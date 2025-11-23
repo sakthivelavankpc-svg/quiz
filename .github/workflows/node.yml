@@ -1,0 +1,22 @@
+name: Node.js CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    # This step installs Node.js in the GitHub runner
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' # Specify the version you want
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run tests
+      run: npm test

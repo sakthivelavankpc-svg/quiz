@@ -169,3 +169,120 @@ th { background: var(--secondary); font-weight: 600; }
     /* Hide Buttons and Header */
     .share-actions, #homeBtn_review, #printPdfBtn, .app-header, .toast-container { display: none !important; }
 }
+/* --- UPDATED REVIEW SECTION STYLES --- */
+
+/* Report Header (Hidden on mobile usually, visible in review/print) */
+.report-header {
+    background: #f9fafb;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.report-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+}
+
+.report-score-box {
+    display: flex;
+    justify-content: space-around;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.score-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.score-lbl { font-size: 0.75rem; text-transform: uppercase; color: var(--text-light); font-weight: 700; }
+.score-val { font-size: 1.2rem; font-weight: 700; }
+
+/* Review List Items */
+.review-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.review-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.review-q-row {
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    gap: 8px;
+    line-height: 1.4;
+}
+.q-num { color: var(--primary); white-space: nowrap; }
+
+.review-ans-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding-top: 5px;
+    border-top: 1px dashed var(--border);
+}
+
+.ans-box {
+    font-size: 0.9rem;
+    padding: 8px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ans-label { font-size: 0.7rem; font-weight: 700; opacity: 0.8; margin-bottom: 2px; }
+.ans-val { font-weight: 500; }
+
+/* Answer Status Colors */
+.correct-ans { background: rgba(16, 185, 129, 0.1); color: #065f46; border: 1px solid rgba(16, 185, 129, 0.2); }
+.wrong-ans { background: rgba(239, 68, 68, 0.1); color: #991b1b; border: 1px solid rgba(239, 68, 68, 0.2); }
+.skipped-ans { background: #f3f4f6; color: var(--text-light); border: 1px solid var(--border); }
+
+/* --- PRINT PDF STYLES --- */
+@media print {
+    body { background: white; color: black; }
+    body * { visibility: hidden; }
+    
+    /* Only show the Review Section Content */
+    #reviewTableContainer, #reviewTableContainer * { visibility: visible; }
+    
+    #reviewSection { 
+        position: absolute; left: 0; top: 0; width: 100%; margin: 0; 
+        box-shadow: none; border: none; padding: 0; 
+        visibility: visible;
+    }
+    
+    /* Hide the top circular score and buttons during print */
+    .result-header, .share-actions, #homeBtn_review, #printPdfBtn, .app-header { display: none !important; }
+    
+    /* Ensure colors print correctly */
+    .review-card, .ans-box, .report-header {
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        page-break-inside: avoid;
+    }
+
+    .review-card { border: 1px solid #ddd; margin-bottom: 10px; }
+    .review-ans-row { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+    .review-ans-row { grid-template-columns: 1fr; }
+}

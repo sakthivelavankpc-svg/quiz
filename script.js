@@ -109,7 +109,7 @@
   }
 
   function getConfig() {
-      return { time: $("totalMinutes").value, perQ: $("perQuestionSeconds").value, marks: $("totalMarks").value, pass: $("minPassMarks").value, shuffle: $("shuffleQuestions").checked, contact: $("teacherWhatsapp").value };
+      return { time: $("totalMinutes").value, perQ: $("perQuestionSeconds").value, marks: $("totalMarks").value || 100, pass: $("minPassMarks").value, shuffle: $("shuffleQuestions").checked, contact: $("teacherWhatsapp").value };
   }
 
   function applyConfig(cfg) {
@@ -224,6 +224,7 @@
       }, 1000);
   }
 
+  // --- UPDATED REVIEW SECTION LOGIC ---
   function finishQuiz() {
       clearInterval(mainTimerInterval); clearInterval(questionTimerInterval); clearTimeout(autoAdvanceTimer);
       hide($("quizSection")); show($("reviewSection")); show($("appContainer").querySelector(".app-header"));
@@ -232,84 +233,100 @@
       const totalM = parseFloat($("totalMarks").value) || 100;
       const markPerQ = totalM / quizData.length;
       
-      // Generate Table Rows
-      let rowsHtml = '';
+      // Generate List Items
+      let listHtml = '';
       quizData.forEach((q, i) => {
           const u = (userAnswers[i] || "").trim();
           const c = (q.answer || "").trim();
-          let statusIcon, rowColor;
+          let userClass = "";
+          let userLabel = "User Selected";
 
           if(!u) {
               skipped++;
-              statusIcon = '⚪ Skipped';
-              rowColor = 'transparent';
+              userClass = "skipped-ans";
+              userLabel = "Skipped";
           } else if(u === c) {
               score += markPerQ;
               correct++;
-              statusIcon = '✅ Correct';
-              rowColor = 'rgba(16, 185, 129, 0.1)';
+              userClass = "correct-ans";
           } else {
-              statusIcon = '❌ Wrong';
-              rowColor = 'rgba(239, 68, 68, 0.1)';
+              userClass = "wrong-ans";
           }
           
-          rowsHtml += `
-          <tr style="background:${rowColor};">
-            <td>${i + 1}</td>
-            <td>${escapeHtml(q.question)}</td>
-            <td style="font-weight:500">${escapeHtml(u) || '<span style="color:gray; font-style:italic">No Answer</span>'}</td>
-            <td style="font-weight:bold">${escapeHtml(c)}</td>
-            <td>${statusIcon}</td>
-          </tr>`;
+          // The specific format requested: Q Text ... User Option, Correct Option
+          listHtml += `
+          <div class="review-card">
+              <div class="review-q-row">
+                  <span class="q-num">Q${i+1}.</span>
+                  <span class="q-text">${escapeHtml(q.question)}</span>
+              </div>
+              <div class="review-ans-row">
+                  <div class="ans-box ${userClass}">
+                      <span class="ans-label"><i class="ri-user-line"></i> Your Answer:</span>
+                      <span class="ans-val">${escapeHtml(u) || "---"}</span>
+                  </div>
+                  <div class="ans-box correct-ans">
+                      <span class="ans-label"><i class="ri-check-double-line"></i> Correct Answer:</span>
+                      <span class="ans-val">${escapeHtml(c)}</span>
+                  </div>
+              </div>
+          </div>`;
       });
 
       // Report Card Header (Visible in Print)
       const summaryHtml = `
-      <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background: #f9fafb;">
-        <h2 style="margin:0 0 10px 0; color:var(--primary)">Student Report Card</h2>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size: 0.95rem;">
+      <div class="report-header">
+        <h2 style="margin:0 0 15px 0; color:var(--primary); border-bottom:2px solid var(--border); padding-bottom:10px;">
+            🎓 QUIZ RESULT REPORT
+        </h2>
+        <div class="report-meta-grid">
             <div><strong>Name:</strong> ${escapeHtml(studentDetails.name || "Guest")}</div>
             <div><strong>Location:</strong> ${escapeHtml(studentDetails.place || "-")}</div>
             <div><strong>Date:</strong> ${new Date().toLocaleDateString()}</div>
-            <div><strong>Time Taken:</strong> ${$("mainTimerLabel").textContent}</div>
+            <div><strong>Time:</strong> ${$("mainTimerLabel").textContent}</div>
         </div>
-        <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">
-        <div style="display:flex; justify-content:space-around; font-weight:bold;">
-            <span>🏆 Score: ${Math.round(score)}/${totalM}</span>
-            <span style="color:green">✅ Correct: ${correct}</span>
-            <span style="color:red">❌ Wrong: ${quizData.length - correct - skipped}</span>
-            <span style="color:gray">⚪ Skipped: ${skipped}</span>
+        <div class="report-score-box">
+            <div class="score-item">
+                <span class="score-lbl">Score</span>
+                <span class="score-val">${Math.round(score)} / ${totalM}</span>
+            </div>
+            <div class="score-item" style="color:var(--success)">
+                <span class="score-lbl">Correct</span>
+                <span class="score-val">${correct}</span>
+            </div>
+            <div class="score-item" style="color:var(--danger)">
+                <span class="score-lbl">Wrong</span>
+                <span class="score-val">${quizData.length - correct - skipped}</span>
+            </div>
         </div>
       </div>`;
       
-      const tableHtml = `
-      ${summaryHtml}
-      <table style="width:100%; font-size:0.9rem; border-collapse:collapse;">
-        <thead>
-            <tr style="background:#f3f4f6; border-bottom:2px solid #ddd;">
-                <th style="padding:10px; text-align:left;">#</th>
-                <th style="padding:10px; text-align:left;">Question</th>
-                <th style="padding:10px; text-align:left;">Your Answer</th>
-                <th style="padding:10px; text-align:left;">Correct Answer</th>
-                <th style="padding:10px; text-align:left;">Result</th>
-            </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>`;
-
       $("finalScoreDisplay").textContent = Math.round(score);
-      $("reviewTableContainer").innerHTML = tableHtml;
+      $("reviewTableContainer").innerHTML = summaryHtml + `<div class="review-list-container">${listHtml}</div>`;
       
       const pass = parseFloat($("minPassMarks").value)||0;
       $("passFailText").innerHTML = score >= pass ? "<span style='color:var(--success)'>PASSED</span>" : "<span style='color:var(--danger)'>FAILED</span>";
 
-      const txt = `*Quiz Result: ${studentDetails.name}*\n📍 ${studentDetails.place}\n🏆 Score: ${Math.round(score)}/${totalM}\n✅ Correct: ${correct}/${quizData.length}`;
+      // WhatsApp Share Logic
+      const txt = `*Quiz Result: ${studentDetails.name}*\n📍 ${studentDetails.place}\n🏆 *Score: ${Math.round(score)}/${totalM}*\n✅ Correct: ${correct}/${quizData.length}\n❌ Wrong: ${quizData.length - correct - skipped}`;
       const contact = $("teacherWhatsapp").value;
-      $("submitWhatsappBtn").onclick = () => window.open(contact ? `https://wa.me/${contact}?text=${encodeURIComponent(txt)}` : `https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank");
-      $("submitEmailBtn").onclick = () => window.open(`mailto:?body=${encodeURIComponent(txt)}`, "_self");
+      
+      // Update Buttons
+      $("submitWhatsappBtn").onclick = () => {
+          const url = contact 
+            ? `https://wa.me/${contact}?text=${encodeURIComponent(txt)}` 
+            : `https://wa.me/?text=${encodeURIComponent(txt)}`;
+          window.open(url, "_blank");
+      };
+      
+      $("submitEmailBtn").onclick = () => window.open(`mailto:?subject=Quiz Result for ${studentDetails.name}&body=${encodeURIComponent(txt)}`, "_self");
   }
 
-  $("printPdfBtn").addEventListener("click", () => window.print());
+  // Print Logic handles "Save as PDF" via browser dialog
+  $("printPdfBtn").addEventListener("click", () => {
+       window.print();
+  });
+  
   $("homeBtn_review").addEventListener("click", () => location.reload());
 
   function checkUrlForSharedQuiz() {

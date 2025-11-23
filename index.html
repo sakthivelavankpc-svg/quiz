@@ -63,21 +63,24 @@
 
         <div class="config-card">
             <h4><i class="ri-file-info-line"></i> Quiz Details</h4>
-            <div class="input-grid">
-                <input id="metaExam" placeholder="Exam Name (e.g. Half Yearly)" />
-                <input id="metaSubject" placeholder="Subject (e.g. Physics)" />
-                <input id="metaTopic" placeholder="Topic" />
-                <select id="metaClass">
-                    <option value="">Select Class...</option>
-                    <option value="Class 1">Class 1</option>
-                    <option value="Class 6">Class 6</option>
-                    <option value="Class 10">Class 10</option>
-                    <option value="Class 12">Class 12</option>
-                    <option value="TNPSC">TNPSC</option>
-                    <option value="NEET">NEET</option>
-                    <option value="Others">Others</option>
-                </select>
-            </div>
+            <div class="input-grid three-col">
+    <div class="input-group">
+        <label>Time (mins)</label>
+        <input id="totalMinutes" type="number" placeholder="Unlimited" />
+    </div>
+    <div class="input-group">
+        <label>Total Marks</label>
+        <input id="totalMarks" type="number" value="100" />
+    </div>
+    <div class="input-group">
+        <label>Per Q (sec)</label>
+        <input id="perQuestionSeconds" type="number" placeholder="Off" />
+    </div>
+    <div class="input-group">
+        <label>Pass Mark</label>
+        <input id="minPassMarks" type="number" value="40" />
+    </div>
+</div>
         </div>
 
         <div class="config-card">

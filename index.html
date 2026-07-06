@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Quiz Master Pro v26 Enterprise</title>
+  <title>Quiz Master Pro v27 Enterprise</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700&family=Roboto&family=Noto+Sans&family=Courier+New&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
@@ -19,12 +19,12 @@
 
   <div id="toastContainer" class="toast-container"></div>
 
-  <header class="app-header">
+  <header class="app-header glass-effect">
     <div class="header-content">
       <div class="logo-area">
         <div class="logo-icon">👑</div>
         <div>
-            <h1>Quiz Master Pro (v26 - Enterprise) <br> <a href="https://www.youtube.com/@KALVIKADAL" target="_blank"> KALVI KADAL</a></h1>
+            <h1>Quiz Master Pro (v27 - Enterprise) <br> <a href="https://www.youtube.com/@KALVIKADAL" target="_blank"> KALVI KADAL</a></h1>
             <span class="subtitle">Created By K. SAKTHI VELAVAN &bull; Enterprise System Edition</span>
         </div>
       </div>
@@ -33,12 +33,13 @@
         <button id="toggleYoutubeSidebarBtn" class="btn-icon" title="Toggle YouTube Sidebar"><i class="ri-youtube-line" style="color:red;"></i></button>
         <button id="toggleCreatorBtn" class="btn-icon" title="Toggle Creator Mode"><i class="ri-edit-box-line"></i></button>
         <button id="themeToggleBtn" class="btn-icon" title="Toggle Theme"><i class="ri-moon-line"></i></button>
+        <button id="globalLogoutBtn" class="btn-icon hidden" title="Secure Logout"><i class="ri-logout-box-r-line" style="color:var(--danger);"></i></button>
       </div>
     </div>
   </header>
 
   <!-- YOUTUBE SIDEBAR -->
-  <aside id="youtubeSidebar" class="youtube-sidebar hidden">
+  <aside id="youtubeSidebar" class="youtube-sidebar hidden glass-effect">
       <div class="sidebar-header">
           <h3><i class="ri-youtube-fill" style="color:red;"></i> My Channel</h3>
           <button id="closeYoutubeSidebarBtn" class="btn-icon"><i class="ri-close-line"></i></button>
@@ -55,7 +56,7 @@
 
   <main class="container" id="appContainer">
     
-    <div id="studentInfoDisplay" class="student-badge hidden">
+    <div id="studentInfoDisplay" class="student-badge hidden glass-effect">
         <div class="badge-icon">🎓</div>
         <div class="badge-text">
             <span id="dispName" class="name">Student</span>
@@ -65,12 +66,13 @@
     </div>
 
     <!-- GLOBAL ENTERPRISE SEARCH & ADVANCED FILTERS SYSTEM -->
-    <div id="globalSearchPanel" class="panel">
+    <div id="globalSearchPanel" class="panel glass-effect">
         <div class="section-header">
             <h3><i class="ri-search-eye-line"></i> Global Enterprise Search & Filters</h3>
         </div>
-        <div class="input-grid">
-            <input type="text" id="globalSearchInput" placeholder="🔍 Search Quiz, Topic, Teacher, School, Group, Question..." />
+        <div class="input-grid relative-wrapper">
+            <input type="text" id="globalSearchInput" placeholder="🔍 Search Quiz, Topic, Teacher, School, Group, Question..." autocomplete="off" />
+            <div id="searchSuggestions" class="autocomplete-dropdown hidden"></div>
             <select id="advFilterSubject">
                 <option value="all">All Subjects</option>
             </select>
@@ -82,8 +84,8 @@
         </div>
     </div>
 
-    <!-- FEATURED CONTENT SECTION (THREE YOUTUBE CARDS) -->
-    <div id="homeYoutubeWidget" class="panel">
+    <!-- FEATURED CONTENT SECTION -->
+    <div id="homeYoutubeWidget" class="panel glass-effect">
         <div class="section-header">
             <h3><i class="ri-video-line"></i> Featured Educational Content</h3>
         </div>
@@ -140,7 +142,7 @@
     </div>
 
     <!-- UNIFIED GLOBAL QUIZ LIBRARY SECTION -->
-    <section id="librarySection" class="panel">
+    <section id="librarySection" class="panel glass-effect">
       <div class="section-header">
         <h3><i class="ri-cloud-line"></i> Unified Global Cloud Library</h3>
         <span class="badge-count" id="libCount">Loading Core Databases...</span>
@@ -149,14 +151,14 @@
     </section>
 
     <!-- BACKWARDS COMPATIBLE EXPLICIT DISPLAY SECTIONS -->
-    <section id="legacyQuizzesSection" class="panel">
+    <section id="legacyQuizzesSection" class="panel glass-effect">
         <div class="section-header">
             <h3><i class="ri-book-read-line"></i> Individual Quizzes (Dedicated Grid)</h3>
         </div>
         <div id="legacyQuizzesGrid" class="library-grid"></div>
     </section>
 
-    <section id="legacyGroupsSection" class="panel">
+    <section id="legacyGroupsSection" class="panel glass-effect">
         <div class="section-header">
             <h3><i class="ri-briefcase-line"></i> Combined Exam Groups (Dedicated Grid)</h3>
         </div>
@@ -164,7 +166,7 @@
     </section>
 
     <!-- ENTERPRISE ADMIN PORTAL COMPONENT -->
-    <section id="adminDashboardPanel" class="panel hidden">
+    <section id="adminDashboardPanel" class="panel hidden glass-effect">
         <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--border); padding-bottom:10px; margin-bottom:15px;">
             <h2>🛠️ Enterprise Admin Control Center</h2>
             <button id="closeAdminDashboardBtn" class="btn-secondary btn-sm">Exit Panel</button>
@@ -175,8 +177,8 @@
             <button class="admin-tab-btn" data-target="adminUsers">Users</button>
             <button class="admin-tab-btn" data-target="adminQuizMgmt">Quizzes</button>
             <button class="admin-tab-btn" data-target="adminGroupMgmt">Groups</button>
-            <button class="admin-tab-btn" data-target="adminLeaderboard">Leaderboard</button>
             <button class="admin-tab-btn" data-target="adminRecycleBin">Recycle Bin</button>
+            <button class="admin-tab-btn" id="openFloatingLeaderboardBtn">Floating Leaderboard</button>
         </div>
 
         <!-- Admin Tab 1: Dashboard Analytics -->
@@ -270,42 +272,6 @@
             </div>
         </div>
 
-        <!-- Admin Tab 5: Enterprise Leaderboard Console -->
-        <div id="adminLeaderboard" class="admin-tab-content hidden">
-            <div class="leaderboard-controls-grid">
-                <select id="lblFilterExam"><option value="all">All Exams</option></select>
-                <select id="lblFilterTopic"><option value="all">All Topics</option></select>
-                <select id="lblFilterSchool"><option value="all">All Schools</option></select>
-                <select id="lblFilterDistrict"><option value="all">All Districts</option></select>
-                <select id="lblFilterMetric">
-                    <option value="high">Highest Score</option>
-                    <option value="low">Lowest Score</option>
-                    <option value="fast">Fastest Completion</option>
-                </select>
-            </div>
-            <div style="margin:15px 0; display:flex; gap:10px;">
-                <button id="exportLbPdf" class="btn-primary btn-sm">Export PDF</button>
-                <button id="exportLbExcel" class="btn-accent btn-sm">Export Excel</button>
-                <button id="exportLbCsv" class="btn-secondary btn-sm">Export CSV</button>
-            </div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Student ID</th>
-                            <th>Name</th>
-                            <th>School</th>
-                            <th>District</th>
-                            <th>Score</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminLeaderboardTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-
         <!-- Admin Tab 6: Recycle Bin -->
         <div id="adminRecycleBin" class="admin-tab-content hidden">
             <div class="table-wrapper">
@@ -326,7 +292,7 @@
 
     <!-- ADMIN PASSWORD FORCE RESET MODAL -->
     <div id="adminPasswordResetModal" class="modal-overlay hidden">
-        <div class="modal-card">
+        <div class="modal-card glass-effect">
             <h3>🔒 Security Requirement: Change Admin Password</h3>
             <p>You are using default administrative authorization. Set a production password.</p>
             <input type="password" id="adminNewPassword" placeholder="Enter New Secure Password" class="q-input" style="margin-bottom:10px;" />
@@ -335,7 +301,7 @@
     </div>
 
     <!-- CREATOR STUDIO PANEL -->
-    <div id="creatorPanel" class="creator-panel hidden">
+    <div id="creatorPanel" class="creator-panel hidden glass-effect">
         <div class="panel-header">
             <h3>🛠️ Creator Studio Workspace</h3>
             <button id="closeCreatorBtn" class="btn-text">Close</button>
@@ -382,7 +348,6 @@
                          <input id="creatorEmail" type="email" placeholder="john@example.com" />
                     </div>
                 </div>
-                <!-- V26 Extra Meta Hooks -->
                 <div class="input-grid">
                     <div class="input-group"><label>District Context</label><input id="metaDistrict" type="text" placeholder="e.g. Chennai" /></div>
                     <div class="input-group"><label>City Context</label><input id="metaCity" type="text" placeholder="e.g. Tamil Nadu" /></div>
@@ -449,7 +414,7 @@
     </div>
 
     <!-- POST-UPLOAD ENTERPRISE VISUAL WORKSPACE EDITOR -->
-    <section id="enterpriseWorkspacePanel" class="panel hidden">
+    <section id="enterpriseWorkspacePanel" class="panel hidden glass-effect">
         <div class="section-header">
             <h3><i class="ri-edit-2-line"></i> Enterprise Post-Upload Visual Workspace</h3>
             <span class="badge-count" id="workspaceQuestionCount">0 Questions Loaded</span>
@@ -463,6 +428,9 @@
                 <button type="button" data-cmd="strikeThrough" title="Strikethrough"><i class="ri-strikethrough"></i></button>
                 <button type="button" data-cmd="superscript" title="Superscript"><i class="ri-superscript"></i></button>
                 <button type="button" data-cmd="subscript" title="Subscript"><i class="ri-subscript"></i></button>
+                <button type="button" data-cmd="foreColor" data-val="#ff0000" title="Color Red"><i class="ri-font-color"></i></button>
+                <button type="button" data-cmd="hiliteColor" data-val="#ffff00" title="Highlight"><i class="ri-mark-pen-line"></i></button>
+                <button type="button" data-cmd="fontSize" data-val="5" title="Increase Font"><i class="ri-font-size"></i></button>
                 <div class="toolbar-divider"></div>
                 <button type="button" data-cmd="justifyLeft"><i class="ri-align-left"></i></button>
                 <button type="button" data-cmd="justifyCenter"><i class="ri-align-center"></i></button>
@@ -470,6 +438,10 @@
                 <div class="toolbar-divider"></div>
                 <button type="button" data-cmd="insertOrderedList"><i class="ri-list-ordered"></i></button>
                 <button type="button" data-cmd="insertUnorderedList"><i class="ri-list-check-2"></i></button>
+                <button type="button" id="insertImageBtn" title="Insert Image"><i class="ri-image-add-line"></i></button>
+                <button type="button" id="insertTableBtn" title="Insert Table"><i class="ri-table-2"></i></button>
+                <button type="button" data-cmd="undo" title="Undo"><i class="ri-arrow-go-back-line"></i></button>
+                <button type="button" data-cmd="redo" title="Redo"><i class="ri-arrow-go-forward-line"></i></button>
                 <button type="button" data-cmd="removeFormat" title="Remove Formatting"><i class="ri-format-clear"></i></button>
             </div>
         </div>
@@ -487,7 +459,7 @@
     </section>
 
     <!-- AUTOMATED COMBINED EXAM GROUP ASSEMBLER -->
-    <div id="v20-group-manager-panel" class="panel">
+    <div id="v20-group-manager-panel" class="panel glass-effect">
         <div class="section-header">
             <h4><i class="ri-install-line"></i> Assemble Combined Exam Group Workspace</h4>
         </div>
@@ -500,7 +472,7 @@
 
     <!-- ONE-TIME REGISTRATION MODAL -->
     <div id="globalRegistrationModal" class="modal-overlay hidden">
-        <div class="modal-card bounce-in">
+        <div class="modal-card bounce-in glass-effect">
             <div class="modal-icon">👤</div>
             <h3>One-Time Core Registration</h3>
             <div class="input-grid" style="grid-template-columns: 1fr;">
@@ -525,7 +497,7 @@
 
     <!-- FALLBACK LOGIN MODAL -->
     <div id="studentLoginModal" class="modal-overlay hidden">
-        <div class="modal-card bounce-in">
+        <div class="modal-card bounce-in glass-effect">
             <div class="modal-icon">🔐</div>
             <h3>System Access Verification</h3>
             <div class="input-grid" style="grid-template-columns: 1fr;">
@@ -539,7 +511,7 @@
 
     <!-- EXAM GROUP COMBINED PREVIEW MODAL -->
     <div id="groupPreviewModal" class="modal-overlay hidden">
-        <div class="modal-card bounce-in" style="max-width: 650px; width:95%;">
+        <div class="modal-card bounce-in glass-effect" style="max-width: 650px; width:95%;">
             <div class="modal-icon">📦</div>
             <h3>Exam Group Structural Summary</h3>
             <div id="groupPreviewDetailsContainer" class="table-wrapper" style="margin: 15px 0;"></div>
@@ -557,7 +529,7 @@
 
     <!-- ASSIGNMENT LINK MODEL -->
     <div id="shareModal" class="modal-overlay hidden">
-        <div class="modal-card bounce-in">
+        <div class="modal-card bounce-in glass-effect">
             <div class="modal-icon">🔗</div>
             <h3 id="shareModalTitle">Share Component Matrix</h3>
             <p id="shareModalTopic" style="font-weight:bold; color:var(--primary);"></p>
@@ -571,7 +543,7 @@
 
     <!-- ENGINE RUNTIME INTERFACE -->
     <section id="quizSection" class="quiz-interface hidden">
-        <div class="quiz-top-bar">
+        <div class="quiz-top-bar glass-effect">
             <div style="flex: 2; display:flex; flex-direction:column;">
                 <div style="font-weight:bold; font-size:1.1rem; color:var(--text-main);" id="quizDisplayExamName">Exam</div>
                 <div style="font-size:0.8rem; color:var(--text-light);">
@@ -589,7 +561,7 @@
                 <div class="progress-bar"><div id="progressBarFill"></div></div>
             </div>
         </div>
-        <div class="question-card">
+        <div class="question-card glass-effect">
             <div class="q-header"><span id="timerPerQ" class="per-q-timer hidden">--</span></div>
             <div id="questionBox" class="q-text"></div>
         </div>
@@ -602,7 +574,7 @@
     </section>
 
     <!-- LIVE COMPREHENSIVE PERFORMANCE REVIEW -->
-    <section id="reviewSection" class="panel hidden">
+    <section id="reviewSection" class="panel hidden glass-effect">
       <div class="result-header" style="text-align:center;">
           <h3>🎉 Runtime Compilation Complete</h3>
           <h4 id="reviewTopicHeader" style="color:var(--primary);"></h4>
@@ -611,7 +583,6 @@
               <small>Score Metric</small>
           </div>
           <div id="passFailText" style="font-weight:bold; font-size:1.2rem; margin-bottom:15px;">--</div>
-          <!-- Integrated QR for Student Results Verification -->
           <div id="resultQrCodeBlock" style="margin:10px 0;"></div>
       </div>
       <div class="share-actions" style="margin-bottom: 20px;">
@@ -632,7 +603,7 @@
 
   <!-- RE-ROUTED AUTH DIALOG -->
   <div id="adminAuthModal" class="modal-overlay hidden">
-      <div class="modal-card">
+      <div class="modal-card glass-effect">
           <h3>👑 Enterprise Administrative Handshake</h3>
           <p>Provide secure credential maps.</p>
           <input type="text" id="adminUserField" placeholder="Username / Email" class="q-input" style="margin-bottom:10px;" />
@@ -642,6 +613,56 @@
               <button id="cancelAdminLoginBtn" class="btn-secondary" style="flex:1;">Cancel</button>
           </div>
       </div>
+  </div>
+
+  <!-- FLOATING ENTERPRISE LEADERBOARD PANEL -->
+  <div id="floatingLeaderboardPanel" class="floating-panel hidden glass-effect">
+      <div class="floating-header" id="floatingLeaderboardHeader">
+          <span>🏆 Enterprise Leaderboard Dashboard</span>
+          <div class="floating-actions">
+              <button id="minMaxFloatingLbBtn" class="btn-icon-small"><i class="ri-arrow-up-s-line"></i></button>
+              <button id="closeFloatingLbBtn" class="btn-icon-small"><i class="ri-close-line"></i></button>
+          </div>
+      </div>
+      <div class="floating-content" id="floatingLeaderboardContent">
+          <div class="leaderboard-controls-grid">
+              <select id="lblFilterExam"><option value="all">All Exams</option></select>
+              <select id="lblFilterTopic"><option value="all">All Topics</option></select>
+              <select id="lblFilterSchool"><option value="all">All Schools</option></select>
+              <select id="lblFilterDistrict"><option value="all">All Districts</option></select>
+              <select id="lblFilterMetric">
+                  <option value="high">Highest Score</option>
+                  <option value="low">Lowest Score</option>
+                  <option value="fast">Fastest Completion</option>
+                  <option value="latest">Latest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="pass">Pass Only</option>
+                  <option value="fail">Fail Only</option>
+              </select>
+          </div>
+          <div style="margin:15px 0; display:flex; gap:10px;">
+              <button id="exportLbPdf" class="btn-primary btn-sm">Export PDF</button>
+              <button id="exportLbExcel" class="btn-accent btn-sm">Export Excel</button>
+              <button id="exportLbCsv" class="btn-secondary btn-sm">Export CSV</button>
+          </div>
+          <div class="table-wrapper virtual-scroll-container">
+              <table>
+                  <thead>
+                      <tr>
+                          <th>Rank</th>
+                          <th>Student ID</th>
+                          <th>Name</th>
+                          <th>School</th>
+                          <th>District</th>
+                          <th>Score</th>
+                          <th>Timestamp</th>
+                      </tr>
+                  </thead>
+                  <tbody id="adminLeaderboardTableBody"></tbody>
+              </table>
+          </div>
+      </div>
+      <div class="resizer" id="lbResizer"></div>
   </div>
 
   <script type="module" src="script.js"></script>

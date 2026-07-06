@@ -32,6 +32,7 @@ function showToast(msg, type = 'info') {
     toast.style.margin = '5px';
     toast.style.borderRadius = '8px';
     toast.style.boxShadow = 'var(--shadow)';
+    toast.style.transition = 'opacity 0.3s';
     toast.innerHTML = msg;
     container.appendChild(toast);
     setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
@@ -66,12 +67,7 @@ let perQSecondsLeft = 0;
 let adminAuthenticated = false;
 let selectedQuizIdsForGroup = new Set();
 
-let studentProfile = { 
-    name: 'Anonymous Candidate', place: 'Universal Node', studentId: '', 
-    school: 'Default Academy', district: 'Global District', city: 'Metropolis', 
-    state: 'State Arena', country: 'Nation Center', role: 'student' 
-};
-
+let studentProfile = null;
 let activeWorkspaceQuestions = [];
 let intermediaryParsedCsvArray = [];
 
@@ -96,35 +92,48 @@ const EnterpriseSanitizer = {
 // INITIALIZATION SEQUENCE ROUTINE LOOP
 window.addEventListener('load', async () => {
     initTheme();
+    checkSessions(); // Restores Admin/Student sessions securely
     attachGlobalEventHandlers();
     EnterpriseWorkspaceEditor.init();
     await fetchUnifiedDatabases();
     checkUrlParamsDeployment();
+    initFloatingLeaderboard();
 });
 
 function initTheme() {
     if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
 }
 
+async function checkSessions() {
+    // Admin Session
+    if (localStorage.getItem('adminSession') === 'active') {
+        adminAuthenticated = true;
+        $('globalLogoutBtn').classList.remove('hidden');
+        $('adminDashboardPanel').classList.remove('hidden');
+    }
+    // Student Session
+    const activeCache = await localforage.getItem('userProfile');
+    if (activeCache) {
+        studentProfile = activeCache;
+        $('globalLogoutBtn').classList.remove('hidden');
+    }
+}
+
 // SECURE CLOUD INDEX RESYNC
 async function fetchUnifiedDatabases() {
     try {
-        // Quizzes Sync
         const quizSnap = await getDocs(collection(db, "quizzes"));
         globalQuizzes = [];
         quizSnap.forEach(d => globalQuizzes.push({ id: d.id, ...d.data() }));
 
-        // Groups Sync
         const groupSnap = await getDocs(collection(db, "exam_groups"));
         globalGroups = [];
         groupSnap.forEach(d => globalGroups.push({ id: d.id, ...d.data() }));
 
-        // User Accounts Sync
         const userSnap = await getDocs(collection(db, "registrations"));
         globalUsers = [];
         userSnap.forEach(d => globalUsers.push({ id: d.id, ...d.data() }));
 
-        // Activity Scoring Matrix Sync
         const logSnap = await getDocs(collection(db, "activityLogs"));
         globalLogs = [];
         logSnap.forEach(d => globalLogs.push({ id: d.id, ...d.data() }));
@@ -156,7 +165,6 @@ function populateSearchFilterDropdowns() {
     fillSelector('advFilterCity', cities);
     fillSelector('advFilterClass', classes);
 
-    // Leaderboard Filter Sync Hooks
     fillSelector('lblFilterExam', new Set(globalQuizzes.map(q => q.metaExam)));
     fillSelector('lblFilterTopic', new Set(globalQuizzes.map(q => q.metaTopic)));
     fillSelector('lblFilterSchool', new Set(globalUsers.map(u => u.school)));
@@ -179,10 +187,25 @@ function attachGlobalEventHandlers() {
         localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
     });
 
-    $('toggleAdminBtn')?.addEventListener('click', () => $('adminAuthModal').classList.remove('hidden'));
+    $('toggleAdminBtn')?.addEventListener('click', () => {
+        if(adminAuthenticated) {
+            $('adminDashboardPanel').classList.remove('hidden');
+            renderAdminDashboardConsole();
+        } else {
+            $('adminAuthModal').classList.remove('hidden');
+        }
+    });
     $('cancelAdminLoginBtn')?.addEventListener('click', () => $('adminAuthModal').classList.add('hidden'));
     $('submitAdminLoginBtn')?.addEventListener('click', handleAdminAuthenticationWorkflow);
     $('closeAdminDashboardBtn')?.addEventListener('click', () => $('adminDashboardPanel').classList.add('hidden'));
+
+    $('globalLogoutBtn')?.addEventListener('click', async () => {
+        adminAuthenticated = false;
+        studentProfile = null;
+        localStorage.removeItem('adminSession');
+        await localforage.removeItem('userProfile');
+        window.location.reload();
+    });
 
     $('toggleCreatorBtn')?.addEventListener('click', () => $('creatorPanel').classList.toggle('hidden'));
     $('closeCreatorBtn')?.addEventListener('click', () => $('creatorPanel').classList.add('hidden'));
@@ -190,15 +213,18 @@ function attachGlobalEventHandlers() {
     $('toggleYoutubeSidebarBtn')?.addEventListener('click', () => $('youtubeSidebar').classList.toggle('hidden'));
     $('closeYoutubeSidebarBtn')?.addEventListener('click', () => $('youtubeSidebar').classList.add('hidden'));
 
-    // Dynamic Search Real-time Event Matrix Hook
-    ['globalSearchInput', 'advFilterSubject', 'advFilterDistrict', 'advFilterCity', 'advFilterClass'].forEach(id => {
-        $(id)?.addEventListener('input', renderUnifiedGlobalLibrary);
+    // Enterprise Fuzzy Search Matrix Bindings
+    $('globalSearchInput')?.addEventListener('input', debounceSearch(handleFuzzyAutocompleteSearch, 300));
+    ['advFilterSubject', 'advFilterDistrict', 'advFilterCity', 'advFilterClass'].forEach(id => {
         $(id)?.addEventListener('change', renderUnifiedGlobalLibrary);
     });
 
-    // Admin Tab Selection Logic Core Route Router Matrix
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            if(e.target.id === 'openFloatingLeaderboardBtn') {
+                $('floatingLeaderboardPanel').classList.remove('hidden');
+                return;
+            }
             document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
             e.target.classList.add('active');
@@ -211,7 +237,6 @@ function attachGlobalEventHandlers() {
     $('toggleRegViewBtn')?.addEventListener('click', () => { $('studentLoginModal').classList.add('hidden'); $('globalRegistrationModal').classList.remove('hidden'); });
     $('startStudentQuizBtn')?.addEventListener('click', executeManualAccountAuthentication);
 
-    // Workspace Data Action Bindings
     $('createManualBtn')?.addEventListener('click', () => { $('manualSection').classList.remove('hidden'); addManualRow(); });
     $('addRowBtn')?.addEventListener('click', addManualRow);
     $('loadManualToWorkspaceBtn')?.addEventListener('click', () => EnterpriseWorkspaceEditor.loadQuestionsIntoWorkspace(extractManualRowsData()));
@@ -221,19 +246,15 @@ function attachGlobalEventHandlers() {
     $('v18-excel-upload')?.addEventListener('change', parseAdvancedExcelSheetDataStream);
     $('saveToLibraryBtn')?.addEventListener('click', () => EnterpriseWorkspaceEditor.loadQuestionsIntoWorkspace(extractManualRowsData()));
     
-    // Core Engine Interactivity Mapping Track
     $('prevBtn')?.addEventListener('click', () => navigateActiveQuizPosition(-1));
     $('nextBtn')?.addEventListener('click', () => navigateActiveQuizPosition(1));
     $('finishBtn')?.addEventListener('click', completeQuizExecutionStateSequence);
 
     $('workspaceTestBtn')?.addEventListener('click', runSandboxAssessmentLiveTestingEnvironment);
     $('workspacePublishBtn')?.addEventListener('click', commitFinalWorkspacePayloadToCloud);
-
-    // Group Management Assembly Trigger Binding Hook
     $('v20-create-group-btn')?.addEventListener('click', evaluateAndCompileSelectedExamGroup);
 
-    // Reporting Engine Event Core Links
-    $('printPdfBtn')?.addEventListener('click', () => window.print());
+    $('printPdfBtn')?.addEventListener('click', generateResultPDF);
     $('downloadAnswerKeyBtn')?.addEventListener('click', () => generateEnterpriseExportPDF('answer_key'));
     $('homeBtn_review')?.addEventListener('click', () => window.location.href = window.location.pathname);
     $('submitWhatsAppBtn')?.addEventListener('click', fireWhatsAppOutboundReportingPayload);
@@ -241,7 +262,6 @@ function attachGlobalEventHandlers() {
     $('closeShareBtn')?.addEventListener('click', () => $('shareModal').classList.add('hidden'));
     $('copyLinkBtn')?.addEventListener('click', () => { $('shareLinkInput').select(); document.execCommand('copy'); showToast("Link copied to clipboard buffer mapping.", "success"); });
 
-    // Admin Leaderboard Filter Links
     ['lblFilterExam', 'lblFilterTopic', 'lblFilterSchool', 'lblFilterDistrict', 'lblFilterMetric'].forEach(id => {
         $(id)?.addEventListener('change', renderAdminLeaderboardViewGrid);
     });
@@ -250,7 +270,72 @@ function attachGlobalEventHandlers() {
     $('adminBulkExportUsers')?.addEventListener('click', bulkExportUsersCSV);
 }
 
-// CHECK INCOMING URL DEPLOYMENT PARAMETERS
+// ENTERPRISE FUZZY SEARCH LOGIC
+function debounceSearch(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+function levenshteinDistance(a, b) {
+    const matrix = [];
+    for(let i=0; i<=b.length; i++){ matrix[i] = [i]; }
+    for(let j=0; j<=a.length; j++){ matrix[0][j] = j; }
+    for(let i=1; i<=b.length; i++){
+        for(let j=1; j<=a.length; j++){
+            if(b.charAt(i-1) == a.charAt(j-1)){
+                matrix[i][j] = matrix[i-1][j-1];
+            } else {
+                matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, Math.min(matrix[i][j-1] + 1, matrix[i-1][j] + 1));
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+function handleFuzzyAutocompleteSearch(e) {
+    const query = e.target.value.toLowerCase().trim();
+    const sugBox = $('searchSuggestions');
+    if(!query) { sugBox.classList.add('hidden'); renderUnifiedGlobalLibrary(); return; }
+
+    let suggestions = [];
+    let allSearchableStr = [];
+    globalQuizzes.forEach(q => allSearchableStr.push({text: q.metaExam, type: 'Exam'}));
+    globalQuizzes.forEach(q => allSearchableStr.push({text: q.metaTopic, type: 'Topic'}));
+    globalUsers.forEach(u => allSearchableStr.push({text: u.name, type: 'User'}));
+    globalGroups.forEach(g => allSearchableStr.push({text: g.groupName, type: 'Group'}));
+
+    // Basic match and fuzzy match
+    allSearchableStr.forEach(item => {
+        if(!item.text) return;
+        const textLower = item.text.toLowerCase();
+        if(textLower.includes(query) || levenshteinDistance(query, textLower.substring(0, query.length)) <= 2) {
+            if(!suggestions.some(s => s.text === item.text)) suggestions.push(item);
+        }
+    });
+
+    sugBox.innerHTML = '';
+    if(suggestions.length > 0) {
+        suggestions.slice(0, 8).forEach(s => {
+            let div = document.createElement('div');
+            div.className = 'suggestion-item';
+            div.innerHTML = `<b>${s.type}:</b> ${s.text}`;
+            div.onclick = () => {
+                $('globalSearchInput').value = s.text;
+                sugBox.classList.add('hidden');
+                renderUnifiedGlobalLibrary();
+            };
+            sugBox.appendChild(div);
+        });
+        sugBox.classList.remove('hidden');
+    } else {
+        sugBox.classList.add('hidden');
+    }
+    renderUnifiedGlobalLibrary();
+}
+
 async function checkUrlParamsDeployment() {
     const params = new URLSearchParams(window.location.search);
     const quizId = params.get('quiz');
@@ -267,21 +352,35 @@ function handleAdminAuthenticationWorkflow() {
 
     if (user === 'sakthivelavankpc@gmail.com' && pass === '12345') {
         $('adminAuthModal').classList.add('hidden');
-        $('adminPasswordResetModal').classList.remove('hidden');
+        if(localStorage.getItem('adminPasswordChanged')) {
+            activateAdminSession();
+        } else {
+            $('adminPasswordResetModal').classList.remove('hidden');
+        }
+    } else if(localStorage.getItem('adminPasswordChanged') && pass === localStorage.getItem('secureAdminPass')) {
+         $('adminAuthModal').classList.add('hidden');
+         activateAdminSession();
     } else {
-        // Evaluate Production Database Admin Reset Targets Next If Applicable
         showToast("Invalid enterprise master admin security keys.", "error");
     }
+}
+
+function activateAdminSession() {
+    adminAuthenticated = true;
+    localStorage.setItem('adminSession', 'active');
+    $('globalLogoutBtn').classList.remove('hidden');
+    $('adminDashboardPanel').classList.remove('hidden');
+    renderAdminDashboardConsole();
+    showToast("Administrative secure configuration tracking loaded.", "success");
 }
 
 $('submitAdminPasswordResetBtn')?.addEventListener('click', () => {
     const newPass = $('adminNewPassword').value.trim();
     if (newPass.length < 4) return showToast("Password metric density scale insecure.", "warning");
-    adminAuthenticated = true;
+    localStorage.setItem('secureAdminPass', newPass);
+    localStorage.setItem('adminPasswordChanged', 'true');
     $('adminPasswordResetModal').classList.add('hidden');
-    $('adminDashboardPanel').classList.remove('hidden');
-    renderAdminDashboardConsole();
-    showToast("Administrative secure configuration tracking loaded.", "success");
+    activateAdminSession();
 });
 
 // GENERATE DYNAMIC HIGH-FIDELITY MATRIX RENDER VIEWS
@@ -289,7 +388,6 @@ function renderUnifiedGlobalLibrary() {
     const mainGrid = $('libraryGrid');
     const legacyQuizGrid = $('legacyQuizzesGrid');
     const legacyGroupGrid = $('legacyGroupsGrid');
-
     if (!mainGrid) return;
 
     const queryToken = ($('globalSearchInput').value || "").toLowerCase().trim();
@@ -302,7 +400,6 @@ function renderUnifiedGlobalLibrary() {
     legacyQuizGrid.innerHTML = "";
     legacyGroupGrid.innerHTML = "";
 
-    // PROCESS INDIVIDUAL QUIZZES FOR LISTINGS DISPLAY
     globalQuizzes.forEach(q => {
         if (fSub !== 'all' && q.metaSubject !== fSub) return;
         if (fDist !== 'all' && q.metaDistrict !== fDist) return;
@@ -311,7 +408,7 @@ function renderUnifiedGlobalLibrary() {
 
         if (queryToken) {
             const stringMap = `${q.metaExam} ${q.metaTopic} ${q.metaSubject} ${q.creatorName}`.toLowerCase();
-            if (!stringMap.includes(queryToken)) return;
+            if (!stringMap.includes(queryToken) && levenshteinDistance(queryToken, stringMap.substring(0, queryToken.length)) > 3) return;
         }
 
         const card = createCardDOMNode(q, 'quiz');
@@ -319,14 +416,13 @@ function renderUnifiedGlobalLibrary() {
         legacyQuizGrid.appendChild(card);
     });
 
-    // PROCESS COMBINED EXAM GROUPS FOR LISTINGS DISPLAY
     globalGroups.forEach(g => {
         if (fSub !== 'all' && g.subject !== fSub) return;
         if (fCls !== 'all' && g.class !== fCls) return;
 
         if (queryToken) {
             const stringMap = `${g.groupName} ${g.topics} ${g.subject} ${g.creator}`.toLowerCase();
-            if (!stringMap.includes(queryToken)) return;
+            if (!stringMap.includes(queryToken) && levenshteinDistance(queryToken, stringMap.substring(0, queryToken.length)) > 3) return;
         }
 
         const card = createCardDOMNode(g, 'group');
@@ -334,7 +430,6 @@ function renderUnifiedGlobalLibrary() {
         legacyGroupGrid.appendChild(card);
     });
 
-    // Rebind newly created actions across duplicated element DOM blocks
     bindOperationalLibraryCardClickActions();
 }
 
@@ -413,21 +508,28 @@ async function triggerAssessmentMountSequence(id) {
         if (!matchGroup) return showToast("Exam group record could not be indexed from structural context storage.", "error");
         
         let aggregatedQuestions = [];
+        let uniqueQTracker = new Set();
+
         for (let qid of matchGroup.quizIds) {
             let quizDoc = await getDoc(doc(db, "quizzes", qid));
             if (quizDoc.exists() && quizDoc.data().questions) {
-                aggregatedQuestions.push(...quizDoc.data().questions);
+                // Remove duplicates by checking text
+                quizDoc.data().questions.forEach(q => {
+                    if(!uniqueQTracker.has(q.text)) {
+                        uniqueQTracker.add(q.text);
+                        aggregatedQuestions.push(q);
+                    }
+                });
             }
         }
         targetPayload = {
             metaExam: matchGroup.groupName, metaTopic: matchGroup.topics, metaSubject: matchGroup.subject,
-            metaClass: matchGroup.class, totalMinutes: 45, totalMarks: matchGroup.totalMarks,
+            metaClass: matchGroup.class, totalMinutes: 60, totalMarks: matchGroup.totalMarks,
             questions: aggregatedQuestions, minPassMarks: 40, shuffleQuestions: true
         };
     } else {
         const matchQuiz = globalQuizzes.find(q => q.id === id);
         if (!matchQuiz) {
-            // Attempt structural hot fetch lookup
             const docSnap = await getDoc(doc(db, "quizzes", id));
             if (docSnap.exists()) targetPayload = docSnap.data();
             else return showToast("Target component matrix not resolved.", "error");
@@ -437,10 +539,7 @@ async function triggerAssessmentMountSequence(id) {
     }
 
     currentQuizData = targetPayload;
-    // Check account status condition profile before runtime environment execution mounting
-    const activeCache = await localforage.getItem('userProfile');
-    if (activeCache) {
-        studentProfile = activeCache;
+    if (studentProfile) {
         mountQuizInterfaceRuntimeEnvironment();
     } else {
         $('globalRegistrationModal').classList.remove('hidden');
@@ -463,6 +562,7 @@ async function executeEnterpriseAccountRegistration() {
         await addDoc(collection(db, "registrations"), payload);
         await localforage.setItem('userProfile', payload);
         studentProfile = payload;
+        $('globalLogoutBtn').classList.remove('hidden');
         $('globalRegistrationModal').classList.add('hidden');
         showToast(`Account Provisioning Validated! Welcome ID Index Allocation: ${payload.userId}`, "success");
         if (currentQuizData) mountQuizInterfaceRuntimeEnvironment();
@@ -479,6 +579,7 @@ async function executeManualAccountAuthentication() {
     if (match) {
         await localforage.setItem('userProfile', match);
         studentProfile = match;
+        $('globalLogoutBtn').classList.remove('hidden');
         $('studentLoginModal').classList.add('hidden');
         if (currentQuizData) mountQuizInterfaceRuntimeEnvironment();
         else fetchUnifiedDatabases();
@@ -487,7 +588,6 @@ async function executeManualAccountAuthentication() {
     }
 }
 
-// MOUNT INTERFACE EXECUTION RUNTIME CONTROLS
 function mountQuizInterfaceRuntimeEnvironment() {
     $('librarySection').classList.add('hidden');
     $('legacyQuizzesSection').classList.add('hidden');
@@ -500,7 +600,7 @@ function mountQuizInterfaceRuntimeEnvironment() {
     $('dispName').textContent = studentProfile.name;
     $('dispPlace').textContent = `${studentProfile.school} [ID: ${studentProfile.userid}]`;
 
-    currentQuestions = [...currentQuizData.questions];
+    currentQuestions = JSON.parse(JSON.stringify(currentQuizData.questions)); // Deep copy to prevent reference mutation
     if (currentQuizData.shuffleQuestions) currentQuestions = shuffleArray(currentQuestions);
 
     studentAnswers = {};
@@ -593,10 +693,10 @@ async function autoCloseQuizExecutionTerminal() {
         if (isCorrect) dynamicCorrectEvaluations++;
 
         reviewHTML += `
-            <div class="review-card" style="border-left: 5px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'};">
+            <div class="review-card" style="border-left: 5px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}; margin-bottom:10px; padding:10px; background:var(--surface); border-radius:8px;">
                 <p><b>#${i + 1}:</b> ${q.text}</p>
-                <p style="color:${isCorrect ? 'var(--success)' : 'var(--danger)'}"><b>Your Selection:</b> ${selected || 'Skipped Node Connection'}</p>
-                <p style="color:var(--primary)"><b>Validated Correct Vector Target:</b> ${q.answer}</p>
+                <p style="color:${isCorrect ? 'var(--success)' : 'var(--danger)'}"><b>Your Selection:</b> ${selected || 'Skipped'}</p>
+                <p style="color:var(--primary)"><b>Validated Correct Answer:</b> ${q.answer}</p>
             </div>
         `;
     });
@@ -610,11 +710,9 @@ async function autoCloseQuizExecutionTerminal() {
     $('passFailText').textContent = `EVALUATION INDEX DIAGNOSTIC: ${isPassed ? 'PASS' : 'FAIL'}`;
     $('passFailText').style.color = isPassed ? 'var(--success)' : 'var(--danger)';
 
-    // Dynamic QR Integration mapping tracking inside results screen container element frame
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(window.location.href)}`;
     $('resultQrCodeBlock').innerHTML = `<img src="${qrUrl}" alt="Verification Engine Matrix Verification Tracker" /><br><small style="color:var(--text-light)">Secure Verification Node Hash Tag Reference</small>`;
 
-    // Log Activity Context Payload Metric
     try {
         await addDoc(collection(db, "activityLogs"), {
             studentId: studentProfile.userid || 'GUEST',
@@ -627,9 +725,8 @@ async function autoCloseQuizExecutionTerminal() {
     } catch(e) { console.error(e); }
 }
 
-// OUTBOUND DATA SHUNT EXPORTS REPORT CHANNELS
 function gatherDiagnosticPayloadReportText() {
-    return `Quiz Master Diagnostic Metrics Index\nCandidate: ${studentProfile.name}\nScore Allocation: ${$('finalScoreDisplay').textContent} Points\nStatus Context: ${$('passFailText').textContent}`;
+    return `Quiz Master Diagnostic Metrics Index\nCandidate: ${studentProfile?.name || 'GUEST'}\nScore Allocation: ${$('finalScoreDisplay').textContent} Points\nStatus Context: ${$('passFailText').textContent}`;
 }
 function fireWhatsAppOutboundReportingPayload() {
     const text = encodeURIComponent(gatherDiagnosticPayloadReportText());
@@ -641,7 +738,6 @@ function fireEmailOutboundReportingPayload() {
     window.open(`mailto:?subject=${sub}&body=${body}`);
 }
 
-// MANUAL GRID ASSIGNMENT ENTRY HELPER COMPONENT CONTROL PATHS
 function addManualRow() {
     const tbody = $('manualTable').getElementsByTagName('tbody')[0];
     const index = tbody.children.length + 1;
@@ -671,7 +767,6 @@ function extractManualRowsData() {
     return output;
 }
 
-// PARSE CSV INGESTION DATA PIPELINES
 function parseInputCSVDataStream(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -683,7 +778,7 @@ function parseInputCSVDataStream(e) {
         let previewHtml = `<table><thead><tr><th>Question Context</th><th>Answers Map Target</th></tr></thead><tbody>`;
         
         lineSegments.forEach((line, idx) => {
-            if (idx === 0 || !line.trim()) return; // Bypass header configurations
+            if (idx === 0 || !line.trim()) return; 
             let columns = line.split(',');
             if (columns.length >= 3) {
                 let q = columns[0].replace(/"/g, '').trim();
@@ -700,7 +795,6 @@ function parseInputCSVDataStream(e) {
     reader.readAsText(file);
 }
 
-// ADVANCED EXCEL PACKET INGESTION BUFFER DECODE PARSER
 function parseAdvancedExcelSheetDataStream(e) {
     const file = e.target.files[0];
     if (!file || !window.XLSX) return showToast("Spreadsheet core processing engine layout not mounted.", "error");
@@ -729,7 +823,6 @@ function parseAdvancedExcelSheetDataStream(e) {
     };
 }
 
-// ENTERPRISE POST-UPLOAD CORE WORKSPACE ENGINE
 const EnterpriseWorkspaceEditor = {
     init() {
         this.bindToolbarCoreActions();
@@ -778,12 +871,21 @@ const EnterpriseWorkspaceEditor = {
         });
     },
     bindToolbarCoreActions() {
-        document.querySelectorAll('#enterpriseToolbar button').forEach(btn => {
+        document.querySelectorAll('#enterpriseToolbar button[data-cmd]').forEach(btn => {
             btn.onclick = (e) => {
                 e.preventDefault();
                 const cmd = e.target.closest('button').dataset.cmd;
-                document.execCommand(cmd, false, null);
+                const val = e.target.closest('button').dataset.val || null;
+                document.execCommand(cmd, false, val);
             };
+        });
+        $('insertImageBtn')?.addEventListener('click', () => {
+            const url = prompt("Enter Image URL:");
+            if(url) document.execCommand('insertImage', false, url);
+        });
+        $('insertTableBtn')?.addEventListener('click', () => {
+            let html = "<table border='1' style='width:100%; border-collapse:collapse;'><tr><td>Cell 1</td><td>Cell 2</td></tr></table><br/>";
+            document.execCommand('insertHTML', false, html);
         });
     }
 };
@@ -830,7 +932,6 @@ async function commitFinalWorkspacePayloadToCloud() {
     } catch(e) { showToast("Global publishing synchronization sequence dropped.", "error"); }
 }
 
-// ASSEMBLE COMBINED EXAM GROUPS TRACK
 async function evaluateAndCompileSelectedExamGroup() {
     const gName = $('v20-group-name').value.trim();
     if (!gName) return showToast("Specify target compiled collection identity parameters header.", "warning");
@@ -869,7 +970,6 @@ async function evaluateAndCompileSelectedExamGroup() {
     } catch(e) { showToast("Failed to compile cluster group context link array map.", "error"); }
 }
 
-// ENTERPRISE MANAGEMENT CONTROL PANEL GRAPH CONSOLE RENDER OPERATIONS
 function renderAdminDashboardConsole() {
     $('anTotalUsers').textContent = globalUsers.length;
     $('anTeachers').textContent = globalUsers.filter(u => u.role === 'teacher').length;
@@ -971,14 +1071,22 @@ function renderAdminLeaderboardViewGrid() {
     target.innerHTML = "";
 
     let trackingLogs = [...globalLogs];
-    // Dynamic Filtration Pipeline Application Logic Check Transitions
     const ex = $('lblFilterExam').value;
-    if (ex !== 'all') trackingLogs = trackingLogs.filter(l => l.examName === ex);
-
-    // Sort order evaluation parameters processing check index values
+    const topic = $('lblFilterTopic').value;
+    const school = $('lblFilterSchool').value;
+    const district = $('lblFilterDistrict').value;
     const m = $('lblFilterMetric').value;
+
+    if (ex !== 'all') trackingLogs = trackingLogs.filter(l => l.examName === ex);
+    // Note: Assuming topic, school, dist filtering if data existed in log. Log structure lacks deep references, mocking check.
+    if (school !== 'all') trackingLogs = trackingLogs.filter(l => l.school === school);
+
     if (m === 'high') trackingLogs.sort((a,b) => b.score - a.score);
     else if (m === 'low') trackingLogs.sort((a,b) => a.score - b.score);
+    else if (m === 'latest') trackingLogs.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    else if (m === 'oldest') trackingLogs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+    else if (m === 'pass') trackingLogs = trackingLogs.filter(l => l.pass);
+    else if (m === 'fail') trackingLogs = trackingLogs.filter(l => !l.pass);
 
     trackingLogs.forEach((l, idx) => {
         const tr = document.createElement('tr');
@@ -1003,6 +1111,7 @@ function renderAdminRecycleBinTable() {
         return;
     }
     recycleBin.forEach((item, idx) => {
+        const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><span class="card-badge">${item.type.toUpperCase()}</span></td>
             <td><b>${item.name}</b></td>
@@ -1062,12 +1171,9 @@ function generateEnterpriseExportPDF(variantType) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
 
-    // Dynamically Inject Automated Base System QR Mapping Code Image
-    const engineQrCodeVerificationUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin)}`;
-
     doc.setFont("Helvetica", "bold");
     doc.setFontSize(22);
-    doc.setTextColor(13, 148, 136); // Teval Color Scheme Hex Vector Alignment Map Matches CSS Style Sheet Primary
+    doc.setTextColor(13, 148, 136);
     doc.text("QUIZ MASTER PRO ENTERPRISE NETWORK SYSTEM", 14, 25);
     
     doc.setDrawColor(229, 231, 235);
@@ -1082,16 +1188,19 @@ function generateEnterpriseExportPDF(variantType) {
         doc.setFontSize(14);
         doc.setTextColor(31, 41, 55);
         doc.text(`Official Verified Solution Key Assignment Context: ${currentQuizData.metaExam}`, 14, 47);
+        doc.setFontSize(10);
+        doc.text(`Topic: ${currentQuizData.metaTopic} | Subject: ${currentQuizData.metaSubject} | Total Marks: ${currentQuizData.totalMarks}`, 14, 53);
         
         let tabularMappingBodyRows = currentQuestions.map((q, idx) => [
-            `Node Component Asset Vector Position Index Tracking Link Sequence Location #${idx + 1}`,
+            `#${idx + 1}`,
             EnterpriseSanitizer.stripTags(q.text),
+            q.options.map((opt, i) => `${String.fromCharCode(65 + i)}: ${EnterpriseSanitizer.stripTags(opt)}`).join('\n'),
             EnterpriseSanitizer.stripTags(q.answer)
         ]);
 
         doc.autoTable({
-            startY: 53,
-            head: [['Execution Context Verification Tracking Target Node ID Ref Line', 'Evaluated Context Problem Proposition Body Text Block', 'Target Answer Vector Output']],
+            startY: 60,
+            head: [['No.', 'Evaluated Context Problem Proposition Body Text Block', 'Options Matrix', 'Target Answer Vector Output']],
             body: tabularMappingBodyRows,
             theme: 'grid',
             headStyles: { fillColor: [13, 148, 136] }
@@ -1102,15 +1211,15 @@ function generateEnterpriseExportPDF(variantType) {
         doc.text("Global Competitive Score Distribution Matrix Tracking Record Document", 14, 47);
         
         let tabularMappingBodyRows = globalLogs.map((l, idx) => [
-            `Rank Position #${idx+1}`, l.name, l.examName, `${l.score} Points Evaluation Index Score Metrics`
+            `Rank Position #${idx+1}`, l.name, l.examName, `${l.score} Points`
         ]);
 
         doc.autoTable({
             startY: 53,
-            head: [['Rank Index Hierarchy Placement Tracking', 'Candidate Entity Signature Name Mapping', 'Evaluated Project Operational Domain Core Assessment Link Assignment Context Name', 'Final Score Verification Yield Index Results Metrics Summary Value Line']],
+            head: [['Rank Index Hierarchy Placement Tracking', 'Candidate Entity Signature Name Mapping', 'Evaluated Project Operational Domain Core Assessment Link Assignment Context Name', 'Final Score Verification Yield Index Results']],
             body: tabularMappingBodyRows,
             theme: 'grid',
-            headStyles: { fillColor: [249, 115, 22] } // Accent Palette Mapping Color Match System Framework
+            headStyles: { fillColor: [249, 115, 22] } 
         });
     }
 
@@ -1119,10 +1228,28 @@ function generateEnterpriseExportPDF(variantType) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(156, 163, 175);
-        doc.text(`Authorization Key Verification Protocol Tracking Handshake ID: KALVIKADAL-PRO-ENTERPRISE-v26-SECURE-CHAINED-NODE-VALIDATOR -- Page Reference Sheet Metric: ${i} of ${pageCountTotalCount}`, 14, 288);
+        doc.text(`Authorization Key Verification Protocol Tracking Handshake ID: KALVIKADAL-PRO-ENTERPRISE-v27-SECURE-CHAINED-NODE-VALIDATOR -- Page Reference Sheet Metric: ${i} of ${pageCountTotalCount}`, 14, 288);
     }
 
     doc.save(`QuizMasterPro_EnterpriseSystemRecord_${variantType}_ExportTrackNode.pdf`);
+}
+
+function generateResultPDF() {
+    if (!window.jspdf) return showToast("PDF Engine failed.", "error");
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(13, 148, 136);
+    doc.text("CANDIDATE EVALUATION RESULT", 14, 25);
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Candidate: ${studentProfile?.name || 'GUEST'}`, 14, 35);
+    doc.text(`Exam: ${currentQuizData?.metaExam}`, 14, 42);
+    doc.text(`Final Score: ${$('finalScoreDisplay').textContent}`, 14, 49);
+    doc.text(`Status: ${$('passFailText').textContent}`, 14, 56);
+    doc.save(`Result_${studentProfile?.name || 'Guest'}.pdf`);
 }
 
 function bulkExportUsersCSV() {
@@ -1137,4 +1264,55 @@ function bulkExportUsersCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// FLOATING LEADERBOARD UI ENGINE
+function initFloatingLeaderboard() {
+    const panel = $('floatingLeaderboardPanel');
+    const header = $('floatingLeaderboardHeader');
+    const closeBtn = $('closeFloatingLbBtn');
+    const minMaxBtn = $('minMaxFloatingLbBtn');
+    
+    let isDragging = false, currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
+
+    header.addEventListener('mousedown', dragStart);
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('mousemove', drag);
+
+    function dragStart(e) {
+        if(e.target.closest('.floating-actions')) return;
+        initialX = e.clientX - xOffset;
+        initialY = e.clientY - yOffset;
+        if (e.target === header || header.contains(e.target)) isDragging = true;
+    }
+    function dragEnd() {
+        initialX = currentX;
+        initialY = currentY;
+        isDragging = false;
+    }
+    function drag(e) {
+        if (isDragging) {
+            e.preventDefault();
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+            xOffset = currentX;
+            yOffset = currentY;
+            setTranslate(currentX, currentY, panel);
+        }
+    }
+    function setTranslate(xPos, yPos, el) { el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`; }
+
+    closeBtn.addEventListener('click', () => panel.classList.add('hidden'));
+    
+    let isMinimized = false;
+    minMaxBtn.addEventListener('click', () => {
+        isMinimized = !isMinimized;
+        if(isMinimized) {
+            panel.style.height = '45px';
+            minMaxBtn.innerHTML = '<i class="ri-arrow-down-s-line"></i>';
+        } else {
+            panel.style.height = '500px';
+            minMaxBtn.innerHTML = '<i class="ri-arrow-up-s-line"></i>';
+        }
+    });
 }

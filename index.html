@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Quiz Master Pro v29 Enterprise</title>
+  <title>Quiz Master Pro v29 Enterprise (Unified)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700&family=Roboto&family=Noto+Sans&family=Courier+New&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
@@ -11,16 +11,63 @@
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
   <div id="toastContainer" class="toast-container"></div>
 
-  <button id="globalStickyHomeBtn" class="sticky-home-btn" title="Return to Dashboard Home">
+  <main class="container" id="welcomeGate">
+      <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: var(--primary); font-size: 2.5rem; margin-bottom: 10px;"><i class="ri-braces-line"></i> Quiz Master Pro</h1>
+          <p style="color: var(--text-light);">Enterprise System Edition &bull; Authentication Required</p>
+      </div>
+      <div class="gate-grid">
+          <div class="gate-card glass-effect bounce-in" id="cardGuest">
+              <div class="gate-icon">👀</div>
+              <h3>Enter as Guest</h3>
+              <ul class="gate-features">
+                  <li><i class="ri-check-line" style="color:var(--success);"></i> Play Every Quiz & Group</li>
+                  <li><i class="ri-check-line" style="color:var(--success);"></i> View Leaderboards</li>
+                  <li><i class="ri-close-line" style="color:var(--danger);"></i> No Progress Saved</li>
+              </ul>
+              <button id="btnEnterGuest" class="btn-secondary btn-full">Continue as Guest</button>
+          </div>
+          <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.1s;">
+              <div class="gate-icon">🔐</div>
+              <h3>Secure Login</h3>
+              <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Auto-detects Student, Teacher, or Admin role.</p>
+              <div class="form-group">
+                  <input type="text" id="loginUserId" placeholder="User ID or Email" class="form-control" />
+              </div>
+              <div class="form-group">
+                  <input type="password" id="loginPassword" placeholder="Password" class="form-control" />
+              </div>
+              <button id="btnLogin" class="btn-primary btn-full">Login to Dashboard</button>
+          </div>
+          <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.2s;">
+              <div class="gate-icon">👤</div>
+              <h3>Register Account</h3>
+              <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Join the enterprise network.</p>
+              <div class="form-group">
+                  <select id="regRole" class="form-control">
+                      <option value="student">I am a Student</option>
+                      <option value="teacher">I am a Teacher</option>
+                  </select>
+              </div>
+              <div class="form-group"><input type="text" id="regName" placeholder="Full Name" class="form-control" /></div>
+              <div class="form-group"><input type="email" id="regEmail" placeholder="Email Address" class="form-control" /></div>
+              <div class="form-group"><input type="password" id="regPassword" placeholder="Create Password" class="form-control" /></div>
+              <button id="btnRegister" class="btn-accent btn-full" style="background:var(--accent); color:white;">Register Account</button>
+          </div>
+      </div>
+  </main>
+
+  <button id="globalStickyHomeBtn" class="sticky-home-btn hidden" title="Return to Dashboard Home">
     <i class="ri-home-4-fill"></i>
   </button>
 
-  <div class="app-shell">
+  <div class="app-shell hidden" id="appShell">
     
     <aside class="sidebar" id="appSidebar">
       <div class="sidebar-header">
@@ -30,15 +77,15 @@
       <nav class="sidebar-menu">
         <a href="#" class="nav-link active" data-target="homeSection"><i class="ri-dashboard-line"></i> <span>Dashboard</span></a>
         <a href="#" class="nav-link" data-target="librarySection"><i class="ri-book-open-line"></i> <span>Library</span></a>
-        <a href="#" class="nav-link" data-target="creatorSection"><i class="ri-magic-line"></i> <span>Creator</span></a>
-        <a href="#" class="nav-link" data-target="workspaceSection"><i class="ri-layout-grid-line"></i> <span>Workspace</span></a>
-        <a href="#" class="nav-link" data-target="groupsSection"><i class="ri-node-tree"></i> <span>Combined Exams</span></a>
+        <a href="#" class="nav-link auth-required" data-target="creatorSection"><i class="ri-magic-line"></i> <span>Creator</span></a>
+        <a href="#" class="nav-link auth-required" data-target="workspaceSection"><i class="ri-layout-grid-line"></i> <span>Workspace</span></a>
+        <a href="#" class="nav-link auth-required" data-target="groupsSection"><i class="ri-node-tree"></i> <span>Combined Exams</span></a>
         <a href="#" class="nav-link" data-target="analyticsSection"><i class="ri-bar-chart-box-line"></i> <span>Analytics</span></a>
         <a href="#" class="nav-link" data-target="leaderboardSection"><i class="ri-trophy-line"></i> <span>Leaderboard</span></a>
-        <a href="#" class="nav-link" data-target="pdfSection"><i class="ri-file-pdf-line"></i> <span>PDF Center</span></a>
+        <a href="#" class="nav-link auth-required" data-target="pdfSection"><i class="ri-file-pdf-line"></i> <span>PDF Center</span></a>
         <a href="#" class="nav-link" data-target="guidesSection"><i class="ri-compass-3-line"></i> <span>Enterprise Guides</span></a>
-        <a href="#" class="nav-link" data-target="profileSection"><i class="ri-user-settings-line"></i> <span>Profile</span></a>
-        <a href="#" class="nav-link" data-target="adminSection" id="sidebarAdminLink"><i class="ri-shield-user-line"></i> <span>Admin Control</span></a>
+        <a href="#" class="nav-link auth-required" data-target="profileSection"><i class="ri-user-settings-line"></i> <span>Profile</span></a>
+        <a href="#" class="nav-link hidden" data-target="adminSection" id="sidebarAdminLink"><i class="ri-shield-user-line"></i> <span>Admin Control</span></a>
       </nav>
       <div class="sidebar-footer">
         <button id="logoutBtn" class="btn-logout"><i class="ri-logout-box-r-line"></i> <span>Log Out</span></button>
@@ -100,7 +147,7 @@
         <section id="librarySection" class="view-section hidden">
           <div class="section-header">
             <h2>Central Asset Library</h2>
-            <p>Browse, manage, and deploy existing quiz assets stored inside your remote Firestore repository.</p>
+            <p>Browse, manage, and deploy existing quiz assets and combined exam groups stored inside your remote Firestore repository.</p>
           </div>
           <div class="library-toolbar">
             <input type="text" id="libraryFilterInput" placeholder="Filter library assets..." class="form-control" />
@@ -129,6 +176,7 @@
             </div>
             <div class="runner-controls">
               <button id="runnerPrevBtn" class="btn-secondary"><i class="ri-arrow-left-s-line"></i> Back</button>
+              <button id="runnerQuitBtn" class="btn-danger"><i class="ri-close-circle-line"></i> Quit Attempt</button>
               <button id="runnerNextBtn" class="btn-primary">Next <i class="ri-arrow-right-s-line"></i></button>
               <button id="runnerFinishBtn" class="btn-success hidden"><i class="ri-check-double-line"></i> Finish Attempt</button>
             </div>
@@ -140,6 +188,7 @@
             <h2>Quiz Creator Studio</h2>
             <p>Generate, structuralize, and push individual question assets or comprehensive testing matrices into production tables.</p>
           </div>
+          
           <div class="creator-card">
             <div class="form-group">
               <label for="creatorQuizTitle">Quiz Structural Title</label>
@@ -149,9 +198,19 @@
               <label for="creatorQuizDescription">Structural Description</label>
               <textarea id="creatorQuizDescription" class="form-control" placeholder="Provide context or instructions for this evaluation matrix..."></textarea>
             </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="creatorShuffle" /> Enable Random Question Shuffle</label>
+            </div>
+
             <hr class="form-divider" />
-            <h3>Append Raw Question Data Block</h3>
+            
+            <div class="admin-tabs" style="display:flex; gap:10px; margin-bottom: 20px;">
+              <button class="btn-secondary active" id="tabManual" onclick="window.appEngineAPI.toggleCreatorTab('manual')">Manual Entry</button>
+              <button class="btn-secondary" id="tabExcel" onclick="window.appEngineAPI.toggleCreatorTab('excel')">Direct Excel Import</button>
+            </div>
+
             <div id="creatorQuestionForm">
+              <h3>Append Raw Question Data Block</h3>
               <div class="form-group">
                 <label>Question Prompt String</label>
                 <input type="text" id="qFormText" class="form-control" placeholder="What is the computational complexity of..." />
@@ -163,7 +222,7 @@
                 <div class="form-group"><label>Option D</label><input type="text" id="qFormOptD" class="form-control" /></div>
               </div>
               <div class="form-group">
-                <label for="qFormAnswer">Target Key Target Choice</label>
+                <label for="qFormAnswer">Target Key Choice</label>
                 <select id="qFormAnswer" class="form-control">
                   <option value="A">Option A</option>
                   <option value="B">Option B</option>
@@ -173,7 +232,29 @@
               </div>
               <button id="creatorAppendQuestionBtn" class="btn-secondary"><i class="ri-add-line"></i> Add Question to Array</button>
             </div>
-            <div class="workspace-action-row" style="margin-top:20px;">
+
+            <div id="creatorExcelForm" class="hidden">
+              <div class="excel-drop-zone" id="excelDropZone">
+                <i class="ri-file-excel-2-line" style="font-size:3rem; color:var(--success);"></i>
+                <h3>Drag & Drop Excel File Here</h3>
+                <p>Supports .xlsx, .xls</p>
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls" hidden />
+                <button class="btn-primary" onclick="document.getElementById('excelFileInput').click()" style="margin-top:10px;">Browse Files</button>
+              </div>
+              <div id="excelPreviewContainer" class="hidden" style="margin-top: 20px;">
+                  <h4>Import Preview (<span id="excelParsedCount">0</span> items)</h4>
+                  <div class="table-wrapper" style="max-height: 250px;">
+                      <table id="excelPreviewTable">
+                          <thead><tr><th>Question</th><th>Opt A</th><th>Opt B</th><th>Answer</th></tr></thead>
+                          <tbody></tbody>
+                      </table>
+                  </div>
+                  <button id="commitExcelImportBtn" class="btn-success btn-full" style="margin-top:10px;"><i class="ri-check-line"></i> Confirm & Inject into Array</button>
+              </div>
+            </div>
+
+            <div class="workspace-action-row" style="margin-top:20px; border-top: 1px solid var(--border); padding-top: 20px;">
+              <div style="margin-bottom: 15px;">Pending Nodes in Memory Array: <strong id="pendingQuestionsCount">0</strong></div>
               <button id="creatorSaveQuizBtn" class="btn-primary btn-full"><i class="ri-save-line"></i> Commit and Publish Quiz to Cloud Database</button>
             </div>
           </div>
@@ -186,28 +267,25 @@
               <p>Drag, duplicate, audit, structuralize, and reorder core testing nodes dynamically with realtime data state calculations.</p>
             </div>
             <div class="workspace-controls-cluster">
-              <button id="wsToggleViewBtn" class="btn-secondary"><i class="ri-grid-fill"></i> Toggle Grid/List</button>
-              <button id="wsBulkEditBtn" class="btn-secondary"><i class="ri-edit-box-line"></i> Bulk Edit</button>
+              <button id="wsToggleViewBtn" class="btn-secondary"><i class="ri-grid-fill"></i> Toggle View</button>
               <button id="wsUndoBtn" class="btn-icon-action" title="Undo"><i class="ri-arrow-go-back-line"></i></button>
               <button id="wsRedoBtn" class="btn-icon-action" title="Redo"><i class="ri-arrow-go-forward-line"></i></button>
-              <button id="wsPublishBtn" class="btn-success"><i class="ri-send-plane-fill"></i> Run Verification & Publish</button>
+              <button id="wsPublishBtn" class="btn-success"><i class="ri-send-plane-fill"></i> Save State</button>
             </div>
           </div>
           <div class="workspace-statistics-bar">
             <div class="stat-node">Selected Nodes: <strong id="wsStatSelected">0</strong></div>
-            <div class="stat-node">Accumulated Marks: <strong id="wsStatMarks">0</strong></div>
-            <div class="stat-node">Estimated Run Duration: <strong id="wsStatTime">0 mins</strong></div>
+            <div class="stat-node">Target Asset: <strong id="wsActiveQuizName" style="color:var(--primary);">None Loaded</strong></div>
           </div>
           <div class="workspace-interactive-wrapper">
-            <div id="visualCanvasContainer" class="visual-canvas-grid">
-              </div>
+            <div id="visualCanvasContainer" class="visual-canvas-grid"></div>
           </div>
         </section>
 
         <section id="groupsSection" class="view-section hidden">
           <div class="section-header">
             <h2>Combined Exam Processing Matrix</h2>
-            <p>Pool independent quiz assets into consolidated institutional testing groups with programmatic sorting and structural logic formatting.</p>
+            <p>Pool independent quiz assets into consolidated institutional testing groups.</p>
           </div>
           <div class="group-builder-layout">
             <div class="group-builder-sidebar">
@@ -223,10 +301,6 @@
                 <label>Composite Group Name</label>
                 <input type="text" id="groupNameInput" class="form-control" placeholder="E.g., Terminal Secondary Evaluation Block" />
               </div>
-              <div class="form-group">
-                <label>Context Blueprint / Description</label>
-                <textarea id="groupDescInput" class="form-control" placeholder="Provide systemic overview directions..."></textarea>
-              </div>
               <div class="operation-control-strip">
                 <button id="groupShuffleBtn" class="btn-secondary"><i class="ri-shuffle-line"></i> Shuffle Elements</button>
                 <button id="groupDeduplicateBtn" class="btn-secondary"><i class="ri-equalizer-line"></i> Clear Duplicates</button>
@@ -234,7 +308,6 @@
               </div>
               <div class="composite-metrics-banner">
                 <span>Total Accumulated Pools: <strong id="groupMetricCount">0</strong></span>
-                <span>Cumulative Score Limit: <strong id="groupMetricMarks">0</strong></span>
               </div>
               <div id="groupCompositeTargetContainer" class="composite-drop-zone">
                 <div class="empty-zone-notice">Select asset checkboxes from the left inventory configuration panel to compile your unified structural evaluation block.</div>
@@ -246,37 +319,25 @@
         <section id="analyticsSection" class="view-section hidden">
           <div class="section-header">
             <h2>Enterprise Statistical Dashboard</h2>
-            <p>Realtime programmatic visualization tracking system telemetry data, scoring profiles, and district wide execution summaries.</p>
+            <p>Realtime programmatic visualization tracking system telemetry data and scoring profiles.</p>
           </div>
           <div class="analytics-matrix-grid">
-            <div class="analytics-card-full">
-              <h3>System Platform Usage Waveforms</h3>
-              <div class="analytics-mock-chart-box">
-                <div class="svg-chart-container" id="chartDailyActivity">
-                  </div>
-              </div>
-            </div>
             <div class="analytics-two-column-layout">
               <div class="analytics-card">
                 <h3>Global Scoring Distribution Profile</h3>
                 <div class="distribution-summary-row">
-                  <div class="dist-pill pass">Pass Ratio: <span id="anaPassPercent">0%</span></div>
-                  <div class="dist-pill fail">Failure Rate: <span id="anaFailPercent">0%</span></div>
+                  <div class="dist-pill pass">Total Attempts: <span id="anaTotalAttempts">0</span></div>
+                  <div class="dist-pill pass">Avg Score: <span id="anaAvgScore">0%</span></div>
                 </div>
-                <div id="chartDistributionRatio" class="ratio-bar-wrapper"></div>
               </div>
               <div class="analytics-card">
-                <h3>Regional Operational Summaries</h3>
-                <div class="table-wrapper">
+                <h3>Recent Operations</h3>
+                <div class="table-wrapper" style="max-height: 250px;">
                   <table>
                     <thead>
-                      <tr><th>Regional Node</th><th>Evaluations Triggered</th><th>Mean Score Index</th></tr>
+                      <tr><th>Candidate</th><th>Evaluation Node</th><th>Score</th></tr>
                     </thead>
-                    <tbody id="analyticsRegionalTableBody">
-                      <tr><td>Chennai Metropolitan</td><td>1,420 Attempts</td><td>84.5% Mean</td></tr>
-                      <tr><td>Tiruvannamalai District</td><td>940 Attempts</td><td>79.2% Mean</td></tr>
-                      <tr><td>Coimbatore Cluster</td><td>1,110 Attempts</td><td>82.1% Mean</td></tr>
-                    </tbody>
+                    <tbody id="analyticsRecentTableBody"></tbody>
                   </table>
                 </div>
               </div>
@@ -292,10 +353,9 @@
           <div class="table-wrapper">
             <table>
               <thead>
-                <tr><th>Rank Vector</th><th>Candidate Identification Pointer</th><th>Completed Items</th><th>Cumulative Score</th></tr>
+                <tr><th>Rank Vector</th><th>Candidate Name</th><th>Assigned Evaluation Block</th><th>Score Percentage</th><th>Date</th></tr>
               </thead>
-              <tbody id="leaderboardTableBody">
-                </tbody>
+              <tbody id="leaderboardTableBody"></tbody>
             </table>
           </div>
         </section>
@@ -303,7 +363,7 @@
         <section id="pdfSection" class="view-section hidden">
           <div class="section-header">
             <h2>High-Fidelity Document Generation Center</h2>
-            <p>Compile production ready PDF files containing evaluation matrices, answer keys, processing logs, and administrative overviews.</p>
+            <p>Compile production ready PDF files containing evaluation matrices and answer keys.</p>
           </div>
           <div class="pdf-center-grid">
             <div class="pdf-config-panel">
@@ -319,20 +379,16 @@
                   <option value="landscape">Extended Landscape Sheet</option>
                 </select>
               </div>
-              <div class="checkbox-options-stack">
-                <label class="check-container"><input type="checkbox" id="pdfIncludeKey" checked /> Interleave Core Answer Keys</label>
-                <label class="check-container"><input type="checkbox" id="pdfInjectHeader" checked /> Append System Header Context Block</label>
-                <label class="check-container"><input type="checkbox" id="pdfEncryptProfile" /> Restrict File Access with Key Flag</label>
-              </div>
-              <div class="pdf-action-block">
-                <button id="pdfGenerateDownloadBtn" class="btn-primary btn-full"><i class="ri-file-download-line"></i> Generate Document & Trigger Local Download</button>
+              <div class="pdf-action-block" style="margin-top:20px;">
+                <button id="pdfGenerateDownloadBtn" class="btn-primary btn-full"><i class="ri-file-download-line"></i> Generate Document</button>
+                <button id="pdfGenerateKeyBtn" class="btn-secondary btn-full" style="margin-top:10px;"><i class="ri-key-line"></i> Generate Answer Key PDF</button>
               </div>
             </div>
             <div class="pdf-preview-panel">
               <h3>Live Layout Document Simulation</h3>
               <div class="simulated-sheet" id="pdfDocumentSimulator">
                 <div class="sim-header">QUIZ MASTER PRO ENTERPRISE DOC SIMULATION</div>
-                <div class="sim-body">Select a source target data node inside the configuration dashboard settings column to preview structural text compilation layouts.</div>
+                <div class="sim-body">Select a source target data node inside the configuration dashboard to preview compilation layouts.</div>
                 <div class="sim-footer">Page 1 of 1</div>
               </div>
             </div>
@@ -343,22 +399,15 @@
           <div class="guides-container-layout">
             <div class="guides-navigation-tree">
               <h3>Knowledge Base Index</h3>
-              <input type="text" id="guideSearchInput" placeholder="Query documentation matrix..." class="form-control guide-search" />
               <div class="guide-nav-cluster">
                 <button class="guide-tree-link active" data-guide="quickstart">System Overview Quickstart</button>
-                <button class="guide-tree-link" data-guide="creator">Quiz Creator Framework Documentation</button>
+                <button class="guide-tree-link" data-guide="creator">Quiz Creator & Excel Framework</button>
                 <button class="guide-tree-link" data-guide="teacher">Pedagogical Execution Guide</button>
                 <button class="guide-tree-link" data-guide="admin">Systems Governance Guide</button>
-                <button class="guide-tree-link" data-guide="shortcuts">Keyboard Interface Mapping Shortcuts</button>
               </div>
             </div>
             <div class="guides-content-viewport">
-              <div id="guideContentBody" class="markdown-rendered-view">
-                </div>
-              <div class="guide-utility-footer">
-                <button id="guidePrintBtn" class="btn-secondary"><i class="ri-printer-line"></i> Print Active Selection</button>
-                <button id="guideBookmarkBtn" class="btn-secondary"><i class="ri-bookmark-line"></i> Bookmark Guide</button>
-              </div>
+              <div id="guideContentBody" class="markdown-rendered-view"></div>
             </div>
           </div>
         </section>
@@ -366,20 +415,20 @@
         <section id="profileSection" class="view-section hidden">
           <div class="section-header">
             <h2>Identity Profile Configuration</h2>
-            <p>Review system security permissions, infrastructure parameters, and global system variables.</p>
+            <p>Review system security permissions and update personal parameters.</p>
           </div>
           <div class="creator-card">
             <div class="form-group">
               <label>Unique Account Identifier Pointer (UID)</label>
-              <input type="text" id="profUid" class="form-control" readonly value="GUEST_SESSION_LOCAL_PERSISTENCE" />
+              <input type="text" id="profUid" class="form-control" readonly />
             </div>
             <div class="form-group">
               <label>Assigned Authorization Clearance Tier</label>
-              <input type="text" id="profRole" class="form-control" readonly value="Administrator Clearance Tier" />
+              <input type="text" id="profRole" class="form-control" readonly />
             </div>
             <div class="form-group">
               <label>User Descriptive Label</label>
-              <input type="text" id="profNameInput" class="form-control" value="Kannairam Sakthivelavan" />
+              <input type="text" id="profNameInput" class="form-control" />
             </div>
             <button id="profileSaveBtn" class="btn-primary"><i class="ri-refresh-line"></i> Synchronize Account Profile Metadata</button>
           </div>
@@ -393,16 +442,16 @@
           <div class="admin-grid-layout">
             <div class="admin-action-card">
               <h3>System Database Actions</h3>
-              <p>Purge local records or populate current temporary operational views with diagnostic evaluation entities.</p>
+              <p>Purge local records or migrate legacy datasets manually.</p>
               <div class="btn-vertical-stack">
                 <button id="adminResetDataBtn" class="btn-danger"><i class="ri-delete-bin-5-line"></i> Wipe Local Cache & Re-Initialize Workspace</button>
-                <button id="adminInjectMockBtn" class="btn-success"><i class="ri-database-2-line"></i> Inject Unit Test Objects into State Array</button>
+                <button id="adminForceSyncBtn" class="btn-success"><i class="ri-database-2-line"></i> Force Cloud Sync & Legacy Migration</button>
               </div>
             </div>
             <div class="admin-action-card">
               <h3>System Security & Audit Trail Logs</h3>
               <div class="log-terminal-output" id="adminTerminalLogs">
-                [SYSTEM LOG ENVIRONMENT INITIATED v29]<br/>
+                [SYSTEM LOG ENVIRONMENT INITIATED v29.1]<br/>
                 [TELEMETRY] Listening to active visual DOM mutation matrices...
               </div>
             </div>
@@ -416,6 +465,7 @@
           </div>
           <div class="score-summary-banner">
             <h3>Final Score Index: <span id="reviewScoreText">0/0</span></h3>
+            <div id="passFailText" style="font-weight:bold; font-size:1.2rem; margin-top:10px;">--</div>
           </div>
           <div id="reviewAnalysisContainer" class="review-cards-stack"></div>
           <button id="reviewCloseBtn" class="btn-primary btn-full" style="margin-top:20px;"><i class="ri-home-wifi-line"></i> Terminate Review Run and Return Home</button>

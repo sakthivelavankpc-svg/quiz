@@ -1,12 +1,29 @@
-/**
- * QUIZ MASTER PRO v29 ENTERPRISE INTERFACE ENGINE
- * CORE PRODUCTION PLATFORM ARCHITECTURE DESIGN
- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- Comprehensive Memory State Model ---
+// --- V27 FIREBASE INTEGRATION & AUTH ---
+const firebaseConfig = {
+    apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
+    authDomain: "quiz-master-3e489.firebaseapp.com",
+    projectId: "quiz-master-3e489",
+    storageBucket: "quiz-master-3e489.firebasestorage.app",
+    messagingSenderId: "741393992507",
+    appId: "1:741393992507:web:b28cd8fcda2b74f85b851e"
+};
+
+let app, db;
+try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+} catch (e) {
+    console.error("Firebase Init Offline Bypass.");
+}
+
+// --- CORE ENTERPRISE STATE (Unified v29 Model) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
+  logs: [],
   activeQuiz: null,
   activeQuestions: [],
   userAnswers: {},
@@ -18,971 +35,653 @@ const enterpriseState = {
   redoStack: [],
   workspaceLayout: 'grid',
   activeGuide: 'quickstart',
-  currentUser: {
-    uid: 'SESSION_NODE_LOCAL_9041',
-    role: 'Administrator',
-    name: 'Kannairam Sakthivelavan'
-  }
+  currentUser: { uid: 'GUEST', role: 'guest', name: 'Guest User' }
 };
 
-// --- Comprehensive Static Enterprise Guides Matrix ---
 const guidesDatabase = {
-  quickstart: {
-    title: "System Overview Quickstart",
-    body: "Welcome to the Quiz Master Pro Enterprise Management Studio. This architecture coordinates system assets, tests processing pipelines, and tracks state configurations. Use the sidebar workspace matrices to access analytical structures, deploy testing modules, or modify parameters."
-  },
-  creator: {
-    title: "Quiz Creator Framework Documentation",
-    body: "The Studio sub-component processes array models to append operational schemas directly onto state repositories. Specify alphanumeric strings in fields, append your target components inside the options sub-array, and execute the publication thread to clear validation constraints."
-  },
-  teacher: {
-    title: "Pedagogical Execution Guide",
-    body: "Deploy custom live runner instances directly to track candidate completion markers. The engine computes performance scores on thread finalization and exposes deep analysis indices to inspect execution times and failure rates across specific sections."
-  },
-  admin: {
-    title: "Systems Governance Guide",
-    body: "The management control layer facilitates full state resetting operations, handles systemic mock asset data injection pipelines, and acts as a single point of validation for remote security profiles and analytical metric maps."
-  },
-  shortcuts: {
-    title: "Keyboard Interface Mapping Shortcuts",
-    body: "Navigate your workspace with high efficiency using these unified platform shortcuts:<br/><ul><li><code>Alt + H</code> : Force Navigation Root Dashboard</li><li><code>Alt + W</code> : Route Canvas Workspace Container</li><li><code>Alt + L</code> : Access Central Asset Library</li></ul>"
-  }
+  quickstart: { title: "System Overview Quickstart", body: "Welcome to the Quiz Master Pro Enterprise Management Studio. Use the sidebar matrices to access analytical structures, deploy testing modules, or modify parameters." },
+  creator: { title: "Quiz Creator & Excel Framework Documentation", body: "Use the Studio to append schemas directly. The newly integrated SheetJS engine supports .xlsx files. Drag and drop bulk questions; the parser dynamically matches columns." },
+  teacher: { title: "Pedagogical Execution Guide", body: "Deploy custom live runner instances directly to track candidate completion markers. Evaluates real-time via FireStore sync." },
+  admin: { title: "Systems Governance Guide", body: "The management control layer facilitates full state resetting operations, handles systemic mock asset data injection pipelines, and acts as a single point of validation." }
 };
 
-// --- Local Repository Persistence Engine Fallback Mock Layer ---
-const defaultMockData = [
-  {
-    id: "mock_quiz_1",
-    title: "Computational Volatility Evaluation Matrix",
-    description: "Evaluates financial parameters focusing on asset tracking algorithms, Beta mechanics, and portfolio tracking variables.",
-    questions: [
-      { text: "Which mathematical index scales systemic volatility against broad baseline benchmarks?", a: "Standard Deviation", b: "Sharpe Metric Ratio", c: "Beta Coefficient Factor", d: "Variance Spectrum", answer: "C", marks: 5, time: 2 },
-      { text: "What formula governs the calculation of XIRR returns across a dynamic transaction array?", a: "Internal Rate of Return assuming uniform cycles", b: "Discounted cash flow polynomial approximation", c: "Geometric progression tracking factor", d: "Simple annual variance arithmetic sum", answer: "B", marks: 5, time: 3 }
-    ]
-  },
-  {
-    id: "mock_quiz_2",
-    title: "Advanced Grammar & Syntactic Parsing Elements",
-    description: "Core structural review isolating active structural verb assignments and relational clause modifications.",
-    questions: [
-      { text: "Identify the element acting as a direct modifier inside a dense syntax block.", a: "Substantive Adjective", b: "Intransitive Modal Verb", c: "Prepositional Pointer", d: "Coordinate Conjunctive", answer: "A", marks: 4, time: 2 }
-    ]
-  }
-];
+let localCreatorQuestionArray = [];
+let activeWorkspaceQuizReference = null;
+let activeDraftCompositeIds = [];
 
-// --- Initialization Main Routine ---
-document.addEventListener('DOMContentLoaded', () => {
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', async () => {
   try {
-    initializeApplicationShell();
     registerGlobalSystemEvents();
-    loadApplicationState();
+    await initializeAuthGates();
+    syncUIStateTelemetry();
     triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v29.");
-  } catch (criticalError) {
-    console.error("Platform Core Boot Defect:", criticalError);
-    displayNotificationToast("Critical Boot Malfunction Encountered", "error");
+  } catch (err) {
+    console.error("Boot Error:", err);
   }
 });
 
-// --- System Shell Scaffolding Core Controller ---
-function initializeApplicationShell() {
-  document.getElementById('headerUserBadge').textContent = enterpriseState.currentUser.name;
-  document.getElementById('welcomeUserName').textContent = enterpriseState.currentUser.name;
-  renderActiveGuideView();
-  syncUIStateTelemetry();
-}
-
-// --- Centralized Event Router & Listener Pipeline ---
-function registerGlobalSystemEvents() {
-  // Navigation Router Interface Maps
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      switchViewportContext(link.getAttribute('data-target'));
-    });
-  });
-
-  // Global Sticky Float Controller Interface Trigger
-  document.getElementById('globalStickyHomeBtn').addEventListener('click', () => {
-    switchViewportContext('homeSection');
-  });
-
-  // UI Navigation Sidebar Toggles
-  document.getElementById('sidebarToggle').addEventListener('click', () => {
-    const sidebar = document.getElementById('appSidebar');
-    const mainShell = document.querySelector('.main-content');
-    sidebar.classList.toggle('mobile-open');
-    sidebar.classList.toggle('hidden');
-    mainShell.classList.toggle('expanded');
-  });
-
-  // Dark Mode Layout Toggle Interceptor
-  document.getElementById('themeToggleBtn').addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    const isDark = document.body.classList.contains('dark-mode');
-    document.getElementById('themeToggleBtn').innerHTML = isDark ? '<i class="ri-sun-line"></i>' : '<i class="ri-moon-line"></i>';
-    triggerLogTrail(`[THEME] Visual palette toggled to ${isDark ? 'Dark Specification' : 'Light Specification'}.`);
-  });
-
-  // Dynamic Content Filtering Telemetry Pipeline
-  document.getElementById('globalSearchInput').addEventListener('input', (e) => {
-    processGlobalAutocompleteQuery(e.target.value.trim());
-  });
-
-  // Quiz Creator Processing Core Buttons
-  document.getElementById('creatorAppendQuestionBtn').addEventListener('click', handleCreatorQuestionAppend);
-  document.getElementById('creatorSaveQuizBtn').addEventListener('click', commitCompiledQuizToRepository);
-
-  // Workspace View State Control Triggers
-  document.getElementById('wsToggleViewBtn').addEventListener('click', () => {
-    enterpriseState.workspaceLayout = enterpriseState.workspaceLayout === 'grid' ? 'list' : 'grid';
-    renderVisualWorkspaceBoard();
-  });
-  document.getElementById('wsPublishBtn').addEventListener('click', executeWorkspacePreflightValidation);
-  document.getElementById('wsUndoBtn').addEventListener('click', executeWorkspaceUndoAction);
-  document.getElementById('wsRedoBtn').addEventListener('click', executeWorkspaceRedoAction);
-
-  // Group Builder Engineering Operations Controls
-  document.getElementById('groupShuffleBtn').addEventListener('click', executeGroupCompositeShuffle);
-  document.getElementById('groupDeduplicateBtn').addEventListener('click', purgeDuplicateGroupElements);
-  document.getElementById('groupCommitBtn').addEventListener('click', saveCombinedExamGroupToState);
-  document.getElementById('groupInventorySearch').addEventListener('input', (e) => {
-    renderGroupInventorySelector(e.target.value.trim());
-  });
-
-  // PDF Export Generation Handlers
-  document.getElementById('pdfGenerateDownloadBtn').addEventListener('click', triggerHighFidelityPDFExport);
-
-  // Documentation Interactive Guides Actions
-  document.querySelectorAll('.guide-tree-link').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.guide-tree-link').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      enterpriseState.activeGuide = btn.getAttribute('data-guide');
-      renderActiveGuideView();
-    });
-  });
-
-  // Administrative Control Operations Panels Buttons
-  document.getElementById('adminResetDataBtn').addEventListener('click', wipeLocalPlatformStateCache);
-  document.getElementById('adminInjectMockBtn').addEventListener('click', injectDiagnosticTestDataPool);
-
-  // Universal Hotkey Keyboard Bindings
-  window.addEventListener('keydown', (e) => {
-    if (e.altKey && e.key.toLowerCase() === 'h') {
-      e.preventDefault();
-      switchViewportContext('homeSection');
-    }
-    if (e.altKey && e.key.toLowerCase() === 'w') {
-      e.preventDefault();
-      switchViewportContext('workspaceSection');
-    }
-  });
-
-  // Profile Form Synchronization Handler
-  document.getElementById('profileSaveBtn').addEventListener('click', () => {
-    const inputName = document.getElementById('profNameInput').value.trim();
-    if (inputName) {
-      enterpriseState.currentUser.name = inputName;
-      initializeApplicationShell();
-      displayNotificationToast("Identity details synchronized across nodes.", "success");
-    }
-  });
-
-  // Quiz Engine Runner Intercept Triggers
-  document.getElementById('runnerPrevBtn').addEventListener('click', stepBackRunnerQuestion);
-  document.getElementById('runnerNextBtn').addEventListener('click', stepForwardRunnerQuestion);
-  document.getElementById('runnerFinishBtn').addEventListener('click', finalizeQuizEvaluationSession);
-  document.getElementById('reviewCloseBtn').addEventListener('click', () => switchViewportContext('homeSection'));
-}
-
-// --- SPA Multi-View Architecture Routing Framework ---
-function switchViewportContext(targetSectionId) {
-  const sections = document.querySelectorAll('.view-section');
-  let viewFound = false;
-
-  sections.forEach(section => {
-    if (section.id === targetSectionId) {
-      section.classList.remove('hidden');
-      viewFound = true;
+// --- AUTHENTICATION GATE LOGIC ---
+async function initializeAuthGates() {
+    const session = await localforage.getItem('activeSession');
+    if (session) {
+        grantAccess(session.role, session);
     } else {
-      section.classList.add('hidden');
+        document.getElementById('welcomeGate').classList.remove('hidden');
+        document.getElementById('appShell').classList.add('hidden');
+        document.getElementById('globalStickyHomeBtn').classList.add('hidden');
     }
-  });
 
-  if (!viewFound) {
-    displayNotificationToast("View routing index not found.", "error");
-    return;
-  }
-
-  // Update Navigation Active Selection Trackers
-  document.querySelectorAll('.nav-link').forEach(link => {
-    if (link.getAttribute('data-target') === targetSectionId) {
-      link.classList.add('active');
-    } else {
-      link.classList.remove('remove');
-    }
-  });
-
-  // Dynamically Sync Context Breadcrumbs
-  const cleanLabel = targetSectionId.replace('Section', '');
-  document.getElementById('breadcrumbCurrent').textContent = cleanLabel.toUpperCase();
-
-  // Route Lazy Engine Processing Views
-  if (targetSectionId === 'librarySection') renderCentralAssetLibrary();
-  if (targetSectionId === 'workspaceSection') renderVisualWorkspaceBoard();
-  if (targetSectionId === 'groupsSection') renderCombinedExamGroupBuilder();
-  if (targetSectionId === 'analyticsSection') renderRealtimeAnalyticsDashboard();
-  if (targetSectionId === 'pdfSection') synchronizePDFSourceAssetSelector();
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  triggerLogTrail(`[ROUTER] View context established at allocation route: ${targetSectionId}`);
+    document.getElementById('btnEnterGuest').onclick = () => grantAccess('guest', {uid:'GUEST', role:'guest', name:'Guest User'});
+    document.getElementById('btnLogin').onclick = handleLogin;
+    document.getElementById('btnRegister').onclick = handleRegister;
+    
+    // Explicit Logout FIX
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 }
 
-// --- Application Global State Management Model Engine ---
-function loadApplicationState() {
-  const localCache = localStorage.getItem('QMP_ENTERPRISE_CACHED_STATE');
-  if (localCache) {
+async function handleLogin() {
+    const id = document.getElementById('loginUserId').value.trim();
+    const pass = document.getElementById('loginPassword').value.trim();
+    
+    if(id === 'sakthivelavankpc@gmail.com' && pass === '12345') {
+        grantAccess('admin', {uid: "ADMIN_NODE", role: 'admin', name: "Master Admin", email: id});
+        return;
+    }
+    
     try {
-      const parsed = JSON.parse(localCache);
-      enterpriseState.quizzes = parsed.quizzes || [];
-      enterpriseState.examGroups = parsed.examGroups || [];
-    } catch {
-      enterpriseState.quizzes = [...defaultMockData];
+        const uSnap = await getDocs(collection(db, "registrations"));
+        const users = uSnap.docs.map(d => ({id: d.id, ...d.data()}));
+        const u = users.find(x => (x.email === id || x.userId === id) && x.password === pass);
+        if(u) grantAccess(u.role, u);
+        else displayNotificationToast("Invalid credentials", "error");
+    } catch(e) {
+        // Fallback offline mock login
+        if (id && pass) grantAccess('student', {uid: `STU_${Date.now()}`, role:'student', name: id.split('@')[0]});
     }
-  } else {
-    enterpriseState.quizzes = [...defaultMockData];
-  }
-  syncUIStateTelemetry();
+}
+
+async function handleRegister() {
+    const role = document.getElementById('regRole').value;
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value.trim();
+    if(!name || !email || !password) return displayNotificationToast("Fill all fields", "error");
+    
+    const payload = { role, name, email, password, userId: `${role==='teacher'?'TCH':'STU'}-${Math.floor(10000+Math.random()*90000)}` };
+    try {
+        if(db) await addDoc(collection(db, "registrations"), payload);
+        displayNotificationToast("Registered Successfully", "success");
+        grantAccess(payload.role, payload);
+    } catch(e) { displayNotificationToast("Offline mode. Registered local.", "success"); grantAccess(payload.role, payload); }
+}
+
+async function handleLogout() {
+    await localforage.removeItem('activeSession');
+    enterpriseState.currentUser = { uid: 'GUEST', role: 'guest', name: 'Guest User' };
+    window.location.reload();
+}
+
+async function grantAccess(role, profile) {
+    enterpriseState.currentUser = profile;
+    await localforage.setItem('activeSession', profile);
+    
+    document.getElementById('welcomeGate').classList.add('hidden');
+    document.getElementById('appShell').classList.remove('hidden');
+    document.getElementById('globalStickyHomeBtn').classList.remove('hidden');
+    
+    document.getElementById('headerUserBadge').textContent = profile.name;
+    document.getElementById('welcomeUserName').textContent = profile.name;
+    
+    document.getElementById('profUid').value = profile.uid || profile.userId || 'N/A';
+    document.getElementById('profRole').value = role.toUpperCase();
+    document.getElementById('profNameInput').value = profile.name;
+
+    // Role-based UI locking
+    document.querySelectorAll('.auth-required').forEach(el => {
+        if (role === 'guest' || role === 'student') el.classList.add('hidden');
+        else el.classList.remove('hidden');
+    });
+    
+    if (role === 'admin') document.getElementById('sidebarAdminLink').classList.remove('hidden');
+
+    displayNotificationToast(`Welcome, ${profile.name}`, "success");
+    await loadAndMigrateApplicationState();
+}
+
+// --- V27 -> V29 MIGRATION ENGINE (No Data Loss) ---
+async function loadAndMigrateApplicationState() {
+    displayNotificationToast("Synchronizing Cloud Vectors...", "success");
+    
+    const localCache = JSON.parse(localStorage.getItem('QMP_ENTERPRISE_CACHED_STATE') || '{"quizzes":[],"examGroups":[]}');
+    enterpriseState.quizzes = localCache.quizzes || [];
+    enterpriseState.examGroups = localCache.examGroups || [];
+    
+    try {
+        if (db) {
+            const [qSnap, gSnap, lSnap] = await Promise.all([
+                getDocs(collection(db, "quizzes")),
+                getDocs(collection(db, "exam_groups")),
+                getDocs(collection(db, "activityLogs"))
+            ]);
+            
+            // Migrate Quizzes
+            qSnap.docs.forEach(doc => {
+                const data = doc.data();
+                if (!enterpriseState.quizzes.find(q => q.id === doc.id)) {
+                    enterpriseState.quizzes.push({
+                        id: doc.id,
+                        title: data.metaExam || data.title || "Legacy Quiz",
+                        description: data.metaSubject ? `${data.metaSubject} - ${data.metaTopic}` : (data.description || ""),
+                        questions: (data.questions || []).map(q => ({
+                            text: q.text,
+                            a: q.options ? q.options[0] : (q.a || ''),
+                            b: q.options ? q.options[1] : (q.b || ''),
+                            c: q.options ? q.options[2] : (q.c || ''),
+                            d: q.options ? q.options[3] : (q.d || ''),
+                            answer: q.answer,
+                            marks: q.marks || 5, time: q.time || 2
+                        }))
+                    });
+                }
+            });
+            
+            // Migrate Groups
+            gSnap.docs.forEach(doc => {
+                const data = doc.data();
+                if (!enterpriseState.examGroups.find(g => g.id === doc.id)) {
+                    enterpriseState.examGroups.push({
+                        id: doc.id,
+                        name: data.groupName || data.name || "Legacy Group",
+                        description: data.subject || data.description || "",
+                        quizReferences: data.quizIds || data.quizReferences || []
+                    });
+                }
+            });
+
+            enterpriseState.logs = lSnap.docs.map(d => d.data());
+        }
+    } catch(e) {
+        console.warn("Offline DB Read bypass.", e);
+    }
+
+    persistApplicationStateToStorage();
+    renderCentralAssetLibrary();
+    renderRealtimeAnalyticsDashboard();
 }
 
 function persistApplicationStateToStorage() {
-  const transportModel = {
-    quizzes: enterpriseState.quizzes,
-    examGroups: enterpriseState.examGroups
-  };
-  localStorage.setItem('QMP_ENTERPRISE_CACHED_STATE', JSON.stringify(transportModel));
-  syncUIStateTelemetry();
+    localStorage.setItem('QMP_ENTERPRISE_CACHED_STATE', JSON.stringify({
+        quizzes: enterpriseState.quizzes, examGroups: enterpriseState.examGroups
+    }));
+    syncUIStateTelemetry();
 }
 
 function syncUIStateTelemetry() {
-  document.getElementById('statTotalQuizzes').textContent = enterpriseState.quizzes.length;
-  document.getElementById('statTotalGroups').textContent = enterpriseState.examGroups.length;
-  
-  let structuralCount = 0;
-  enterpriseState.quizzes.forEach(q => structuralCount += (q.questions ? q.questions.length : 0));
-  document.getElementById('statTotalUsers').textContent = structuralCount + 3; 
+    document.getElementById('statTotalQuizzes').textContent = enterpriseState.quizzes.length;
+    document.getElementById('statTotalGroups').textContent = enterpriseState.examGroups.length;
+    document.getElementById('statTotalUsers').textContent = enterpriseState.quizzes.reduce((acc, q) => acc + (q.questions?.length||0), 0);
 }
 
-// --- Global Realtime Context Auto-Complete Matrix ---
-function processGlobalAutocompleteQuery(searchTerm) {
-  const container = document.getElementById('searchSuggestions');
-  if (!searchTerm) {
-    container.classList.add('hidden');
-    return;
-  }
+// --- GLOBAL EVENT ROUTER ---
+function registerGlobalSystemEvents() {
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchViewportContext(link.getAttribute('data-target'));
+        });
+    });
 
-  container.innerHTML = '';
-  let matchCounter = 0;
+    document.getElementById('globalStickyHomeBtn').addEventListener('click', () => switchViewportContext('homeSection'));
+    document.getElementById('sidebarToggle').addEventListener('click', () => {
+        document.getElementById('appSidebar').classList.toggle('hidden');
+        document.querySelector('.main-content').classList.toggle('expanded');
+    });
 
-  enterpriseState.quizzes.forEach(q => {
-    if (q.title.toLowerCase().includes(searchTerm.toLowerCase()) && matchCounter < 5) {
-      const div = document.createElement('div');
-      div.className = 'suggestion-item';
-      div.innerHTML = `<i class="ri-file-list-3-line"></i> <strong>Quiz:</strong> ${q.title}`;
-      div.onclick = () => {
-        container.classList.add('hidden');
-        document.getElementById('globalSearchInput').value = '';
-        initializeLiveQuizAttemptRunner(q.id);
-      };
-      container.appendChild(div);
-      matchCounter++;
-    }
-  });
+    document.getElementById('themeToggleBtn').addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        document.getElementById('themeToggleBtn').innerHTML = document.body.classList.contains('dark-mode') ? '<i class="ri-sun-line"></i>' : '<i class="ri-moon-line"></i>';
+    });
 
-  if (matchCounter === 0) {
-    const emptyItem = document.createElement('div');
-    emptyItem.className = 'suggestion-item';
-    emptyItem.textContent = "No relational evaluation vectors resolved.";
-    container.appendChild(emptyItem);
-  }
+    document.getElementById('globalSearchInput').addEventListener('input', (e) => processGlobalAutocompleteQuery(e.target.value.trim()));
 
-  container.classList.remove('hidden');
+    // Creator logic
+    document.getElementById('creatorAppendQuestionBtn').addEventListener('click', handleCreatorQuestionAppend);
+    document.getElementById('creatorSaveQuizBtn').addEventListener('click', commitCompiledQuizToRepository);
+    
+    // Excel Engine logic
+    const excelDropZone = document.getElementById('excelDropZone');
+    excelDropZone.addEventListener('dragover', (e) => { e.preventDefault(); excelDropZone.classList.add('dragover'); });
+    excelDropZone.addEventListener('dragleave', () => excelDropZone.classList.remove('dragover'));
+    excelDropZone.addEventListener('drop', handleExcelDrop);
+    document.getElementById('excelFileInput').addEventListener('change', handleExcelSelect);
+    document.getElementById('commitExcelImportBtn').addEventListener('click', commitExcelToArray);
+
+    // Workspace
+    document.getElementById('wsToggleViewBtn').addEventListener('click', () => {
+        enterpriseState.workspaceLayout = enterpriseState.workspaceLayout === 'grid' ? 'list' : 'grid';
+        renderVisualWorkspaceBoard();
+    });
+    document.getElementById('wsPublishBtn').addEventListener('click', () => { persistApplicationStateToStorage(); displayNotificationToast("Workspace saved", "success"); });
+    document.getElementById('wsUndoBtn').addEventListener('click', executeWorkspaceUndoAction);
+    document.getElementById('wsRedoBtn').addEventListener('click', executeWorkspaceRedoAction);
+
+    // Group Builder
+    document.getElementById('groupShuffleBtn').addEventListener('click', () => { activeDraftCompositeIds.sort(()=>Math.random()-0.5); renderCompositeTargetZone(); });
+    document.getElementById('groupDeduplicateBtn').addEventListener('click', () => { activeDraftCompositeIds = [...new Set(activeDraftCompositeIds)]; renderCompositeTargetZone(); });
+    document.getElementById('groupCommitBtn').addEventListener('click', saveCombinedExamGroupToState);
+    document.getElementById('groupInventorySearch').addEventListener('input', (e) => renderGroupInventorySelector(e.target.value.trim()));
+
+    // Runner
+    document.getElementById('runnerPrevBtn').addEventListener('click', stepBackRunnerQuestion);
+    document.getElementById('runnerNextBtn').addEventListener('click', stepForwardRunnerQuestion);
+    document.getElementById('runnerQuitBtn').addEventListener('click', () => switchViewportContext('librarySection'));
+    document.getElementById('runnerFinishBtn').addEventListener('click', finalizeQuizEvaluationSession);
+    document.getElementById('reviewCloseBtn').addEventListener('click', () => switchViewportContext('homeSection'));
+
+    // Admin & PDF
+    document.getElementById('adminResetDataBtn').addEventListener('click', () => { localStorage.removeItem('QMP_ENTERPRISE_CACHED_STATE'); window.location.reload(); });
+    document.getElementById('adminForceSyncBtn').addEventListener('click', loadAndMigrateApplicationState);
+    document.getElementById('pdfGenerateDownloadBtn').addEventListener('click', () => triggerHighFidelityPDFExport(false));
+    document.getElementById('pdfGenerateKeyBtn').addEventListener('click', () => triggerHighFidelityPDFExport(true));
+    document.getElementById('profileSaveBtn').addEventListener('click', () => {
+        enterpriseState.currentUser.name = document.getElementById('profNameInput').value;
+        document.getElementById('welcomeUserName').textContent = enterpriseState.currentUser.name;
+        displayNotificationToast("Profile updated", "success");
+    });
+
+    // Guides
+    document.querySelectorAll('.guide-tree-link').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.guide-tree-link').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderActiveGuideView(btn.getAttribute('data-guide'));
+        });
+    });
 }
 
-// --- Central Asset Library Processing Engine ---
+function switchViewportContext(targetId) {
+    document.querySelectorAll('.view-section').forEach(sec => sec.classList.toggle('hidden', sec.id !== targetId));
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.toggle('active', link.getAttribute('data-target') === targetId));
+    document.getElementById('breadcrumbCurrent').textContent = targetId.replace('Section', '').toUpperCase();
+
+    if (targetId === 'librarySection') renderCentralAssetLibrary();
+    if (targetId === 'workspaceSection') renderVisualWorkspaceBoard();
+    if (targetId === 'groupsSection') { renderGroupInventorySelector(''); renderCompositeTargetZone(); }
+    if (targetId === 'pdfSection') synchronizePDFSourceAssetSelector();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// --- GLOBAL SEARCH ---
+function processGlobalAutocompleteQuery(term) {
+    const container = document.getElementById('searchSuggestions');
+    if (!term) return container.classList.add('hidden');
+    container.innerHTML = '';
+    
+    let matches = enterpriseState.quizzes.filter(q => q.title.toLowerCase().includes(term.toLowerCase())).slice(0, 5);
+    matches.forEach(q => {
+        let div = document.createElement('div'); div.className = 'suggestion-item';
+        div.innerHTML = `<i class="ri-file-list-3-line"></i> ${q.title}`;
+        div.onclick = () => { container.classList.add('hidden'); document.getElementById('globalSearchInput').value=''; initializeLiveQuizAttemptRunner(q.id); };
+        container.appendChild(div);
+    });
+    container.classList.remove('hidden');
+}
+
+// --- LIBRARY ---
 function renderCentralAssetLibrary() {
-  const wrapper = document.getElementById('libraryContainer');
-  wrapper.innerHTML = '';
-
-  if (enterpriseState.quizzes.length === 0) {
-    wrapper.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px;">No operational quiz assets compiled inside cloud data storage tables.</div>';
-    return;
-  }
-
-  enterpriseState.quizzes.forEach(quiz => {
-    const card = document.createElement('div');
-    card.className = 'library-asset-card';
-    card.innerHTML = `
-      <div class="asset-card-meta">
-        <h3>${quiz.title}</h3>
-        <p>${quiz.description || 'No descriptive taxonomy available.'}</p>
-        <div style="font-size:0.8rem; font-weight:700; color:var(--text-light)">
-          Nodes Bound: ${quiz.questions ? quiz.questions.length : 0} Structural Units
-        </div>
-      </div>
-      <div class="asset-action-row" style="margin-top: 16px;">
-        <button class="btn-primary" onclick="window.appEngineAPI.launchQuiz('${quiz.id}')"><i class="ri-play-fill"></i> Launch</button>
-        <button class="btn-secondary" onclick="window.appEngineAPI.stageWorkspace('${quiz.id}')"><i class="ri-layout-grid-line"></i> Workspace</button>
-      </div>
-    `;
-    wrapper.appendChild(card);
-  });
+    const wrapper = document.getElementById('libraryContainer');
+    wrapper.innerHTML = '';
+    
+    [...enterpriseState.quizzes, ...enterpriseState.examGroups].forEach(asset => {
+        const isGroup = !!asset.quizReferences;
+        const count = isGroup ? asset.quizReferences.length : (asset.questions?.length||0);
+        
+        wrapper.innerHTML += `
+            <div class="library-asset-card" style="border-top: 4px solid ${isGroup?'var(--success)':'var(--primary)'};">
+                <div class="asset-card-meta">
+                    <span style="font-size:0.7rem; background:${isGroup?'var(--success)':'var(--primary)'}; color:white; padding:2px 6px; border-radius:4px;">${isGroup?'COMBINED EXAM':'QUIZ MODULE'}</span>
+                    <h3 style="margin-top:10px;">${asset.title || asset.name}</h3>
+                    <p>${asset.description}</p>
+                    <div style="font-size:0.8rem; font-weight:700; color:var(--text-light)">Contains: ${count} Nodes</div>
+                </div>
+                <div class="asset-action-row">
+                    <button class="btn-primary" onclick="window.appEngineAPI.launchAsset('${asset.id}', ${isGroup})"><i class="ri-play-fill"></i> Launch</button>
+                    ${!isGroup && enterpriseState.currentUser.role !== 'guest' ? `<button class="btn-secondary" onclick="window.appEngineAPI.stageWorkspace('${asset.id}')"><i class="ri-layout-grid-line"></i> Edit</button>` : ''}
+                </div>
+            </div>`;
+    });
 }
 
-// --- Interactive Live Test Evaluation Engine Running Component ---
-function initializeLiveQuizAttemptRunner(quizId) {
-  const target = enterpriseState.quizzes.find(q => q.id === quizId);
-  if (!target || !target.questions || target.questions.length === 0) {
-    displayNotificationToast("Target test structure contains no functional questions.", "error");
-    return;
-  }
+// --- DIRECT EXCEL IMPORT ENGINE (SheetJS) ---
+let pendingExcelArray = [];
 
-  enterpriseState.activeQuiz = target;
-  enterpriseState.activeQuestions = [...target.questions];
-  enterpriseState.userAnswers = {};
-  enterpriseState.currentQuestionIndex = 0;
-  enterpriseState.elapsedSeconds = 0;
+function handleExcelDrop(e) {
+    e.preventDefault(); e.target.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) parseExcelFile(e.dataTransfer.files[0]);
+}
+function handleExcelSelect(e) { if(e.target.files.length > 0) parseExcelFile(e.target.files[0]); }
 
-  switchViewportContext('quizSection');
-  document.getElementById('runnerQuizTitle').textContent = target.title;
-  
-  clearInterval(enterpriseState.timerInterval);
-  enterpriseState.timerInterval = setInterval(() => {
-    enterpriseState.elapsedSeconds++;
-    const pad = (val) => String(val).padStart(2, '0');
-    document.getElementById('runnerTimer').textContent = `${pad(Math.floor(enterpriseState.elapsedSeconds / 60))}:${pad(enterpriseState.elapsedSeconds % 60)}`;
-  }, 1000);
+function parseExcelFile(file) {
+    if(!window.XLSX) return displayNotificationToast("Excel Engine not loaded.", "error");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const wb = XLSX.read(e.target.result, {type: 'binary'});
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const data = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ""});
+            
+            // Heuristic Column Mapping
+            let hRow = data[0].map(h => String(h).toLowerCase().trim());
+            let qIdx = hRow.findIndex(h => h.includes('question'));
+            let aIdx = hRow.findIndex(h => h === 'a' || h.includes('option a') || h.includes('opt a'));
+            let bIdx = hRow.findIndex(h => h === 'b' || h.includes('option b') || h.includes('opt b'));
+            let cIdx = hRow.findIndex(h => h === 'c' || h.includes('option c') || h.includes('opt c'));
+            let dIdx = hRow.findIndex(h => h === 'd' || h.includes('option d') || h.includes('opt d'));
+            let ansIdx = hRow.findIndex(h => h.includes('answer') || h.includes('correct'));
 
-  renderRunnerActiveQuestionIndex();
+            if(qIdx===-1 || aIdx===-1 || ansIdx===-1) return displayNotificationToast("Required columns missing (Question, Opt A, Answer)", "error");
+
+            pendingExcelArray = [];
+            for(let i=1; i<data.length; i++) {
+                if(!data[i][qIdx]) continue;
+                let ansText = String(data[i][ansIdx]).trim().toUpperCase();
+                let finalAns = ['A','B','C','D'].includes(ansText) ? ansText : 'A';
+                
+                pendingExcelArray.push({
+                    text: data[i][qIdx],
+                    a: data[i][aIdx], b: data[i][bIdx], c: data[i][cIdx]||'', d: data[i][dIdx]||'',
+                    answer: finalAns, marks: 5, time: 2
+                });
+            }
+            
+            renderExcelPreview();
+        } catch(err) { displayNotificationToast("Corrupted Excel file.", "error"); }
+    };
+    reader.readAsBinaryString(file);
 }
 
-function renderRunnerActiveQuestionIndex() {
-  const index = enterpriseState.currentQuestionIndex;
-  const question = enterpriseState.activeQuestions[index];
-
-  document.getElementById('runnerQuestionMeta').textContent = `Question ${index + 1} of ${enterpriseState.activeQuestions.length}`;
-  document.getElementById('runnerQuestionText').textContent = question.text;
-
-  const optGrid = document.getElementById('runnerOptionsGrid');
-  optGrid.innerHTML = '';
-
-  ['A', 'B', 'C', 'D'].forEach(optKey => {
-    const optionText = question[optKey.toLowerCase()];
-    if (optionText) {
-      const card = document.createElement('div');
-      card.className = `option-click-card ${enterpriseState.userAnswers[index] === optKey ? 'selected' : ''}`;
-      card.innerHTML = `<strong>${optKey}:</strong> ${optionText}`;
-      card.onclick = () => {
-        enterpriseState.userAnswers[index] = optKey;
-        renderRunnerActiveQuestionIndex();
-      };
-      optGrid.appendChild(card);
-    }
-  });
-
-  document.getElementById('runnerPrevBtn').disabled = index === 0;
-  if (index === enterpriseState.activeQuestions.length - 1) {
-    document.getElementById('runnerNextBtn').classList.add('hidden');
-    document.getElementById('runnerFinishBtn').classList.remove('hidden');
-  } else {
-    document.getElementById('runnerNextBtn').classList.remove('hidden');
-    document.getElementById('runnerFinishBtn').classList.add('hidden');
-  }
-
-  const progressPct = ((index + 1) / enterpriseState.activeQuestions.length) * 100;
-  document.getElementById('runnerProgressBar').style.width = `${progressPct}%`;
+function renderExcelPreview() {
+    document.getElementById('excelDropZone').classList.add('hidden');
+    const preview = document.getElementById('excelPreviewContainer');
+    preview.classList.remove('hidden');
+    document.getElementById('excelParsedCount').textContent = pendingExcelArray.length;
+    
+    const tbody = document.querySelector('#excelPreviewTable tbody');
+    tbody.innerHTML = pendingExcelArray.slice(0, 50).map(q => `<tr><td>${q.text.substring(0,40)}...</td><td>${q.a}</td><td>${q.b}</td><td><mark>${q.answer}</mark></td></tr>`).join('');
+    if(pendingExcelArray.length > 50) tbody.innerHTML += `<tr><td colspan="4" style="text-align:center;">... and ${pendingExcelArray.length - 50} more.</td></tr>`;
 }
 
-function stepBackRunnerQuestion() {
-  if (enterpriseState.currentQuestionIndex > 0) {
-    enterpriseState.currentQuestionIndex--;
-    renderRunnerActiveQuestionIndex();
-  }
+function commitExcelToArray() {
+    localCreatorQuestionArray = localCreatorQuestionArray.concat(pendingExcelArray);
+    document.getElementById('pendingQuestionsCount').textContent = localCreatorQuestionArray.length;
+    document.getElementById('excelDropZone').classList.remove('hidden');
+    document.getElementById('excelPreviewContainer').classList.add('hidden');
+    displayNotificationToast(`${pendingExcelArray.length} parsed items injected.`, "success");
+    pendingExcelArray = [];
 }
 
-function stepForwardRunnerQuestion() {
-  if (enterpriseState.currentQuestionIndex < enterpriseState.activeQuestions.length - 1) {
-    enterpriseState.currentQuestionIndex++;
-    renderRunnerActiveQuestionIndex();
-  }
+// --- CREATOR STUDIO MANUAL & PUBLISH ---
+function handleCreatorQuestionAppend() {
+    const q = {
+        text: document.getElementById('qFormText').value,
+        a: document.getElementById('qFormOptA').value, b: document.getElementById('qFormOptB').value,
+        c: document.getElementById('qFormOptC').value, d: document.getElementById('qFormOptD').value,
+        answer: document.getElementById('qFormAnswer').value, marks: 5, time: 2
+    };
+    if(!q.text || !q.a) return displayNotificationToast("Question text and Option A required.", "error");
+    localCreatorQuestionArray.push(q);
+    document.getElementById('pendingQuestionsCount').textContent = localCreatorQuestionArray.length;
+    ['qFormText','qFormOptA','qFormOptB','qFormOptC','qFormOptD'].forEach(id => document.getElementById(id).value = '');
+    displayNotificationToast("Node appended to volatile array.", "success");
 }
 
-function finalizeQuizEvaluationSession() {
-  clearInterval(enterpriseState.timerInterval);
-  let correctHits = 0;
-  let totalMarksCalculated = 0;
-  let clientScoreCalculated = 0;
+async function commitCompiledQuizToRepository() {
+    const title = document.getElementById('creatorQuizTitle').value.trim();
+    if(!title || !localCreatorQuestionArray.length) return displayNotificationToast("Provide Title and Questions.", "error");
+    
+    const shuffle = document.getElementById('creatorShuffle').checked;
+    const payload = { id: "quiz_" + Date.now(), title, description: document.getElementById('creatorQuizDescription').value, questions: localCreatorQuestionArray, shuffle };
+    
+    enterpriseState.quizzes.push(payload);
+    persistApplicationStateToStorage();
+    if(db) try { await setDoc(doc(db, "quizzes", payload.id), payload); } catch(e){}
 
-  enterpriseState.activeQuestions.forEach((q, i) => {
-    const itemWeight = q.marks || 1;
-    totalMarksCalculated += itemWeight;
-    if (enterpriseState.userAnswers[i] === q.answer.toUpperCase()) {
-      correctHits++;
-      clientScoreCalculated += itemWeight;
-    }
-  });
-
-  document.getElementById('reviewScoreText').textContent = `${clientScoreCalculated} / ${totalMarksCalculated} (${Math.round((clientScoreCalculated/totalMarksCalculated)*100)}%)`;
-  
-  const container = document.getElementById('reviewAnalysisContainer');
-  container.innerHTML = '';
-
-  enterpriseState.activeQuestions.forEach((q, i) => {
-    const isCorrect = enterpriseState.userAnswers[i] === q.answer.toUpperCase();
-    const reviewCard = document.createElement('div');
-    reviewCard.className = `review-eval-card ${isCorrect ? 'correct' : 'incorrect'}`;
-    reviewCard.innerHTML = `
-      <h4>#${i+1}: ${q.text}</h4>
-      <p style="margin: 6px 0; font-size:0.88rem;">Chosen Entry Option: <strong style="color:var(--accent)">${enterpriseState.userAnswers[i] || 'Null Option'}</strong> | Valid Key Pointer: <strong style="color:var(--success)">${q.answer}</strong></p>
-    `;
-    container.appendChild(reviewCard);
-  });
-
-  switchViewportContext('reviewSection');
-  displayNotificationToast("Evaluation finalized. Scoring vectors tabulated.", "success");
+    document.getElementById('creatorQuizTitle').value = '';
+    localCreatorQuestionArray = [];
+    document.getElementById('pendingQuestionsCount').textContent = 0;
+    
+    displayNotificationToast("Quiz Asset Published Globally.", "success");
+    switchViewportContext('librarySection');
 }
 
-// --- Creator Studio Component Implementation ---
-let localCreatorQuestionArray = [];
-
-function handleCreatorQuestionAppend(e) {
-  e.preventDefault();
-  const text = document.getElementById('qFormText').value.trim();
-  const a = document.getElementById('qFormOptA').value.trim();
-  const b = document.getElementById('qFormOptB').value.trim();
-  const c = document.getElementById('qFormOptC').value.trim();
-  const d = document.getElementById('qFormOptD').value.trim();
-  const answer = document.getElementById('qFormAnswer').value;
-
-  if (!text || !a || !b) {
-    displayNotificationToast("Incomplete option configuration matrices.", "error");
-    return;
-  }
-
-  localCreatorQuestionArray.push({ text, a, b, c, d, answer, marks: 5, time: 2 });
-  displayNotificationToast(`Question array holds ${localCreatorQuestionArray.length} items.`, "success");
-
-  // Reset Sub Form Inputs
-  document.getElementById('qFormText').value = '';
-  document.getElementById('qFormOptA').value = '';
-  document.getElementById('qFormOptB').value = '';
-  document.getElementById('qFormOptC').value = '';
-  document.getElementById('qFormOptD').value = '';
-}
-
-function commitCompiledQuizToRepository() {
-  const title = document.getElementById('creatorQuizTitle').value.trim();
-  const desc = document.getElementById('creatorQuizDescription').value.trim();
-
-  if (!title || localCreatorQuestionArray.length === 0) {
-    displayNotificationToast("Provide structural title and populate questions array.", "error");
-    return;
-  }
-
-  const generatedObject = {
-    id: "quiz_" + Date.now(),
-    title,
-    description: desc,
-    questions: [...localCreatorQuestionArray]
-  };
-
-  enterpriseState.quizzes.push(generatedObject);
-  persistApplicationStateToStorage();
-
-  document.getElementById('creatorQuizTitle').value = '';
-  document.getElementById('creatorQuizDescription').value = '';
-  localCreatorQuestionArray = [];
-
-  displayNotificationToast("Quiz configuration deployed successfully to live state.", "success");
-  switchViewportContext('librarySection');
-}
-
-// --- FIX 1: HIGH PERFORMANCE INTERACTIVE VISUAL CANVAS WORKSPACE ---
-let activeWorkspaceQuizReference = null;
-
-function stageQuizIntoCanvasWorkspace(quizId) {
-  const target = enterpriseState.quizzes.find(q => q.id === quizId);
-  if (!target) return;
-  activeWorkspaceQuizReference = target;
-  switchViewportContext('workspaceSection');
-}
-
+// --- VISUAL WORKSPACE ---
 function renderVisualWorkspaceBoard() {
-  const canvas = document.getElementById('visualCanvasContainer');
-  canvas.innerHTML = '';
+    const cvs = document.getElementById('visualCanvasContainer');
+    cvs.className = enterpriseState.workspaceLayout === 'grid' ? 'visual-canvas-grid' : 'visual-canvas-list';
+    if(!activeWorkspaceQuizReference) return cvs.innerHTML = '<div style="grid-column:1/-1; padding:40px; text-align:center;">No Asset Targeted.</div>';
+    
+    document.getElementById('wsActiveQuizName').textContent = activeWorkspaceQuizReference.title;
+    document.getElementById('wsStatSelected').textContent = activeWorkspaceQuizReference.questions.length;
 
-  canvas.className = enterpriseState.workspaceLayout === 'grid' ? 'visual-canvas-grid' : 'visual-canvas-list';
-
-  if (!activeWorkspaceQuizReference || !activeWorkspaceQuizReference.questions || activeWorkspaceQuizReference.questions.length === 0) {
-    canvas.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-light)">No quiz target actively loaded inside the visual canvas workbench interface. Select an asset node via the library interface.</div>';
-    updateWorkspaceAggregateMetrics(0,0,0);
-    return;
-  }
-
-  let cumulativeMarks = 0;
-  let cumulativeTime = 0;
-
-  activeWorkspaceQuizReference.questions.forEach((q, idx) => {
-    cumulativeMarks += (q.marks || 5);
-    cumulativeTime += (q.time || 2);
-
-    const nodeCard = document.createElement('div');
-    nodeCard.className = 'workspace-node-card';
-    nodeCard.setAttribute('draggable', 'true');
-    nodeCard.innerHTML = `
-      <div class="node-card-header">
-        <span class="node-badge">Node Module #${idx + 1}</span>
-        <div class="node-actions">
-          <button class="btn-node-tool" title="Duplicate Node" onclick="window.appEngineAPI.duplicateNode(${idx})"><i class="ri-file-copy-line"></i></button>
-          <button class="btn-node-tool" style="color:var(--danger)" title="Purge Node" onclick="window.appEngineAPI.purgeNode(${idx})"><i class="ri-delete-bin-line"></i></button>
-        </div>
-      </div>
-      <div class="node-card-body">
-        <h4>${q.text}</h4>
-        <div class="node-options-preview">
-          <div class="node-option-row ${q.answer === 'A'?'correct-key':''}">A: ${q.a}</div>
-          <div class="node-option-row ${q.answer === 'B'?'correct-key':''}">B: ${q.b}</div>
-          <div class="node-option-row ${q.answer === 'C'?'correct-key':''}">C: ${q.c}</div>
-          <div class="node-option-row ${q.answer === 'D'?'correct-key':''}">D: ${q.d}</div>
-        </div>
-      </div>
-    `;
-
-    // Modern HTML5 Drag-And-Drop Orchestration Logic Sequence
-    nodeCard.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('text/plain', idx);
-      nodeCard.style.opacity = '0.4';
-    });
-    nodeCard.addEventListener('dragend', () => {
-      nodeCard.style.opacity = '1';
-    });
-    nodeCard.addEventListener('dragover', (e) => e.preventDefault());
-    nodeCard.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const originIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-      executeWorkspaceNodeReorderingSequence(originIndex, idx);
-    });
-
-    canvas.appendChild(nodeCard);
-  });
-
-  updateWorkspaceAggregateMetrics(activeWorkspaceQuizReference.questions.length, cumulativeMarks, cumulativeTime);
-}
-
-function updateWorkspaceAggregateMetrics(count, marks, time) {
-  document.getElementById('wsStatSelected').textContent = count;
-  document.getElementById('wsStatMarks').textContent = marks;
-  document.getElementById('wsStatTime').textContent = `${time} mins`;
-}
-
-function executeWorkspaceNodeReorderingSequence(fromIndex, toIndex) {
-  if (fromIndex === toIndex) return;
-  captureWorkspaceSnapshotToHistory();
-  
-  const targetArray = activeWorkspaceQuizReference.questions;
-  const elementMoved = targetArray.splice(fromIndex, 1)[0];
-  targetArray.splice(toIndex, 0, elementMoved);
-  
-  persistApplicationStateToStorage();
-  renderVisualWorkspaceBoard();
-  triggerLogTrail(`[WORKSPACE] Node card reordered from reference position index ${fromIndex} to target slot position index ${toIndex}.`);
-}
-
-function captureWorkspaceSnapshotToHistory() {
-  if (!activeWorkspaceQuizReference) return;
-  const snapshot = JSON.stringify(activeWorkspaceQuizReference.questions);
-  enterpriseState.undoStack.push(snapshot);
-  enterpriseState.redoStack = []; // Flush redo linear buffers forward
+    cvs.innerHTML = activeWorkspaceQuizReference.questions.map((q, i) => `
+        <div class="workspace-node-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain', ${i})" ondragover="event.preventDefault()" ondrop="window.appEngineAPI.reorderNode(event, ${i})">
+            <div class="node-card-header"><span class="node-badge">Node #${i+1}</span>
+                <div class="node-actions">
+                    <button class="btn-node-tool" onclick="window.appEngineAPI.duplicateNode(${i})"><i class="ri-file-copy-line"></i></button>
+                    <button class="btn-node-tool" style="color:var(--danger)" onclick="window.appEngineAPI.purgeNode(${i})"><i class="ri-delete-bin-line"></i></button>
+                </div>
+            </div>
+            <div class="node-card-body"><h4>${q.text}</h4>
+                <div class="node-options-preview">
+                    <div class="node-option-row ${q.answer==='A'?'correct-key':''}">${q.a}</div>
+                    <div class="node-option-row ${q.answer==='B'?'correct-key':''}">${q.b}</div>
+                </div>
+            </div>
+        </div>`).join('');
 }
 
 function executeWorkspaceUndoAction() {
-  if (enterpriseState.undoStack.length === 0) {
-    displayNotificationToast("No tracking state history points found to reverse.", "error");
-    return;
-  }
-  const currentSnapshot = JSON.stringify(activeWorkspaceQuizReference.questions);
-  enterpriseState.redoStack.push(currentSnapshot);
-
-  const parsedHistory = JSON.parse(enterpriseState.undoStack.pop());
-  activeWorkspaceQuizReference.questions = parsedHistory;
-
-  persistApplicationStateToStorage();
-  renderVisualWorkspaceBoard();
-  displayNotificationToast("Previous evaluation structure configuration restored.", "success");
+    if(!enterpriseState.undoStack.length) return displayNotificationToast("No history.", "error");
+    enterpriseState.redoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions));
+    activeWorkspaceQuizReference.questions = JSON.parse(enterpriseState.undoStack.pop());
+    renderVisualWorkspaceBoard();
 }
 
 function executeWorkspaceRedoAction() {
-  if (enterpriseState.redoStack.length === 0) {
-    displayNotificationToast("No forward mapping elements queued to process.", "error");
-    return;
-  }
-  const currentSnapshot = JSON.stringify(activeWorkspaceQuizReference.questions);
-  enterpriseState.undoStack.push(currentSnapshot);
-
-  const parsedForwardState = JSON.parse(enterpriseState.redoStack.pop());
-  activeWorkspaceQuizReference.questions = parsedForwardState;
-
-  persistApplicationStateToStorage();
-  renderVisualWorkspaceBoard();
-  displayNotificationToast("Forward layout vector executed.", "success");
+    if(!enterpriseState.redoStack.length) return displayNotificationToast("No redo history.", "error");
+    enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions));
+    activeWorkspaceQuizReference.questions = JSON.parse(enterpriseState.redoStack.pop());
+    renderVisualWorkspaceBoard();
 }
 
-function executeWorkspacePreflightValidation() {
-  if (!activeWorkspaceQuizReference || !activeWorkspaceQuizReference.questions) {
-    displayNotificationToast("No operational layout targeted to audit.", "error");
-    return;
-  }
-
-  let absoluteValidationPass = true;
-  activeWorkspaceQuizReference.questions.forEach((q, idx) => {
-    if (!q.text || !q.answer || !q.a || !q.b) {
-      absoluteValidationPass = false;
-      triggerLogTrail(`[AUDIT] Structural gap caught at execution node context block address ${idx+1}`);
-    }
-  });
-
-  if (absoluteValidationPass) {
-    displayNotificationToast("Preflight testing structural configurations passed validation checks.", "success");
-    triggerLogTrail("[AUDIT] System validation clear. State verified.");
-  } else {
-    displayNotificationToast("Structural anomalies located in active layout parameters. Review transaction logs.", "error");
-  }
-}
-
-// --- FIX 5: ASSEMBLE COMBINED EXAM GROUP SYSTEM ---
-function renderCombinedExamGroupBuilder() {
-  renderGroupInventorySelector('');
-  renderCompositeTargetZone();
-}
-
-function renderGroupInventorySelector(filterTerm) {
-  const box = document.getElementById('groupInventoryContainer');
-  box.innerHTML = '';
-
-  const operationalSelection = enterpriseState.quizzes.filter(q => q.title.toLowerCase().includes(filterTerm.toLowerCase()));
-
-  operationalSelection.forEach(quiz => {
-    const div = document.createElement('div');
-    div.className = 'inventory-item-row';
-    div.innerHTML = `
-      <input type="checkbox" id="chk_inv_${quiz.id}" value="${quiz.id}" onchange="window.appEngineAPI.toggleCompositeTargetSelection('${quiz.id}')" />
-      <label for="chk_inv_${quiz.id}" style="font-size:0.85rem; font-weight:600; cursor:pointer;">${quiz.title}</label>
-    `;
-    box.appendChild(div);
-  });
-}
-
-let activeDraftCompositeIds = [];
-
-function toggleCompositeTargetSelection(quizId) {
-  const index = activeDraftCompositeIds.indexOf(quizId);
-  if (index > -1) {
-    activeDraftCompositeIds.splice(index, 1);
-  } else {
-    activeDraftCompositeIds.push(quizId);
-  }
-  renderCompositeTargetZone();
+// --- COMBINED EXAMS ---
+function renderGroupInventorySelector(term) {
+    const box = document.getElementById('groupInventoryContainer');
+    box.innerHTML = enterpriseState.quizzes.filter(q => q.title.toLowerCase().includes(term.toLowerCase()))
+        .map(q => `<div class="inventory-item-row"><input type="checkbox" id="chk_${q.id}" ${activeDraftCompositeIds.includes(q.id)?'checked':''} onchange="window.appEngineAPI.toggleGroupRef('${q.id}')"> <label for="chk_${q.id}" style="cursor:pointer; font-size:0.85rem; font-weight:600;">${q.title}</label></div>`).join('');
 }
 
 function renderCompositeTargetZone() {
-  const zone = document.getElementById('groupCompositeTargetContainer');
-  zone.innerHTML = '';
+    const zone = document.getElementById('groupCompositeTargetContainer');
+    document.getElementById('groupMetricCount').textContent = activeDraftCompositeIds.length;
+    if(!activeDraftCompositeIds.length) return zone.innerHTML = '<div class="empty-zone-notice">Select blocks to compile.</div>';
+    
+    zone.innerHTML = activeDraftCompositeIds.map((id, i) => {
+        const match = enterpriseState.quizzes.find(q => q.id === id);
+        return `<div class="inventory-item-row" style="margin-bottom:10px;"><b>Block #${i+1}:</b> ${match?.title || 'Unknown'}</div>`;
+    }).join('');
+}
 
-  if (activeDraftCompositeIds.length === 0) {
-    zone.innerHTML = '<div class="empty-zone-notice">Select test configurations from inventory matrices to build out a composite package sequence block.</div>';
-    document.getElementById('groupMetricCount').textContent = '0';
-    document.getElementById('groupMetricMarks').textContent = '0';
-    return;
-  }
+async function saveCombinedExamGroupToState() {
+    const name = document.getElementById('groupNameInput').value;
+    if(!name || !activeDraftCompositeIds.length) return displayNotificationToast("Name and nodes required.", "error");
+    
+    const payload = { id: "group_" + Date.now(), name, quizReferences: [...activeDraftCompositeIds] };
+    enterpriseState.examGroups.push(payload);
+    persistApplicationStateToStorage();
+    if(db) try { await setDoc(doc(db, "exam_groups", payload.id), payload); } catch(e){}
 
-  let runningMarkCount = 0;
-  activeDraftCompositeIds.forEach((id, idx) => {
-    const match = enterpriseState.quizzes.find(q => q.id === id);
-    if (match) {
-      let qMarks = 0;
-      match.questions.forEach(qs => qMarks += (qs.marks || 5));
-      runningMarkCount += qMarks;
+    activeDraftCompositeIds = [];
+    document.getElementById('groupNameInput').value = '';
+    renderGroupInventorySelector('');
+    renderCompositeTargetZone();
+    displayNotificationToast("Group Generated.", "success");
+}
 
-      const card = document.createElement('div');
-      card.className = 'inventory-item-row';
-      card.style.marginButton = '10px';
-      card.innerHTML = `<span><strong>Block Sequence #${idx+1}:</strong> ${match.title} (${match.questions.length} sub-nodes)</span>`;
-      zone.appendChild(card);
+// --- QUIZ RUNNER ---
+function initializeLiveQuizAttemptRunner(id, isGroup = false) {
+    let targetQuizzes = [];
+    if(isGroup) {
+        const group = enterpriseState.examGroups.find(g => g.id === id);
+        group.quizReferences.forEach(ref => {
+            const qz = enterpriseState.quizzes.find(q => q.id === ref);
+            if(qz && qz.questions) targetQuizzes.push(...qz.questions);
+        });
+        enterpriseState.activeQuiz = { title: group.name, questions: targetQuizzes };
+    } else {
+        const qz = enterpriseState.quizzes.find(q => q.id === id);
+        enterpriseState.activeQuiz = qz;
+        targetQuizzes = [...qz.questions];
+        if(qz.shuffle) targetQuizzes.sort(() => Math.random() - 0.5);
     }
-  });
+    
+    enterpriseState.activeQuestions = targetQuizzes;
+    enterpriseState.userAnswers = {};
+    enterpriseState.currentQuestionIndex = 0;
+    enterpriseState.elapsedSeconds = 0;
 
-  document.getElementById('groupMetricCount').textContent = activeDraftCompositeIds.length;
-  document.getElementById('groupMetricMarks').textContent = runningMarkCount;
+    switchViewportContext('quizSection');
+    document.getElementById('runnerQuizTitle').textContent = enterpriseState.activeQuiz.title;
+    
+    clearInterval(enterpriseState.timerInterval);
+    enterpriseState.timerInterval = setInterval(() => {
+        enterpriseState.elapsedSeconds++;
+        const pad = v => String(v).padStart(2,'0');
+        document.getElementById('runnerTimer').textContent = `${pad(Math.floor(enterpriseState.elapsedSeconds/60))}:${pad(enterpriseState.elapsedSeconds%60)}`;
+    }, 1000);
+    renderRunnerActiveQuestionIndex();
 }
 
-function executeGroupCompositeShuffle() {
-  if (activeDraftCompositeIds.length < 2) return;
-  activeDraftCompositeIds.sort(() => Math.random() - 0.5);
-  renderCompositeTargetZone();
-  displayNotificationToast("Composite pooling structural processing array indices randomized.", "success");
+function renderRunnerActiveQuestionIndex() {
+    const i = enterpriseState.currentQuestionIndex;
+    const q = enterpriseState.activeQuestions[i];
+    document.getElementById('runnerQuestionMeta').textContent = `Question ${i+1} of ${enterpriseState.activeQuestions.length}`;
+    document.getElementById('runnerQuestionText').textContent = q.text;
+    
+    document.getElementById('runnerOptionsGrid').innerHTML = ['A','B','C','D'].filter(opt => q[opt.toLowerCase()]).map(opt => `
+        <div class="option-click-card ${enterpriseState.userAnswers[i] === opt ? 'selected' : ''}" onclick="window.appEngineAPI.selectAnswer('${opt}')">
+            <b>${opt}:</b> ${q[opt.toLowerCase()]}
+        </div>`).join('');
+    
+    document.getElementById('runnerPrevBtn').disabled = i === 0;
+    const isLast = i === enterpriseState.activeQuestions.length - 1;
+    document.getElementById('runnerNextBtn').classList.toggle('hidden', isLast);
+    document.getElementById('runnerFinishBtn').classList.toggle('hidden', !isLast);
+    document.getElementById('runnerProgressBar').style.width = `${((i+1)/enterpriseState.activeQuestions.length)*100}%`;
 }
 
-function purgeDuplicateGroupElements() {
-  activeDraftCompositeIds = [...new Set(activeDraftCompositeIds)];
-  renderCompositeTargetZone();
-  displayNotificationToast("Redundant group tracking elements stripped.", "success");
+function stepBackRunnerQuestion() { if(enterpriseState.currentQuestionIndex > 0) { enterpriseState.currentQuestionIndex--; renderRunnerActiveQuestionIndex(); } }
+function stepForwardRunnerQuestion() { if(enterpriseState.currentQuestionIndex < enterpriseState.activeQuestions.length - 1) { enterpriseState.currentQuestionIndex++; renderRunnerActiveQuestionIndex(); } }
+
+async function finalizeQuizEvaluationSession() {
+    clearInterval(enterpriseState.timerInterval);
+    let correct = 0, max = enterpriseState.activeQuestions.length;
+    
+    const container = document.getElementById('reviewAnalysisContainer'); container.innerHTML = '';
+    
+    enterpriseState.activeQuestions.forEach((q, i) => {
+        const uAns = enterpriseState.userAnswers[i];
+        if(uAns === q.answer.toUpperCase()) correct++;
+        container.innerHTML += `<div class="review-eval-card ${uAns===q.answer?'correct':'incorrect'}">
+            <h4>#${i+1}: ${q.text}</h4><p>You: <b>${uAns||'Skip'}</b> | Answer: <b>${q.answer}</b></p></div>`;
+    });
+    
+    const scorePct = Math.round((correct/max)*100);
+    document.getElementById('reviewScoreText').textContent = `${correct}/${max} (${scorePct}%)`;
+    const pf = document.getElementById('passFailText');
+    pf.textContent = scorePct >= 40 ? "PASS" : "FAIL";
+    pf.style.color = scorePct >= 40 ? "var(--success)" : "var(--danger)";
+    
+    switchViewportContext('reviewSection');
+
+    if(enterpriseState.currentUser.role !== 'guest') {
+        const payload = { 
+            name: enterpriseState.currentUser.name, exam: enterpriseState.activeQuiz.title, 
+            score: scorePct, date: new Date().toISOString() 
+        };
+        enterpriseState.logs.push(payload);
+        if(db) try { await addDoc(collection(db, "activityLogs"), payload); } catch(e){}
+        renderRealtimeAnalyticsDashboard();
+    }
 }
 
-function saveCombinedExamGroupToState() {
-  const name = document.getElementById('groupNameInput').value.trim();
-  const desc = document.getElementById('groupDescInput').value.trim();
-
-  if (!name || activeDraftCompositeIds.length === 0) {
-    displayNotificationToast("Provide dynamic system classification header properties and select nodes.", "error");
-    return;
-  }
-
-  const payload = {
-    id: "group_" + Date.now(),
-    name,
-    description: desc,
-    quizReferences: [...activeDraftCompositeIds]
-  };
-
-  enterpriseState.examGroups.push(payload);
-  persistApplicationStateToStorage();
-
-  document.getElementById('groupNameInput').value = '';
-  document.getElementById('groupDescInput').value = '';
-  activeDraftCompositeIds = [];
-  
-  renderCombinedExamGroupBuilder();
-  displayNotificationToast("Composite collection configuration synchronized to remote environment map pointers.", "success");
-}
-
-// --- FIX 3: ENTERPRISE ANALYTICS RENDERING ENGINE ---
+// --- ANALYTICS & PDF ---
 function renderRealtimeAnalyticsDashboard() {
-  const chartBox = document.getElementById('chartDailyActivity');
-  // High-Performance Vector Graphic (SVG) Responsive Generation Engine Core Implementation
-  chartBox.innerHTML = `
-    <svg viewBox="0 0 500 150" width="100%" height="100%">
-      <path d="M10,130 Q100,20 200,90 T400,40 L490,120" fill="none" stroke="var(--primary)" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="10" cy="130" r="4" fill="var(--accent)"/>
-      <circle cx="200" cy="90" r="4" fill="var(--accent)"/>
-      <circle cx="400" cy="40" r="4" fill="var(--accent)"/>
-      <text x="10" y="145" fill="var(--text-light)" font-size="9">Day 1</text>
-      <text x="200" y="145" fill="var(--text-light)" font-size="9">Day 15</text>
-      <text x="450" y="145" fill="var(--text-light)" font-size="9">Day 30</text>
-    </svg>
-  `;
+    document.getElementById('anaTotalAttempts').textContent = enterpriseState.logs.length;
+    const avg = enterpriseState.logs.length ? enterpriseState.logs.reduce((a,b)=>a+b.score,0)/enterpriseState.logs.length : 0;
+    document.getElementById('anaAvgScore').textContent = `${avg.toFixed(1)}%`;
+    
+    document.getElementById('analyticsRecentTableBody').innerHTML = enterpriseState.logs.slice(-5).reverse().map(l => 
+        `<tr><td>${l.name}</td><td>${l.exam}</td><td>${l.score}%</td></tr>`
+    ).join('');
 
-  document.getElementById('anaPassPercent').textContent = "84.2%";
-  document.getElementById('anaFailPercent').textContent = "15.8%";
-
-  const distBar = document.getElementById('chartDistributionRatio');
-  distBar.innerHTML = '<div style="width: 84.2%; height:100%; background-color:var(--success); float:left;"></div><div style="width: 158%; height:100%; background-color:var(--danger); float:left;"></div>';
-
-  // Compute and Render Standings Dynamic Records
-  const leaderboardTable = document.getElementById('leaderboardTableBody');
-  leaderboardTable.innerHTML = '';
-  
-  const studentRecords = [
-    { rank: "Top Performance Node 1", name: "Suresh Kumar", elements: "14 Solved Blocks", points: "940 Cumulative Points" },
-    { rank: "Top Performance Node 2", name: "Amirtha Varshini", elements: "12 Solved Blocks", points: "890 Cumulative Points" },
-    { rank: "Top Performance Node 3", name: "Kannairam S.", elements: "11 Solved Blocks", points: "855 Cumulative Points" }
-  ];
-
-  studentRecords.forEach(rec => {
-    const row = document.createElement('tr');
-    row.innerHTML = `<td><strong>${rec.rank}</strong></td><td>${rec.name}</td><td>${rec.elements}</td><td>${rec.points}</td>`;
-    leaderboardTable.appendChild(row);
-  });
+    document.getElementById('leaderboardTableBody').innerHTML = [...enterpriseState.logs].sort((a,b)=>b.score-a.score).map((l,i) => 
+        `<tr><td>#${i+1}</td><td><b>${l.name}</b></td><td>${l.exam}</td><td>${l.score}%</td><td>${l.date.split('T')[0]}</td></tr>`
+    ).join('');
 }
 
-// --- FIX 4: HIGH-FIDELITY PDF CENTER EXPORT ENGINE ---
 function synchronizePDFSourceAssetSelector() {
-  const select = document.getElementById('pdfSourceAssetSelect');
-  select.innerHTML = '<option value="">Select Quiz Source Data Node...</option>';
-
-  enterpriseState.quizzes.forEach(q => {
-    const opt = document.createElement('option');
-    opt.value = q.id;
-    opt.textContent = q.title;
-    select.appendChild(opt);
-  });
-
-  select.onchange = (e) => {
-    const simulator = document.getElementById('pdfDocumentSimulator');
-    const matched = enterpriseState.quizzes.find(q => q.id === e.target.value);
-    if (matched) {
-      simulator.innerHTML = `
-        <div class="sim-header">DOCUMENT SYSTEM LAYOUT STRATEGY EXPORT ENGINE PREVIEW</div>
-        <div class="sim-body">
-          <h2 style="font-size:1.1rem; margin-bottom:10px;">${matched.title}</h2>
-          <p style="font-size:0.8rem; margin-bottom:14px; color:#475569;">${matched.description || 'No subtext structural descriptions bound to node context properties.'}</p>
-          <div style="border-top:1px dashed #cbd5e1; padding-top:10px; font-size:0.75rem;">
-            ${matched.questions.map((qs, i) => `<div><strong>Q${i+1}:</strong> ${qs.text.substring(0, 60)}...</div>`).join('')}
-          </div>
-        </div>
-        <div class="sim-footer">Evaluation Mapping Sheet - Total Questions Array Index Count: ${matched.questions.length}</div>
-      `;
-    } else {
-      simulator.innerHTML = '<div class="sim-body">Select a production source data node target parameters element structure block from the dashboard selector panel properties menu framework loop configuration panel block to review formatting patterns before file rendering pipeline finalization threads execution sequences.</div>';
-    }
-  };
+    const sel = document.getElementById('pdfSourceAssetSelect');
+    sel.innerHTML = '<option value="">Select Quiz...</option>' + enterpriseState.quizzes.map(q => `<option value="${q.id}">${q.title}</option>`).join('');
+    sel.onchange = (e) => {
+        const q = enterpriseState.quizzes.find(x => x.id === e.target.value);
+        if(q) document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${q.title}</div><div class="sim-body">${q.questions.length} Items</div>`;
+    };
 }
 
-function triggerHighFidelityPDFExport() {
-  const assetId = document.getElementById('pdfSourceAssetSelect').value;
-  if (!assetId) {
-    displayNotificationToast("Select a valid target repository dataset reference node pointer properties node cluster structural array vector map layer.", "error");
-    return;
-  }
+function triggerHighFidelityPDFExport(isKey = false) {
+    if(!window.jspdf) return displayNotificationToast("PDF Engine Error", "error");
+    const qz = enterpriseState.quizzes.find(q => q.id === document.getElementById('pdfSourceAssetSelect').value);
+    if(!qz) return displayNotificationToast("Select an asset", "error");
 
-  const targetAsset = enterpriseState.quizzes.find(q => q.id === assetId);
-  if (!targetAsset) return;
-
-  displayNotificationToast("Initializing High-Fidelity local document generation routines...", "success");
-
-  // High-Fidelity jsPDF Implementation Engine Execution Matrix Processing
-  setTimeout(() => {
-    if (window.jspdf) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({
-        orientation: document.getElementById('pdfOrientation').value === 'landscape' ? 'l' : 'p',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      doc.setFont("Helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("QUIZ MASTER PRO ENTERPRISE SYSTEM STRUCTURAL DOCUMENTATION", 14, 20);
-      
-      doc.setFont("Helvetica", "normal");
-      doc.setFontSize(11);
-      doc.text(`Target Asset Class Reference: ${targetAsset.title}`, 14, 30);
-      doc.text(`Bound Internal Node Subsets Sequence Parameters Length: ${targetAsset.questions.length} structural elements`, 14, 36);
-
-      let mappingCursorLineY = 46;
-      targetAsset.questions.forEach((q, index) => {
-        if (mappingCursorLineY > 260) {
-          doc.addPage();
-          mappingCursorLineY = 20;
-        }
-        doc.text(`#${index+1}: ${q.text.substring(0, 75)}`, 14, mappingCursorLineY);
-        mappingCursorLineY += 8;
-      });
-
-      doc.save(`QMP_Document_Node_${targetAsset.id}.pdf`);
-      displayNotificationToast("Document download payload transmitted successfully.", "success");
-    } else {
-      // Fallback implementation if downstream script engines drop context pointers
-      window.print();
-    }
-  }, 1200);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(16); doc.text(`QUIZ MASTER PRO: ${qz.title} ${isKey?'(ANSWER KEY)':''}`, 14, 20);
+    
+    let y = 30;
+    qz.questions.forEach((q, i) => {
+        if(y > 270) { doc.addPage(); y = 20; }
+        doc.text(`${i+1}. ${q.text.substring(0, 80)}`, 14, y);
+        if(isKey) { doc.text(`Answer: ${q.answer}`, 20, y+6); y+=14; } 
+        else { doc.text(`A: ${q.a}   B: ${q.b}   C: ${q.c}   D: ${q.d}`, 20, y+6); y+=14; }
+    });
+    doc.save(`${qz.title.replace(/\s+/g, '_')}_${isKey?'Key':'Exam'}.pdf`);
 }
 
-// --- Interactive Guides View Matrix Compiler ---
-function renderActiveGuideView() {
-  const contentBox = document.getElementById('guideContentBody');
-  const contextData = guidesDatabase[enterpriseState.activeGuide];
-  if (contextData) {
-    contentBox.innerHTML = `
-      <h3>${contextData.title}</h3>
-      <p style="margin-top:14px; font-size:0.95rem; color:var(--text-main); line-height:1.6">${contextData.body}</p>
-    `;
-  }
+function renderActiveGuideView(id) { document.getElementById('guideContentBody').innerHTML = `<h3>${guidesDatabase[id].title}</h3><p>${guidesDatabase[id].body}</p>`; }
+function triggerLogTrail(msg) { document.getElementById('adminTerminalLogs').innerHTML += `<br/>[${new Date().toLocaleTimeString()}] ${msg}`; }
+function displayNotificationToast(msg, type='success') {
+    const t = document.createElement('div'); t.className = 'toast-message';
+    t.style.borderLeftColor = type==='error' ? 'var(--danger)' : 'var(--primary)';
+    t.textContent = msg;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => { t.style.animation = 'slideIn 0.2s reverse forwards'; setTimeout(()=>t.remove(),200); }, 3000);
 }
 
-// --- Administrative Core Console Commands Interceptors ---
-function wipeLocalPlatformStateCache() {
-  if (confirm("Execute systematic clean action against localized memory records configuration pools parameters metadata?")) {
-    localStorage.removeItem('QMP_ENTERPRISE_CACHED_STATE');
-    enterpriseState.quizzes = [...defaultMockData];
-    enterpriseState.examGroups = [];
-    persistApplicationStateToStorage();
-    switchViewportContext('homeSection');
-    displayNotificationToast("System tracking states cleared back to default blueprints configurations profiles.", "success");
-  }
-}
-
-function injectDiagnosticTestDataPool() {
-  enterpriseState.quizzes.push({
-    id: "unit_test_injected_" + Date.now(),
-    title: "Systemic Telemetry Diagnostic Testing Blueprint Node",
-    description: "Injected operational target verification properties unit structural matrix element checking logic components vector flow paths.",
-    questions: [
-      { text: "Confirm standard assertion vector integrity flags matching active environment validation criteria profiles.", a: "Passed Flag", b: "Exception Threat", c: "Null Output Pointer Reference", d: "Interrupted Connection Handshake Sequence", answer: "A", marks: 5, time: 1 }
-    ]
-  });
-  persistApplicationStateToStorage();
-  displayNotificationToast("Injected diagnostic target entities appended into active global memory array context loop matrices maps indexes.", "success");
-  if (document.getElementById('librarySection').classList.contains('hidden') === false) renderCentralAssetLibrary();
-}
-
-// --- Universal Logging Architecture Console Handlers ---
-function triggerLogTrail(logStringMessage) {
-  const trackingTimeLabel = new Date().toLocaleTimeString();
-  const compiledOutputString = `[${trackingTimeLabel}] ${logStringMessage}`;
-  enterpriseState.systemLogs.push(compiledOutputString);
-  
-  const terminal = document.getElementById('adminTerminalLogs');
-  if (terminal) {
-    terminal.innerHTML += `<br/>${compiledOutputString}`;
-    terminal.scrollTop = terminal.scrollHeight;
-  }
-}
-
-// --- Graphical Platform Toast Interface Overlay Component ---
-function displayNotificationToast(textMessageString, styleThemeClassType = 'success') {
-  const container = document.getElementById('toastContainer');
-  const elementMessageBlock = document.createElement('div');
-  elementMessageBlock.className = 'toast-message';
-  if (styleThemeClassType === 'error') {
-    elementMessageBlock.style.borderLeft = '4px solid var(--danger)';
-  } else {
-    elementMessageBlock.style.borderLeft = '4px solid var(--primary)';
-  }
-  elementMessageBlock.textContent = textMessageString;
-  
-  container.appendChild(elementMessageBlock);
-  setTimeout(() => {
-    elementMessageBlock.style.animation = 'fadeIn 0.2s ease reverse forwards';
-    setTimeout(() => elementMessageBlock.remove(), 200);
-  }, 3500);
-}
-
-// --- Global API Module Scoping Exposing Interfaces Blocks ---
+// --- GLOBAL EXPORTS ---
 window.appEngineAPI = {
-  launchQuiz: (id) => initializeLiveQuizAttemptRunner(id),
-  stageWorkspace: (id) => {
-    const qz = enterpriseState.quizzes.find(x => x.id === id);
-    if(qz) {
-      activeWorkspaceQuizReference = qz;
-      switchViewportContext('workspaceSection');
+    launchAsset: (id, isGroup) => initializeLiveQuizAttemptRunner(id, isGroup),
+    stageWorkspace: (id) => { activeWorkspaceQuizReference = enterpriseState.quizzes.find(q=>q.id===id); switchViewportContext('workspaceSection'); },
+    duplicateNode: (i) => { enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions)); activeWorkspaceQuizReference.questions.splice(i,0, JSON.parse(JSON.stringify(activeWorkspaceQuizReference.questions[i]))); renderVisualWorkspaceBoard(); },
+    purgeNode: (i) => { enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions)); activeWorkspaceQuizReference.questions.splice(i,1); renderVisualWorkspaceBoard(); },
+    reorderNode: (e, to) => { const from = parseInt(e.dataTransfer.getData('text/plain')); if(from===to) return; enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions)); const el = activeWorkspaceQuizReference.questions.splice(from,1)[0]; activeWorkspaceQuizReference.questions.splice(to,0,el); renderVisualWorkspaceBoard(); },
+    toggleGroupRef: (id) => { activeDraftCompositeIds.includes(id) ? activeDraftCompositeIds.splice(activeDraftCompositeIds.indexOf(id),1) : activeDraftCompositeIds.push(id); renderCompositeTargetZone(); },
+    selectAnswer: (opt) => { enterpriseState.userAnswers[enterpriseState.currentQuestionIndex] = opt; renderRunnerActiveQuestionIndex(); },
+    toggleCreatorTab: (tab) => {
+        document.getElementById('tabManual').classList.toggle('active', tab==='manual');
+        document.getElementById('tabExcel').classList.toggle('active', tab==='excel');
+        document.getElementById('creatorQuestionForm').classList.toggle('hidden', tab!=='manual');
+        document.getElementById('creatorExcelForm').classList.toggle('hidden', tab!=='excel');
     }
-  },
-  duplicateNode: (index) => {
-    if (!activeWorkspaceQuizReference) return;
-    captureWorkspaceSnapshotToHistory();
-    const clonedNode = JSON.parse(JSON.stringify(activeWorkspaceQuizReference.questions[index]));
-    activeWorkspaceQuizReference.questions.splice(index + 1, 0, clonedNode);
-    persistApplicationStateToStorage();
-    renderVisualWorkspaceBoard();
-    displayNotificationToast("Target card duplicate appended successfully.", "success");
-  },
-  purgeNode: (index) => {
-    if (!activeWorkspaceQuizReference) return;
-    captureWorkspaceSnapshotToHistory();
-    activeWorkspaceQuizReference.questions.splice(index, 1);
-    persistApplicationStateToStorage();
-    renderVisualWorkspaceBoard();
-    displayNotificationToast("Target element node stripped from array sequence tracking records context layer list map loops execution framework indices blocks.", "success");
-  },
-  toggleCompositeTargetSelection: (id) => toggleCompositeTargetSelection(id)
 };

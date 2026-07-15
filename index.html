@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&family=Roboto&family=Noto+Sans&family=Courier+New&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  <!-- Dependencies -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
@@ -53,6 +54,7 @@
                   <select id="regRole" class="form-control">
                       <option value="student">I am a Student</option>
                       <option value="teacher">I am a Teacher</option>
+                      <option value="admin">I am an Administrator</option>
                   </select>
               </div>
               <div class="form-group"><input type="text" id="regName" placeholder="Full Name" class="form-control" /></div>
@@ -305,7 +307,9 @@
             <div class="stat-node">Target Asset: <strong id="wsActiveQuizName" style="color:var(--primary);">None Loaded</strong></div>
           </div>
           <div class="workspace-interactive-wrapper">
-            <div id="visualCanvasContainer" class="visual-canvas-grid"></div>
+            <div id="visualCanvasContainer" class="visual-canvas-grid" style="padding: 20px;">
+                <p style="color:var(--text-light); text-align:center; padding-top:20px;">Select an asset from the Library to begin interactive visual editing.</p>
+            </div>
           </div>
         </section>
 
@@ -320,7 +324,7 @@
               <div class="inventory-search-row">
                 <input type="text" id="groupInventorySearch" placeholder="Filter available quizzes..." class="form-control" />
               </div>
-              <div id="groupInventoryContainer" class="inventory-scroll-box"></div>
+              <div id="groupInventoryContainer" class="inventory-scroll-box" style="margin-top: 15px; max-height:400px; overflow-y:auto;"></div>
             </div>
             <div class="group-builder-main-panel">
               <h3>Target Composite Configuration</h3>
@@ -328,12 +332,12 @@
                 <label>Composite Group Name</label>
                 <input type="text" id="groupNameInput" class="form-control" placeholder="E.g., Terminal Secondary Evaluation Block" />
               </div>
-              <div class="operation-control-strip">
-                <button id="groupShuffleBtn" class="btn-secondary"><i class="ri-shuffle-line"></i> Shuffle Elements</button>
-                <button id="groupDeduplicateBtn" class="btn-secondary"><i class="ri-equalizer-line"></i> Clear Duplicates</button>
-                <button id="groupCommitBtn" class="btn-primary"><i class="ri-cloud-upload-line"></i> Save and Initialize Group</button>
+              <div class="operation-control-strip" style="display:flex; gap:10px; margin-bottom:15px; margin-top:10px;">
+                <label class="checkbox-label"><input type="checkbox" id="groupShuffleBtn"/> Shuffle Elements</label>
+                <label class="checkbox-label"><input type="checkbox" id="groupDeduplicateBtn"/> Clear Duplicates</label>
+                <button id="groupCommitBtn" class="btn-primary" style="margin-left:auto;"><i class="ri-cloud-upload-line"></i> Compile & Deploy Group</button>
               </div>
-              <div class="composite-metrics-banner">
+              <div class="composite-metrics-banner" style="padding:10px; background:var(--secondary); border-radius:var(--radius); margin-bottom:15px;">
                 <span>Total Accumulated Pools: <strong id="groupMetricCount">0</strong></span>
               </div>
               <div id="groupCompositeTargetContainer" class="composite-drop-zone">
@@ -467,14 +471,29 @@
         <section id="adminSection" class="view-section hidden">
           <div class="section-header">
             <h2>System Administration & Control Matrix</h2>
-            <p>Perform broad operations, clear remote cloud datastores, update system states, and inspect execution logs.</p>
+            <p>Perform broad operations, manage accounts, clear datastores, and inspect execution logs.</p>
           </div>
           <div class="admin-grid-layout">
+            
+            <div class="admin-action-card" style="grid-column: 1 / -1;">
+              <h3>User Identity Management</h3>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr><th>User ID / Name</th><th>Assigned Role</th><th>Status</th><th>Actions</th></tr>
+                  </thead>
+                  <tbody id="adminUsersTableBody">
+                      <!-- Populated via script -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div class="admin-action-card">
               <h3>System Database Actions</h3>
               <p>Purge local records or migrate legacy datasets manually.</p>
               <div class="btn-vertical-stack">
-                <button id="adminResetDataBtn" class="btn-danger"><i class="ri-delete-bin-5-line"></i> Wipe Local Cache & Re-Initialize Workspace</button>
+                <button id="adminResetDataBtn" class="btn-danger"><i class="ri-delete-bin-5-line"></i> Wipe Local Cache & Re-Initialize</button>
                 <button id="adminForceSyncBtn" class="btn-success"><i class="ri-database-2-line"></i> Force Cloud Sync & Legacy Migration</button>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- V30 FIREBASE INTEGRATION & AUTH MODEL ---
+// --- V31 FIREBASE INTEGRATION & AUTH MODEL ---
 const firebaseConfig = {
     apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
     authDomain: "quiz-master-3e489.firebaseapp.com",
@@ -19,7 +19,7 @@ try {
     console.error("Firebase Init Offline Bypass.");
 }
 
-// --- CORE ENTERPRISE STATE (Unified v30 Model) ---
+// --- CORE ENTERPRISE STATE (Unified v31 Model) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
@@ -48,21 +48,14 @@ const guidesDatabase = {
 let localCreatorQuestionArray = [];
 let activeWorkspaceQuizReference = null;
 let activeDraftCompositeIds = [];
-
-// --- UTILITY: HTML to Raw Text safely for comparisons ---
-function htmlToPdfRawText(htmlStr) {
-    if(!htmlStr) return "";
-    const tmp = document.createElement("DIV");
-    tmp.innerHTML = htmlStr;
-    return tmp.textContent || tmp.innerText || "";
-}
+let currentlyEditingNodeIndex = null;
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v30.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v31.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -164,7 +157,7 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V30 SAFE CLOUD-MERGE ENGINE ---
+// --- V31 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
@@ -186,7 +179,10 @@ async function loadAndMigrateApplicationState() {
                 const quizObj = {
                     id: doc.id,
                     title: data.title || data.metaExam || "Legacy Quiz",
-                    description: data.description || data.metaSubject || "",
+                    description: data.description || "",
+                    metaClass: data.metaClass || "",
+                    metaSubject: data.metaSubject || "",
+                    metaTopic: data.metaTopic || "",
                     questions: data.questions || [],
                     shuffle: data.shuffle || false
                 };
@@ -252,9 +248,9 @@ function registerGlobalSystemEvents() {
 
     document.getElementById('globalSearchInput').addEventListener('input', (e) => processGlobalAutocompleteQuery(e.target.value.trim()));
 
-    // Creator logic
+    // Creator to Workspace bridge logic
     document.getElementById('creatorAppendQuestionBtn').addEventListener('click', handleCreatorQuestionAppend);
-    document.getElementById('creatorSaveQuizBtn').addEventListener('click', commitCompiledQuizToRepository);
+    document.getElementById('creatorToWorkspaceBtn').addEventListener('click', transferCreatorToWorkspace);
     
     // Excel Engine logic
     const excelDropZone = document.getElementById('excelDropZone');
@@ -264,28 +260,12 @@ function registerGlobalSystemEvents() {
     document.getElementById('excelFileInput').addEventListener('change', handleExcelSelect);
     document.getElementById('commitExcelImportBtn').addEventListener('click', commitExcelToArray);
 
-    // Workspace Sync Logic Fixed
+    // Workspace logic
     document.getElementById('wsToggleViewBtn').addEventListener('click', () => {
         enterpriseState.workspaceLayout = enterpriseState.workspaceLayout === 'grid' ? 'list' : 'grid';
         renderVisualWorkspaceBoard();
     });
-    
-    document.getElementById('wsPublishBtn').addEventListener('click', async () => { 
-        persistApplicationStateToStorage(); 
-        if(db && activeWorkspaceQuizReference) {
-            try {
-                // Ensure cloud database receives updated node structure
-                await setDoc(doc(db, "quizzes", activeWorkspaceQuizReference.id), activeWorkspaceQuizReference);
-                displayNotificationToast("Workspace modifications saved to Cloud Data Matrix!", "success");
-            } catch(e) {
-                console.warn("Cloud sync failed during workspace save", e);
-                displayNotificationToast("Workspace saved locally (Offline).", "success");
-            }
-        } else {
-            displayNotificationToast("Workspace saved locally.", "success");
-        }
-    });
-    
+    document.getElementById('wsPublishBtn').addEventListener('click', publishWorkspaceState);
     document.getElementById('wsUndoBtn').addEventListener('click', executeWorkspaceUndoAction);
     document.getElementById('wsRedoBtn').addEventListener('click', executeWorkspaceRedoAction);
 
@@ -363,23 +343,30 @@ function renderCentralAssetLibrary() {
         const isGroup = !!asset.quizReferences;
         const count = isGroup ? asset.quizReferences.length : (asset.questions?.length||0);
         
+        // Metadata Pill compilation
+        let metaTags = '';
+        if(!isGroup && asset.metaClass) metaTags += `<span class="meta-pill">${asset.metaClass}</span>`;
+        if(!isGroup && asset.metaSubject) metaTags += `<span class="meta-pill">${asset.metaSubject}</span>`;
+        if(!isGroup && asset.metaTopic) metaTags += `<span class="meta-pill">${asset.metaTopic}</span>`;
+
         wrapper.innerHTML += `
             <div class="library-asset-card" style="border-top: 4px solid ${isGroup?'var(--success)':'var(--primary)'};">
                 <div class="asset-card-meta">
-                    <span style="font-size:0.7rem; background:${isGroup?'var(--success)':'var(--primary)'}; color:white; padding:2px 6px; border-radius:4px;">${isGroup?'COMBINED EXAM':'QUIZ MODULE'}</span>
-                    <h3 style="margin-top:10px;">${asset.title || asset.name}</h3>
-                    <p>${asset.description || ""}</p>
-                    <div style="font-size:0.8rem; font-weight:700; color:var(--text-light)">Contains: ${count} Nodes</div>
+                    <span style="font-size:0.7rem; background:${isGroup?'var(--success)':'var(--primary)'}; color:white; padding:2px 6px; border-radius:4px; margin-bottom:8px; display:inline-block;">${isGroup?'COMBINED EXAM':'QUIZ MODULE'}</span>
+                    <h3 style="margin-top:5px; margin-bottom: 5px;">${asset.title || asset.name}</h3>
+                    <div style="margin-bottom: 10px;">${metaTags}</div>
+                    <p style="font-size: 0.85rem; color:var(--text-light);">${asset.description || ""}</p>
+                    <div style="font-size:0.8rem; font-weight:700; color:var(--text-main); margin-top:10px;">Contains: ${count} Nodes</div>
                 </div>
                 <div class="asset-action-row">
                     <button class="btn-primary" onclick="window.appEngineAPI.launchAsset('${asset.id}', ${isGroup})"><i class="ri-play-fill"></i> Launch</button>
-                    ${!isGroup && enterpriseState.currentUser.role !== 'guest' ? `<button class="btn-secondary" onclick="window.appEngineAPI.stageWorkspace('${asset.id}')"><i class="ri-layout-grid-line"></i> Edit</button>` : ''}
+                    ${!isGroup && enterpriseState.currentUser.role !== 'guest' ? `<button class="btn-secondary" onclick="window.appEngineAPI.stageWorkspace('${asset.id}')"><i class="ri-layout-grid-line"></i> Edit Canvas</button>` : ''}
                 </div>
             </div>`;
     });
 }
 
-// --- EXCEL IMPORT ENGINE (Advanced Text Resolution Heuristic) ---
+// --- EXCEL IMPORT ENGINE (Rich Text HTML & Correct Answer Context Parsing) ---
 let pendingExcelArray = [];
 
 function handleExcelDrop(e) {
@@ -426,40 +413,36 @@ function parseExcelFile(file) {
                 let qText = getCellContent(R, qIdx);
                 if(!qText) continue;
 
-                let rawAnsCell = htmlToPdfRawText(getCellContent(R, ansIdx)).trim();
-                let ansUpper = rawAnsCell.toUpperCase();
-                let finalAns = 'A'; // Ultimate fallback
-                
-                // Advanced Heuristic Logic: Fixing the "Option A" import mapping error
-                // 1. Direct Letter Mapping check
-                if (/^[A-D]$/.test(ansUpper)) {
-                    finalAns = ansUpper;
-                } 
-                // 2. Exact "Option X" phrase mapping
-                else if (ansUpper.includes('OPTION A') || ansUpper.includes('OPT A')) finalAns = 'A';
-                else if (ansUpper.includes('OPTION B') || ansUpper.includes('OPT B')) finalAns = 'B';
-                else if (ansUpper.includes('OPTION C') || ansUpper.includes('OPT C')) finalAns = 'C';
-                else if (ansUpper.includes('OPTION D') || ansUpper.includes('OPT D')) finalAns = 'D';
-                // 3. Fallback: Intelligent string matching against actual columns text
-                else {
-                    let aTextRaw = htmlToPdfRawText(getCellContent(R, aIdx)).trim().toLowerCase();
-                    let bTextRaw = htmlToPdfRawText(getCellContent(R, bIdx)).trim().toLowerCase();
-                    let cTextRaw = htmlToPdfRawText(getCellContent(R, cIdx)).trim().toLowerCase();
-                    let dTextRaw = htmlToPdfRawText(getCellContent(R, dIdx)).trim().toLowerCase();
-                    let ansCompare = rawAnsCell.toLowerCase();
-                    
-                    if (ansCompare && aTextRaw && (ansCompare === aTextRaw || aTextRaw.includes(ansCompare) || ansCompare.includes(aTextRaw))) finalAns = 'A';
-                    else if (ansCompare && bTextRaw && (ansCompare === bTextRaw || bTextRaw.includes(ansCompare) || ansCompare.includes(bTextRaw))) finalAns = 'B';
-                    else if (ansCompare && cTextRaw && (ansCompare === cTextRaw || cTextRaw.includes(ansCompare) || ansCompare.includes(cTextRaw))) finalAns = 'C';
-                    else if (ansCompare && dTextRaw && (ansCompare === dTextRaw || dTextRaw.includes(ansCompare) || ansCompare.includes(dTextRaw))) finalAns = 'D';
+                let aText = getCellContent(R, aIdx);
+                let bText = getCellContent(R, bIdx);
+                let cText = getCellContent(R, cIdx);
+                let dText = getCellContent(R, dIdx);
+                let ansRaw = getCellContent(R, ansIdx);
+
+                let cleanAns = ansRaw.replace(/<[^>]*>?/gm, '').trim().toUpperCase();
+                let cleanA = aText.replace(/<[^>]*>?/gm, '').trim().toUpperCase();
+                let cleanB = bText.replace(/<[^>]*>?/gm, '').trim().toUpperCase();
+                let cleanC = cText.replace(/<[^>]*>?/gm, '').trim().toUpperCase();
+                let cleanD = dText.replace(/<[^>]*>?/gm, '').trim().toUpperCase();
+
+                let finalAns = 'A'; // Base Fallback
+
+                if (['A','B','C','D'].includes(cleanAns)) {
+                    finalAns = cleanAns;
+                } else {
+                    if (cleanAns === cleanB) finalAns = 'B';
+                    else if (cleanAns === cleanC) finalAns = 'C';
+                    else if (cleanAns === cleanD) finalAns = 'D';
+                    else if (cleanAns === cleanA) finalAns = 'A';
+                    else finalAns = 'A'; 
                 }
                 
                 pendingExcelArray.push({
                     text: qText,
-                    a: getCellContent(R, aIdx),
-                    b: getCellContent(R, bIdx),
-                    c: getCellContent(R, cIdx),
-                    d: getCellContent(R, dIdx),
+                    a: aText,
+                    b: bText,
+                    c: cText,
+                    d: dText,
                     answer: finalAns,
                     marks: 5,
                     time: 2
@@ -483,7 +466,7 @@ function renderExcelPreview() {
     
     const tbody = document.querySelector('#excelPreviewTable tbody');
     tbody.innerHTML = pendingExcelArray.slice(0, 50).map(q => 
-        `<tr><td>${q.text.substring(0,80)}...</td><td>${q.a}</td><td>${q.b}</td><td><mark style="padding:2px 6px; border-radius:4px; font-weight:bold;">${q.answer}</mark></td></tr>`
+        `<tr><td>${q.text.substring(0,80)}...</td><td>${q.a}</td><td>${q.b}</td><td><mark style="font-weight:bold;">${q.answer}</mark></td></tr>`
     ).join('');
     if(pendingExcelArray.length > 50) tbody.innerHTML += `<tr><td colspan="4" style="text-align:center;">... and ${pendingExcelArray.length - 50} more.</td></tr>`;
 }
@@ -493,11 +476,11 @@ function commitExcelToArray() {
     document.getElementById('pendingQuestionsCount').textContent = localCreatorQuestionArray.length;
     document.getElementById('excelDropZone').classList.remove('hidden');
     document.getElementById('excelPreviewContainer').classList.add('hidden');
-    displayNotificationToast(`${pendingExcelArray.length} parsed items injected.`, "success");
+    displayNotificationToast(`${pendingExcelArray.length} parsed items injected. Ready to Transfer to Workspace.`, "success");
     pendingExcelArray = [];
 }
 
-// --- CREATOR STUDIO MANUAL & PUBLISH ---
+// --- CREATOR STUDIO MANUAL ---
 function handleCreatorQuestionAppend() {
     const q = {
         text: document.getElementById('qFormText').value,
@@ -512,50 +495,50 @@ function handleCreatorQuestionAppend() {
     displayNotificationToast("Node appended to volatile array.", "success");
 }
 
-async function commitCompiledQuizToRepository() {
-    const title = document.getElementById('creatorQuizTitle').value.trim();
-    if(!title || !localCreatorQuestionArray.length) return displayNotificationToast("Provide Title and Questions.", "error");
+// --- CREATOR TO WORKSPACE BRIDGE ---
+function transferCreatorToWorkspace() {
+    if(!localCreatorQuestionArray.length) return displayNotificationToast("Provide Questions in the Array first.", "error");
+
+    const title = document.getElementById('creatorQuizTitle').value.trim() || `Draft Matrix ${new Date().toLocaleTimeString()}`;
+    const desc = document.getElementById('creatorQuizDescription').value;
+    const mClass = document.getElementById('creatorClass').value.trim();
+    const mSubject = document.getElementById('creatorSubject').value.trim();
+    const mTopic = document.getElementById('creatorTopic').value.trim();
     
-    const shuffle = document.getElementById('creatorShuffle').checked;
-    
-    // FIX: Using Deep Copy (JSON parse stringify) severs reference ties. The array wasn't displaying in Workspace because it was being emptied below.
-    const payload = { 
-        id: "quiz_" + Date.now(), 
-        title, 
-        description: document.getElementById('creatorQuizDescription').value, 
-        questions: JSON.parse(JSON.stringify(localCreatorQuestionArray)), 
-        shuffle,
+    activeWorkspaceQuizReference = {
+        id: "quiz_" + Date.now(),
+        title: title,
+        description: desc,
+        metaClass: mClass,
+        metaSubject: mSubject,
+        metaTopic: mTopic,
+        questions: [...localCreatorQuestionArray],
+        shuffle: document.getElementById('creatorShuffle').checked,
         createdAt: new Date().toISOString()
     };
-    
-    enterpriseState.quizzes.push(payload);
-    persistApplicationStateToStorage();
-    if(db) try { await setDoc(doc(db, "quizzes", payload.id), payload); } catch(e){}
 
-    // Clear Creator Forms
+    // Clean Creator Slate
     document.getElementById('creatorQuizTitle').value = '';
+    document.getElementById('creatorClass').value = '';
+    document.getElementById('creatorSubject').value = '';
+    document.getElementById('creatorTopic').value = '';
     document.getElementById('creatorQuizDescription').value = '';
     localCreatorQuestionArray = [];
     document.getElementById('pendingQuestionsCount').textContent = 0;
     
-    displayNotificationToast("Quiz Staged. Routing to Workspace...", "success");
-    
-    // FIX: Auto-Opens directly into Workspace modifying visual canvas as requested instead of returning to Library.
-    window.appEngineAPI.stageWorkspace(payload.id);
+    displayNotificationToast("Asset generated. Review and Adjust within Workspace.", "success");
+    switchViewportContext('workspaceSection');
 }
 
-// --- VISUAL WORKSPACE ---
+// --- VISUAL WORKSPACE CANVAS ---
 function renderVisualWorkspaceBoard() {
     const cvs = document.getElementById('visualCanvasContainer');
     cvs.className = enterpriseState.workspaceLayout === 'grid' ? 'visual-canvas-grid' : 'visual-canvas-list';
     
-    if(!activeWorkspaceQuizReference || !activeWorkspaceQuizReference.questions || activeWorkspaceQuizReference.questions.length === 0) {
-        return cvs.innerHTML = `
-            <div style="grid-column:1/-1; padding:60px; text-align:center; background:var(--surface); border-radius:var(--radius); border:2px dashed var(--border);">
-                <i class="ri-file-search-line" style="font-size:3rem; color:var(--text-light); display:block; margin-bottom:10px;"></i>
-                <h3 style="color:var(--text-main);">No Nodes Detected in Canvas</h3>
-                <p style="color:var(--text-light); font-size:0.9rem;">Generate a quiz first via the Creator Studio before mapping it here.</p>
-            </div>`;
+    if(!activeWorkspaceQuizReference || !activeWorkspaceQuizReference.questions) {
+        document.getElementById('wsActiveQuizName').textContent = "None Loaded";
+        document.getElementById('wsStatSelected').textContent = "0";
+        return cvs.innerHTML = '<div style="grid-column:1/-1; padding:40px; text-align:center; color: var(--text-light); font-weight:600;">No Target Asset Configured. Transfer a quiz from Creator or Edit via Library.</div>';
     }
     
     document.getElementById('wsActiveQuizName').textContent = activeWorkspaceQuizReference.title;
@@ -565,14 +548,15 @@ function renderVisualWorkspaceBoard() {
         <div class="workspace-node-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain', ${i})" ondragover="event.preventDefault()" ondrop="window.appEngineAPI.reorderNode(event, ${i})">
             <div class="node-card-header"><span class="node-badge">Node #${i+1}</span>
                 <div class="node-actions">
-                    <button class="btn-node-tool" onclick="window.appEngineAPI.duplicateNode(${i})" title="Duplicate Node"><i class="ri-file-copy-line"></i></button>
-                    <button class="btn-node-tool" style="color:var(--danger)" onclick="window.appEngineAPI.purgeNode(${i})" title="Delete Node"><i class="ri-delete-bin-line"></i></button>
+                    <button class="btn-node-tool" style="color:var(--primary)" onclick="window.appEngineAPI.openEditModal(${i})"><i class="ri-edit-2-line"></i></button>
+                    <button class="btn-node-tool" onclick="window.appEngineAPI.duplicateNode(${i})"><i class="ri-file-copy-line"></i></button>
+                    <button class="btn-node-tool" style="color:var(--danger)" onclick="window.appEngineAPI.purgeNode(${i})"><i class="ri-delete-bin-line"></i></button>
                 </div>
             </div>
-            <div class="node-card-body"><h4 style="font-weight: 500; font-size: 0.95rem; margin-bottom: 8px;">${q.text}</h4>
+            <div class="node-card-body"><div style="font-weight: 500; font-size: 0.95rem; margin-bottom: 8px;">${q.text}</div>
                 <div class="node-options-preview">
-                    <div class="node-option-row ${q.answer==='A'?'correct-key':''}">${q.a}</div>
-                    <div class="node-option-row ${q.answer==='B'?'correct-key':''}">${q.b}</div>
+                    <div class="node-option-row ${q.answer==='A'?'correct-key':''}">${q.a || ''}</div>
+                    <div class="node-option-row ${q.answer==='B'?'correct-key':''}">${q.b || ''}</div>
                     ${q.c ? `<div class="node-option-row ${q.answer==='C'?'correct-key':''}">${q.c}</div>` : ''}
                     ${q.d ? `<div class="node-option-row ${q.answer==='D'?'correct-key':''}">${q.d}</div>` : ''}
                 </div>
@@ -581,17 +565,44 @@ function renderVisualWorkspaceBoard() {
 }
 
 function executeWorkspaceUndoAction() {
-    if(!enterpriseState.undoStack.length) return displayNotificationToast("No history.", "error");
+    if(!enterpriseState.undoStack.length || !activeWorkspaceQuizReference) return displayNotificationToast("No history.", "error");
     enterpriseState.redoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions));
     activeWorkspaceQuizReference.questions = JSON.parse(enterpriseState.undoStack.pop());
     renderVisualWorkspaceBoard();
 }
 
 function executeWorkspaceRedoAction() {
-    if(!enterpriseState.redoStack.length) return displayNotificationToast("No redo history.", "error");
+    if(!enterpriseState.redoStack.length || !activeWorkspaceQuizReference) return displayNotificationToast("No redo history.", "error");
     enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions));
     activeWorkspaceQuizReference.questions = JSON.parse(enterpriseState.redoStack.pop());
     renderVisualWorkspaceBoard();
+}
+
+// Publish from Workspace to actual DB
+async function publishWorkspaceState() {
+    if(!activeWorkspaceQuizReference) return displayNotificationToast("No active workspace asset to publish", "error");
+    if(!activeWorkspaceQuizReference.questions.length) return displayNotificationToast("Cannot save empty quiz.", "error");
+
+    const existingIdx = enterpriseState.quizzes.findIndex(q => q.id === activeWorkspaceQuizReference.id);
+    
+    if (existingIdx >= 0) enterpriseState.quizzes[existingIdx] = activeWorkspaceQuizReference;
+    else enterpriseState.quizzes.push(activeWorkspaceQuizReference);
+    
+    persistApplicationStateToStorage();
+    
+    if(db) {
+        try {
+            await setDoc(doc(db, "quizzes", activeWorkspaceQuizReference.id), activeWorkspaceQuizReference);
+            displayNotificationToast("Asset Published & Synced to Cloud DB Successfully", "success");
+        } catch(e) {
+            displayNotificationToast("Asset Saved Locally (Operating Offline)", "success");
+        }
+    } else {
+        displayNotificationToast("Asset Saved Locally (Operating Offline)", "success");
+    }
+    
+    renderCentralAssetLibrary(); 
+    switchViewportContext('librarySection');
 }
 
 // --- COMBINED EXAMS ---
@@ -658,7 +669,7 @@ function initializeLiveQuizAttemptRunner(id, isGroup = false) {
     switchViewportContext('quizSection');
     document.getElementById('runnerQuizTitle').textContent = enterpriseState.activeQuiz.title;
     
-    clearInterval(enterpriseState.timerInterval); 
+    clearInterval(enterpriseState.timerInterval);
     enterpriseState.timerInterval = setInterval(() => {
         enterpriseState.elapsedSeconds++;
         const pad = v => String(v).padStart(2,'0');
@@ -724,7 +735,7 @@ async function finalizeQuizEvaluationSession() {
     }
 }
 
-// --- ANALYTICS & PDF MATRIX ---
+// --- ANALYTICS & PDF MATRIX (HIGH FIDELITY) ---
 function renderRealtimeAnalyticsDashboard() {
     document.getElementById('anaTotalAttempts').textContent = enterpriseState.logs.length;
     const avg = enterpriseState.logs.length ? enterpriseState.logs.reduce((a,b)=>a+b.score,0)/enterpriseState.logs.length : 0;
@@ -748,31 +759,82 @@ function synchronizePDFSourceAssetSelector() {
     };
 }
 
-function triggerHighFidelityPDFExport(isKey = false) {
-    if(!window.jspdf) return displayNotificationToast("PDF Engine Error", "error");
+// Generates a true HTML DOM preserving original view for PDF snapshotting
+async function triggerHighFidelityPDFExport(isKey = false) {
+    if(!window.jspdf || !window.html2canvas) return displayNotificationToast("PDF rendering engines not fully loaded yet.", "error");
+    
     const qz = enterpriseState.quizzes.find(q => q.id === document.getElementById('pdfSourceAssetSelect').value);
-    if(!qz) return displayNotificationToast("Select an asset", "error");
+    if(!qz) return displayNotificationToast("Select an asset source.", "error");
+
+    const tMarks = document.getElementById('pdfMarksInput').value || 'N/A';
+    const tTime = document.getElementById('pdfTimeInput').value || 'N/A';
+
+    displayNotificationToast("Compiling Document Geometry... Please wait.", "success");
+
+    // Construct a hidden staging container mimicking real paper
+    const printDiv = document.createElement('div');
+    printDiv.style.width = '800px'; 
+    printDiv.style.padding = '40px';
+    printDiv.style.fontFamily = "'Arial', sans-serif";
+    printDiv.style.color = '#000000';
+    printDiv.style.background = '#ffffff';
+    printDiv.style.position = 'absolute';
+    printDiv.style.top = '-9999px'; 
+    printDiv.style.left = '-9999px';
+    
+    let htmlContent = `
+        <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+            <h1 style="font-size: 24px; margin-bottom: 8px;">${qz.title} ${isKey ? '(ANSWER KEY)' : ''}</h1>
+            <div style="font-size: 14px; display: flex; justify-content: space-between; max-width: 600px; margin: 0 auto;">
+                <span><b>Class:</b> ${qz.metaClass || '___'}</span>
+                <span><b>Subject:</b> ${qz.metaSubject || '___'}</span>
+                <span><b>Topic:</b> ${qz.metaTopic || '___'}</span>
+            </div>
+            <div style="font-size: 14px; display: flex; justify-content: space-between; max-width: 600px; margin: 5px auto 0;">
+                <span><b>Total Marks:</b> ${tMarks}</span>
+                <span><b>Time Allowed:</b> ${tTime} Mins</span>
+            </div>
+        </div>
+    `;
+
+    qz.questions.forEach((q, i) => {
+        htmlContent += `<div style="margin-bottom:20px; font-size: 15px; page-break-inside: avoid;">`;
+        htmlContent += `<div style="display:flex;"><strong style="margin-right:8px;">${i+1}.</strong> <div>${q.text}</div></div>`;
+        
+        if(isKey) {
+            htmlContent += `<div style="margin-left:22px; margin-top:6px; color: green; font-weight: bold;">Target Key: ${q.answer}</div>`;
+        } else {
+            htmlContent += `<div style="margin-left: 22px; margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">`;
+            if(q.a) htmlContent += `<div style="display:flex;"><strong style="width: 25px;">A)</strong> <div>${q.a}</div></div>`;
+            if(q.b) htmlContent += `<div style="display:flex;"><strong style="width: 25px;">B)</strong> <div>${q.b}</div></div>`;
+            if(q.c) htmlContent += `<div style="display:flex;"><strong style="width: 25px;">C)</strong> <div>${q.c}</div></div>`;
+            if(q.d) htmlContent += `<div style="display:flex;"><strong style="width: 25px;">D)</strong> <div>${q.d}</div></div>`;
+            htmlContent += `</div>`;
+        }
+        htmlContent += `</div>`;
+    });
+
+    printDiv.innerHTML = htmlContent;
+    document.body.appendChild(printDiv);
 
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(16); doc.text(`QUIZ MASTER PRO: ${qz.title} ${isKey?'(ANSWER KEY)':''}`, 14, 20);
-    
-    let y = 30;
-    qz.questions.forEach((q, i) => {
-        if(y > 270) { doc.addPage(); y = 20; }
-        
-        let cleanedQuestionStr = htmlToPdfRawText(q.text);
-        doc.text(`${i+1}. ${cleanedQuestionStr.substring(0, 80)}`, 14, y);
-        
-        if(isKey) { doc.text(`Answer: ${q.answer}`, 20, y+6); y+=14; } 
-        else { 
-            let aText = htmlToPdfRawText(q.a); let bText = htmlToPdfRawText(q.b);
-            let cText = htmlToPdfRawText(q.c); let dText = htmlToPdfRawText(q.d);
-            doc.text(`A: ${aText}   B: ${bText}   C: ${cText}   D: ${dText}`, 20, y+6); 
-            y+=14; 
-        }
-    });
-    doc.save(`${qz.title.replace(/\s+/g, '_')}_${isKey?'Key':'Exam'}.pdf`);
+    const doc = new jsPDF('p', 'pt', 'a4');
+
+    try {
+        await doc.html(printDiv, {
+            callback: function (doc) {
+                doc.save(`${qz.title.replace(/\s+/g, '_')}_${isKey ? 'Key' : 'Exam'}.pdf`);
+                document.body.removeChild(printDiv);
+            },
+            x: 20,
+            y: 20,
+            width: 550, // fits into A4 points (~595 width)
+            windowWidth: 800 // match the container width for accurate rendering mapping
+        });
+    } catch(err) {
+        document.body.removeChild(printDiv);
+        displayNotificationToast("PDF Generation Failed.", "error");
+    }
 }
 
 function renderActiveGuideView(id) { document.getElementById('guideContentBody').innerHTML = `<h3>${guidesDatabase[id].title}</h3><p>${guidesDatabase[id].body}</p>`; }
@@ -785,13 +847,16 @@ function displayNotificationToast(msg, type='success') {
     setTimeout(() => { t.style.animation = 'slideIn 0.2s reverse forwards'; setTimeout(()=>t.remove(),200); }, 3000);
 }
 
-// --- GLOBAL EXPORTS API ---
+// --- GLOBAL EXPORTS API & RICH TEXT CONTROLS ---
 window.appEngineAPI = {
     launchAsset: (id, isGroup) => initializeLiveQuizAttemptRunner(id, isGroup),
-    stageWorkspace: (id) => { activeWorkspaceQuizReference = enterpriseState.quizzes.find(q=>q.id===id); switchViewportContext('workspaceSection'); },
+    stageWorkspace: (id) => { 
+        activeWorkspaceQuizReference = JSON.parse(JSON.stringify(enterpriseState.quizzes.find(q=>q.id===id))); 
+        switchViewportContext('workspaceSection'); 
+    },
     duplicateNode: (i) => { enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions)); activeWorkspaceQuizReference.questions.splice(i,0, JSON.parse(JSON.stringify(activeWorkspaceQuizReference.questions[i]))); renderVisualWorkspaceBoard(); },
     purgeNode: (i) => { enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions)); activeWorkspaceQuizReference.questions.splice(i,1); renderVisualWorkspaceBoard(); },
-    reorderNode: (e, to) => { const from = parseInt(e.dataTransfer.getData('text/plain')); if(from===to) return; enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions)); const el = activeWorkspaceQuizReference.questions.splice(from,1)[0]; activeWorkspaceQuizReference.questions.splice(to,0,el); renderVisualWorkspaceBoard(); },
+    reorderNode: (e, to) => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData('text/plain')); if(from===to || isNaN(from)) return; enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions)); const el = activeWorkspaceQuizReference.questions.splice(from,1)[0]; activeWorkspaceQuizReference.questions.splice(to,0,el); renderVisualWorkspaceBoard(); },
     toggleGroupRef: (id) => { activeDraftCompositeIds.includes(id) ? activeDraftCompositeIds.splice(activeDraftCompositeIds.indexOf(id),1) : activeDraftCompositeIds.push(id); renderCompositeTargetZone(); },
     selectAnswer: (opt) => { enterpriseState.userAnswers[enterpriseState.currentQuestionIndex] = opt; renderRunnerActiveQuestionIndex(); },
     toggleCreatorTab: (tab) => {
@@ -799,5 +864,48 @@ window.appEngineAPI = {
         document.getElementById('tabExcel').classList.toggle('active', tab==='excel');
         document.getElementById('creatorQuestionForm').classList.toggle('hidden', tab!=='manual');
         document.getElementById('creatorExcelForm').classList.toggle('hidden', tab!=='excel');
+    },
+    
+    // Rich Text Editor Specific Logic
+    openEditModal: (i) => {
+        currentlyEditingNodeIndex = i;
+        const q = activeWorkspaceQuizReference.questions[i];
+        document.getElementById('rtEditQuestion').innerHTML = q.text || '';
+        document.getElementById('rtEditOptA').innerHTML = q.a || '';
+        document.getElementById('rtEditOptB').innerHTML = q.b || '';
+        document.getElementById('rtEditOptC').innerHTML = q.c || '';
+        document.getElementById('rtEditOptD').innerHTML = q.d || '';
+        document.getElementById('rtEditAnswer').value = q.answer || 'A';
+        document.getElementById('richTextEditorModal').classList.remove('hidden');
+    },
+    closeEditModal: () => {
+        document.getElementById('richTextEditorModal').classList.add('hidden');
+        currentlyEditingNodeIndex = null;
+    },
+    saveEditModal: () => {
+        if(currentlyEditingNodeIndex === null) return;
+        enterpriseState.undoStack.push(JSON.stringify(activeWorkspaceQuizReference.questions));
+        
+        activeWorkspaceQuizReference.questions[currentlyEditingNodeIndex] = {
+            text: document.getElementById('rtEditQuestion').innerHTML,
+            a: document.getElementById('rtEditOptA').innerHTML,
+            b: document.getElementById('rtEditOptB').innerHTML,
+            c: document.getElementById('rtEditOptC').innerHTML,
+            d: document.getElementById('rtEditOptD').innerHTML,
+            answer: document.getElementById('rtEditAnswer').value,
+            marks: 5, time: 2
+        };
+        
+        window.appEngineAPI.closeEditModal();
+        renderVisualWorkspaceBoard();
+        displayNotificationToast("Node Updated Globally.", "success");
+    },
+    toggleTextCase: () => {
+        let selection = window.getSelection();
+        if(!selection.isCollapsed) {
+            let text = selection.toString();
+            let newText = text === text.toUpperCase() ? text.toLowerCase() : text.toUpperCase();
+            document.execCommand('insertText', false, newText);
+        }
     }
 };

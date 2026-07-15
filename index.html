@@ -3,20 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Quiz Master Pro v30 Enterprise (Workspace Unified)</title>
+  <title>Quiz Master Pro v31 Enterprise (Unified)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700&family=Roboto&family=Noto+Sans&family=Courier+New&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  <!-- Core Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+  <!-- PDF & Canvas Rendering Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
   <div id="toastContainer" class="toast-container"></div>
 
+  <!-- AUTH GATE -->
   <main class="container" id="welcomeGate">
       <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: var(--primary); font-size: 2.5rem; margin-bottom: 10px;"><i class="ri-braces-line"></i> Quiz Master Pro</h1>
@@ -115,6 +118,7 @@
 
       <div class="view-container">
 
+        <!-- DASHBOARD -->
         <section id="homeSection" class="view-section">
           <div class="welcome-hero">
             <h1>Welcome Back, <span id="welcomeUserName">Professional</span></h1>
@@ -145,6 +149,7 @@
           </div>
         </section>
 
+        <!-- LIBRARY -->
         <section id="librarySection" class="view-section hidden">
           <div class="section-header">
             <h2>Central Asset Library</h2>
@@ -160,6 +165,7 @@
           <div id="libraryContainer" class="library-grid-layout"></div>
         </section>
 
+        <!-- QUIZ RUNNER -->
         <section id="quizSection" class="view-section hidden">
           <div class="quiz-runner-box">
             <div class="runner-header">
@@ -184,6 +190,7 @@
           </div>
         </section>
 
+        <!-- CREATOR STUDIO -->
         <section id="creatorSection" class="view-section hidden">
           <div class="section-header">
             <h2>Quiz Creator Studio</h2>
@@ -191,9 +198,24 @@
           </div>
           
           <div class="creator-card">
+            <!-- Asset Metadata -->
             <div class="form-group">
               <label for="creatorQuizTitle">Quiz Structural Title</label>
               <input type="text" id="creatorQuizTitle" class="form-control" placeholder="Enter quiz title..." />
+            </div>
+            <div class="form-group-row">
+                <div class="form-group">
+                    <label>Class / Grade</label>
+                    <input type="text" id="creatorClass" class="form-control" placeholder="e.g., 10th Grade" />
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" id="creatorSubject" class="form-control" placeholder="e.g., Science" />
+                </div>
+                <div class="form-group">
+                    <label>Topic</label>
+                    <input type="text" id="creatorTopic" class="form-control" placeholder="e.g., Physics" />
+                </div>
             </div>
             <div class="form-group">
               <label for="creatorQuizDescription">Structural Description</label>
@@ -256,11 +278,12 @@
 
             <div class="workspace-action-row" style="margin-top:20px; border-top: 1px solid var(--border); padding-top: 20px;">
               <div style="margin-bottom: 15px;">Pending Nodes in Memory Array: <strong id="pendingQuestionsCount">0</strong></div>
-              <button id="creatorSaveQuizBtn" class="btn-primary btn-full"><i class="ri-magic-line"></i> Compile Database & Auto-Open in Workspace</button>
+              <button id="creatorToWorkspaceBtn" class="btn-primary btn-full"><i class="ri-brush-line"></i> Generate Canvas & Edit in Workspace</button>
             </div>
           </div>
         </section>
 
+        <!-- WORKSPACE -->
         <section id="workspaceSection" class="view-section hidden">
           <div class="workspace-header-panel">
             <div>
@@ -271,7 +294,7 @@
               <button id="wsToggleViewBtn" class="btn-secondary"><i class="ri-grid-fill"></i> Toggle View</button>
               <button id="wsUndoBtn" class="btn-icon-action" title="Undo"><i class="ri-arrow-go-back-line"></i></button>
               <button id="wsRedoBtn" class="btn-icon-action" title="Redo"><i class="ri-arrow-go-forward-line"></i></button>
-              <button id="wsPublishBtn" class="btn-success"><i class="ri-send-plane-fill"></i> Save State To Cloud</button>
+              <button id="wsPublishBtn" class="btn-success"><i class="ri-cloud-upload-line"></i> Save State To Cloud</button>
             </div>
           </div>
           <div class="workspace-statistics-bar">
@@ -283,6 +306,7 @@
           </div>
         </section>
 
+        <!-- COMBINED GROUPS -->
         <section id="groupsSection" class="view-section hidden">
           <div class="section-header">
             <h2>Combined Exam Processing Matrix</h2>
@@ -317,6 +341,7 @@
           </div>
         </section>
 
+        <!-- ANALYTICS -->
         <section id="analyticsSection" class="view-section hidden">
           <div class="section-header">
             <h2>Enterprise Statistical Dashboard</h2>
@@ -346,6 +371,7 @@
           </div>
         </section>
 
+        <!-- LEADERBOARD -->
         <section id="leaderboardSection" class="view-section hidden">
           <div class="section-header">
             <h2>Global Institutional Standings</h2>
@@ -361,10 +387,11 @@
           </div>
         </section>
 
+        <!-- PDF CENTER -->
         <section id="pdfSection" class="view-section hidden">
           <div class="section-header">
             <h2>High-Fidelity Document Generation Center</h2>
-            <p>Compile production ready PDF files containing evaluation matrices and answer keys.</p>
+            <p>Compile production ready PDF files retaining full original rich text, colors, and formatting matrices.</p>
           </div>
           <div class="pdf-center-grid">
             <div class="pdf-config-panel">
@@ -373,12 +400,15 @@
                 <label>Target Source File</label>
                 <select id="pdfSourceAssetSelect" class="form-control"><option value="">Select Quiz Source Data Node...</option></select>
               </div>
-              <div class="form-group">
-                <label>Document Layout Strategy</label>
-                <select id="pdfOrientation" class="form-control">
-                  <option value="portrait">Standard Portrait Profile</option>
-                  <option value="landscape">Extended Landscape Sheet</option>
-                </select>
+              <div class="form-group-row">
+                  <div class="form-group">
+                      <label>Total Marks (Header)</label>
+                      <input type="number" id="pdfMarksInput" class="form-control" placeholder="e.g. 100" />
+                  </div>
+                  <div class="form-group">
+                      <label>Time Allowed (Minutes)</label>
+                      <input type="number" id="pdfTimeInput" class="form-control" placeholder="e.g. 90" />
+                  </div>
               </div>
               <div class="pdf-action-block" style="margin-top:20px;">
                 <button id="pdfGenerateDownloadBtn" class="btn-primary btn-full"><i class="ri-file-download-line"></i> Generate Document</button>
@@ -396,6 +426,7 @@
           </div>
         </section>
 
+        <!-- GUIDES -->
         <section id="guidesSection" class="view-section hidden">
           <div class="guides-container-layout">
             <div class="guides-navigation-tree">
@@ -413,6 +444,7 @@
           </div>
         </section>
 
+        <!-- PROFILE -->
         <section id="profileSection" class="view-section hidden">
           <div class="section-header">
             <h2>Identity Profile Configuration</h2>
@@ -435,6 +467,7 @@
           </div>
         </section>
 
+        <!-- ADMIN -->
         <section id="adminSection" class="view-section hidden">
           <div class="section-header">
             <h2>System Administration & Control Matrix</h2>
@@ -452,13 +485,14 @@
             <div class="admin-action-card">
               <h3>System Security & Audit Trail Logs</h3>
               <div class="log-terminal-output" id="adminTerminalLogs">
-                [SYSTEM LOG ENVIRONMENT INITIATED v30.1]<br/>
+                [SYSTEM LOG ENVIRONMENT INITIATED v31.1]<br/>
                 [TELEMETRY] Listening to active visual DOM mutation matrices...
               </div>
             </div>
           </div>
         </section>
 
+        <!-- REVIEW -->
         <section id="reviewSection" class="view-section hidden">
           <div class="section-header">
             <h2>Evaluation Attempt Analysis</h2>
@@ -474,6 +508,85 @@
 
       </div>
     </main>
+  </div>
+
+  <!-- RICH TEXT EDITOR MODAL FOR WORKSPACE -->
+  <div id="richTextEditorModal" class="modal-overlay hidden">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h3>Edit Assessment Node</h3>
+              <button class="btn-icon-toggle" onclick="window.appEngineAPI.closeEditModal()"><i class="ri-close-line"></i></button>
+          </div>
+          
+          <div class="wysiwyg-toolbar">
+              <button class="wysiwyg-btn" title="Bold" onclick="document.execCommand('bold', false, null)"><i class="ri-bold"></i></button>
+              <button class="wysiwyg-btn" title="Italic" onclick="document.execCommand('italic', false, null)"><i class="ri-italic"></i></button>
+              <button class="wysiwyg-btn" title="Underline" onclick="document.execCommand('underline', false, null)"><i class="ri-underline"></i></button>
+              <div class="toolbar-divider"></div>
+              <button class="wysiwyg-btn" title="Subscript" onclick="document.execCommand('subscript', false, null)">X<sub>2</sub></button>
+              <button class="wysiwyg-btn" title="Superscript" onclick="document.execCommand('superscript', false, null)">X<sup>2</sup></button>
+              <button class="wysiwyg-btn" title="Toggle Uppercase/Lowercase" onclick="window.appEngineAPI.toggleTextCase()">Aa</button>
+              <div class="toolbar-divider"></div>
+              <input type="color" class="color-picker" title="Text Color" onchange="document.execCommand('foreColor', false, this.value)">
+              <div class="toolbar-divider"></div>
+              <select class="symbol-dropdown" onchange="if(this.value){ document.execCommand('insertText', false, this.value); this.value=''; }">
+                  <option value="">+ Symbols</option>
+                  <option value="√">√ (Root)</option>
+                  <option value="π">π (Pi)</option>
+                  <option value="θ">θ (Theta)</option>
+                  <option value="Δ">Δ (Delta)</option>
+                  <option value="∑</option>
+                  <option value="∞">∞ (Infinity)</option>
+                  <option value="±">± (Plus-Minus)</option>
+                  <option value="÷">÷ (Divide)</option>
+                  <option value="×">× (Multiply)</option>
+                  <option value="°">° (Degree)</option>
+                  <option value="α">α (Alpha)</option>
+                  <option value="β">β (Beta)</option>
+                  <option value="Ω">Ω (Omega)</option>
+              </select>
+          </div>
+
+          <div class="modal-body">
+              <div class="form-group">
+                  <label>Question Text</label>
+                  <div id="rtEditQuestion" class="rich-text-area" contenteditable="true"></div>
+              </div>
+              <div class="form-group-row">
+                  <div class="form-group">
+                      <label>Option A</label>
+                      <div id="rtEditOptA" class="rich-text-area" contenteditable="true"></div>
+                  </div>
+                  <div class="form-group">
+                      <label>Option B</label>
+                      <div id="rtEditOptB" class="rich-text-area" contenteditable="true"></div>
+                  </div>
+              </div>
+              <div class="form-group-row">
+                  <div class="form-group">
+                      <label>Option C</label>
+                      <div id="rtEditOptC" class="rich-text-area" contenteditable="true"></div>
+                  </div>
+                  <div class="form-group">
+                      <label>Option D</label>
+                      <div id="rtEditOptD" class="rich-text-area" contenteditable="true"></div>
+                  </div>
+              </div>
+              <div class="form-group">
+                  <label>Correct Answer Target (A, B, C, or D)</label>
+                  <select id="rtEditAnswer" class="form-control">
+                      <option value="A">Option A</option>
+                      <option value="B">Option B</option>
+                      <option value="C">Option C</option>
+                      <option value="D">Option D</option>
+                  </select>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn-secondary" onclick="window.appEngineAPI.closeEditModal()">Cancel</button>
+              <button class="btn-primary" onclick="window.appEngineAPI.saveEditModal()">Save Node Modifications</button>
+          </div>
+      </div>
   </div>
 
   <script src="script.js" type="module"></script>

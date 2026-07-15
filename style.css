@@ -35,7 +35,7 @@ body.dark-mode {
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Roboto', sans-serif; }
 body { background-color: var(--bg-body); color: var(--text-main); overflow-x: hidden; transition: background-color 0.3s ease, color 0.3s ease; }
 
-/* --- AUTH GATE SYSTEM (From v27) --- */
+/* --- AUTH GATE SYSTEM --- */
 .container { max-width: 1100px; margin: 40px auto; padding: 0 15px; }
 .gate-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
 .gate-card { background: var(--surface); padding: 30px; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow); }
@@ -103,7 +103,9 @@ body { background-color: var(--bg-body); color: var(--text-main); overflow-x: hi
 .form-control { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); background-color: var(--surface); color: var(--text-main); font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
 .form-control:focus { border-color: var(--primary); }
 textarea.form-control { min-height: 100px; resize: vertical; }
-.form-group { margin-bottom: 18px; }
+.form-group { margin-bottom: 18px; width: 100%; }
+.form-group-row { display: flex; gap: 16px; width: 100%; margin-bottom: 18px; }
+.form-group-row .form-group { margin-bottom: 0; flex: 1; }
 .form-group label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
 .form-divider { border: 0; height: 1px; background-color: var(--border); margin: 24px 0; }
 
@@ -152,9 +154,26 @@ textarea.form-control { min-height: 100px; resize: vertical; }
 .workspace-node-card:active { cursor: grabbing; transform: scale(0.98); }
 .node-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .node-badge { font-size: 0.75rem; background-color: var(--secondary); padding: 4px 8px; border-radius: 6px; font-weight: 700; }
-.btn-node-tool { background: transparent; border: none; color: var(--text-light); cursor: pointer; padding: 4px; font-size: 1rem; border-radius: 4px; }
+.btn-node-tool { background: transparent; border: none; color: var(--text-light); cursor: pointer; padding: 4px; font-size: 1rem; border-radius: 4px; transition: color 0.2s; }
+.btn-node-tool:hover { color: var(--primary); }
 .node-options-preview { font-size: 0.82rem; color: var(--text-light); display: flex; flex-direction: column; gap: 4px; }
 .node-option-row.correct-key { color: var(--success); font-weight: 700; }
+
+/* --- Editor Modal --- */
+.modal-overlay { position: fixed; top:0; left:0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+.modal-content { background: var(--surface); border-radius: var(--radius); width: 90%; max-width: 850px; border: 1px solid var(--border); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); display: flex; flex-direction: column; max-height: 90vh; }
+.modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { font-size: 1.2rem; font-weight: 700; color: var(--primary); margin:0; }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; }
+.rich-text-area { width: 100%; min-height: 60px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background-color: var(--bg-body); font-size: 0.95rem; outline: none; transition: border 0.2s; max-height: 200px; overflow-y: auto; }
+.rich-text-area:focus { border-color: var(--primary); }
+.wysiwyg-toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 24px; background: var(--secondary); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.wysiwyg-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); cursor: pointer; padding: 6px 12px; border-radius: 6px; font-weight: 600; transition: all 0.2s; font-size: 0.9rem; }
+.wysiwyg-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+.toolbar-divider { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+.color-picker { border: none; border-radius: 4px; padding: 0; width: 30px; height: 30px; cursor: pointer; background: transparent; }
+.symbol-dropdown { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-main); font-weight: 600; cursor: pointer; outline: none; }
 
 /* --- Groups & UI --- */
 .group-builder-layout { display: grid; grid-template-columns: 320px 1fr; gap: 24px; }
@@ -179,6 +198,7 @@ td { padding: 14px 18px; border-bottom: 1px solid var(--border); color: var(--te
 .library-grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
 .library-asset-card { background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; }
 .asset-action-row { display: flex; gap: 10px; margin-top:15px; }
+.meta-pill { background-color: var(--secondary); color: var(--text-main); font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; margin-right: 6px; font-weight: 600; border: 1px solid var(--border); display:inline-block; margin-bottom:4px; }
 
 .pdf-center-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
 .pdf-config-panel { background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
@@ -210,4 +230,5 @@ td { padding: 14px 18px; border-bottom: 1px solid var(--border); color: var(--te
   .sidebar.mobile-open { transform: translateX(0); }
   .main-content { margin-left: 0 !important; }
   .pdf-center-grid, .group-builder-layout, .admin-grid-layout, .guides-container-layout { grid-template-columns: 1fr; }
+  .form-group-row { flex-direction: column; gap: 0; }
 }

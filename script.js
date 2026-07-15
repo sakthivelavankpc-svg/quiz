@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- V29 FIREBASE INTEGRATION & AUTH MODEL ---
+// --- V30 FIREBASE INTEGRATION & AUTH MODEL ---
 const firebaseConfig = {
     apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
     authDomain: "quiz-master-3e489.firebaseapp.com",
@@ -19,7 +19,7 @@ try {
     console.error("Firebase Init Offline Bypass.");
 }
 
-// --- CORE ENTERPRISE STATE (Unified v29 Model) ---
+// --- CORE ENTERPRISE STATE (Unified v30 Model) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
@@ -49,12 +49,20 @@ let localCreatorQuestionArray = [];
 let activeWorkspaceQuizReference = null;
 let activeDraftCompositeIds = [];
 
+// --- UTILITY: HTML to Raw Text safely for comparisons ---
+function htmlToPdfRawText(htmlStr) {
+    if(!htmlStr) return "";
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = htmlStr;
+    return tmp.textContent || tmp.innerText || "";
+}
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v29.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v30.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -94,7 +102,6 @@ async function handleLogin() {
         }
         throw new Error("Invalid Cloud Credentials");
     } catch(e) {
-        // Safe Offline fallback checking against localized registration storage preventing the 'student' force-overwrite bug.
         let offlineUsers = JSON.parse(localStorage.getItem('QMP_OFFLINE_USERS') || '[]');
         const localU = offlineUsers.find(x => (x.email === id || x.userId === id) && x.password === pass);
         if (localU) return grantAccess(localU.role, localU);
@@ -112,7 +119,6 @@ async function handleRegister() {
     
     const payload = { role, name, email, password, userId: `${role.substring(0,3).toUpperCase()}-${Math.floor(10000+Math.random()*90000)}` };
     
-    // Save locally to prevent lockouts during DB drops
     let offlineUsers = JSON.parse(localStorage.getItem('QMP_OFFLINE_USERS') || '[]');
     offlineUsers.push(payload);
     localStorage.setItem('QMP_OFFLINE_USERS', JSON.stringify(offlineUsers));
@@ -147,7 +153,6 @@ async function grantAccess(role, profile) {
     document.getElementById('profRole').value = role.toUpperCase();
     document.getElementById('profNameInput').value = profile.name;
 
-    // Role-based UI locking
     document.querySelectorAll('.auth-required').forEach(el => {
         if (role === 'guest' || role === 'student') el.classList.add('hidden');
         else el.classList.remove('hidden');
@@ -159,12 +164,11 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V29 SAFE CLOUD-MERGE ENGINE ---
+// --- V30 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
     const localCache = JSON.parse(localStorage.getItem('QMP_ENTERPRISE_CACHED_STATE') || '{"quizzes":[],"examGroups":[]}');
-    // Load local first so UI doesn't appear empty if DB fails
     enterpriseState.quizzes = localCache.quizzes || [];
     enterpriseState.examGroups = localCache.examGroups || [];
     
@@ -176,7 +180,6 @@ async function loadAndMigrateApplicationState() {
                 getDocs(collection(db, "activityLogs"))
             ]);
             
-            // Migrate Quizzes cleanly preventing duplication
             qSnap.docs.forEach(doc => {
                 const data = doc.data();
                 const existingIndex = enterpriseState.quizzes.findIndex(q => q.id === doc.id);
@@ -191,7 +194,6 @@ async function loadAndMigrateApplicationState() {
                 else enterpriseState.quizzes[existingIndex] = quizObj;
             });
             
-            // Migrate Groups
             gSnap.docs.forEach(doc => {
                 const data = doc.data();
                 const existingIndex = enterpriseState.examGroups.findIndex(g => g.id === doc.id);
@@ -211,7 +213,7 @@ async function loadAndMigrateApplicationState() {
     }
 
     persistApplicationStateToStorage();
-    renderCentralAssetLibrary(); // Triggers UI render correctly after fetch
+    renderCentralAssetLibrary(); 
     renderRealtimeAnalyticsDashboard();
 }
 
@@ -262,12 +264,28 @@ function registerGlobalSystemEvents() {
     document.getElementById('excelFileInput').addEventListener('change', handleExcelSelect);
     document.getElementById('commitExcelImportBtn').addEventListener('click', commitExcelToArray);
 
-    // Workspace
+    // Workspace Sync Logic Fixed
     document.getElementById('wsToggleViewBtn').addEventListener('click', () => {
         enterpriseState.workspaceLayout = enterpriseState.workspaceLayout === 'grid' ? 'list' : 'grid';
         renderVisualWorkspaceBoard();
     });
-    document.getElementById('wsPublishBtn').addEventListener('click', () => { persistApplicationStateToStorage(); displayNotificationToast("Workspace saved", "success"); });
+    
+    document.getElementById('wsPublishBtn').addEventListener('click', async () => { 
+        persistApplicationStateToStorage(); 
+        if(db && activeWorkspaceQuizReference) {
+            try {
+                // Ensure cloud database receives updated node structure
+                await setDoc(doc(db, "quizzes", activeWorkspaceQuizReference.id), activeWorkspaceQuizReference);
+                displayNotificationToast("Workspace modifications saved to Cloud Data Matrix!", "success");
+            } catch(e) {
+                console.warn("Cloud sync failed during workspace save", e);
+                displayNotificationToast("Workspace saved locally (Offline).", "success");
+            }
+        } else {
+            displayNotificationToast("Workspace saved locally.", "success");
+        }
+    });
+    
     document.getElementById('wsUndoBtn').addEventListener('click', executeWorkspaceUndoAction);
     document.getElementById('wsRedoBtn').addEventListener('click', executeWorkspaceRedoAction);
 
@@ -361,7 +379,7 @@ function renderCentralAssetLibrary() {
     });
 }
 
-// --- EXCEL IMPORT ENGINE (Rich Text HTML Supported Parsing) ---
+// --- EXCEL IMPORT ENGINE (Advanced Text Resolution Heuristic) ---
 let pendingExcelArray = [];
 
 function handleExcelDrop(e) {
@@ -396,12 +414,11 @@ function parseExcelFile(file) {
             pendingExcelArray = [];
             const range = XLSX.utils.decode_range(ws['!ref']);
 
-            // Intelligent Cell Extractor - Fallback loop mapping HTML structural styles natively formatted in Excel
             const getCellContent = (R, C) => {
                 if (C === -1) return "";
                 const cell = ws[XLSX.utils.encode_cell({r: R, c: C})];
                 if (!cell) return "";
-                let content = cell.h ? cell.h : (cell.w ? cell.w : cell.v); // cell.h retains bold/italic HTML string overrides natively
+                let content = cell.h ? cell.h : (cell.w ? cell.w : cell.v);
                 return String(content).trim();
             };
 
@@ -409,12 +426,36 @@ function parseExcelFile(file) {
                 let qText = getCellContent(R, qIdx);
                 if(!qText) continue;
 
-                // Scrub innerHTML from the Target Answer strictly evaluating [A, B, C, D]
-                let ansRawText = getCellContent(R, ansIdx).toUpperCase().replace(/<[^>]*>?/gm, '');
-                let finalAns = ['A','B','C','D'].includes(ansRawText) ? ansRawText : 'A';
+                let rawAnsCell = htmlToPdfRawText(getCellContent(R, ansIdx)).trim();
+                let ansUpper = rawAnsCell.toUpperCase();
+                let finalAns = 'A'; // Ultimate fallback
+                
+                // Advanced Heuristic Logic: Fixing the "Option A" import mapping error
+                // 1. Direct Letter Mapping check
+                if (/^[A-D]$/.test(ansUpper)) {
+                    finalAns = ansUpper;
+                } 
+                // 2. Exact "Option X" phrase mapping
+                else if (ansUpper.includes('OPTION A') || ansUpper.includes('OPT A')) finalAns = 'A';
+                else if (ansUpper.includes('OPTION B') || ansUpper.includes('OPT B')) finalAns = 'B';
+                else if (ansUpper.includes('OPTION C') || ansUpper.includes('OPT C')) finalAns = 'C';
+                else if (ansUpper.includes('OPTION D') || ansUpper.includes('OPT D')) finalAns = 'D';
+                // 3. Fallback: Intelligent string matching against actual columns text
+                else {
+                    let aTextRaw = htmlToPdfRawText(getCellContent(R, aIdx)).trim().toLowerCase();
+                    let bTextRaw = htmlToPdfRawText(getCellContent(R, bIdx)).trim().toLowerCase();
+                    let cTextRaw = htmlToPdfRawText(getCellContent(R, cIdx)).trim().toLowerCase();
+                    let dTextRaw = htmlToPdfRawText(getCellContent(R, dIdx)).trim().toLowerCase();
+                    let ansCompare = rawAnsCell.toLowerCase();
+                    
+                    if (ansCompare && aTextRaw && (ansCompare === aTextRaw || aTextRaw.includes(ansCompare) || ansCompare.includes(aTextRaw))) finalAns = 'A';
+                    else if (ansCompare && bTextRaw && (ansCompare === bTextRaw || bTextRaw.includes(ansCompare) || ansCompare.includes(bTextRaw))) finalAns = 'B';
+                    else if (ansCompare && cTextRaw && (ansCompare === cTextRaw || cTextRaw.includes(ansCompare) || ansCompare.includes(cTextRaw))) finalAns = 'C';
+                    else if (ansCompare && dTextRaw && (ansCompare === dTextRaw || dTextRaw.includes(ansCompare) || ansCompare.includes(dTextRaw))) finalAns = 'D';
+                }
                 
                 pendingExcelArray.push({
-                    text: qText, // Passes inline HTML stylings natively to the database
+                    text: qText,
                     a: getCellContent(R, aIdx),
                     b: getCellContent(R, bIdx),
                     c: getCellContent(R, cIdx),
@@ -441,9 +482,8 @@ function renderExcelPreview() {
     document.getElementById('excelParsedCount').textContent = pendingExcelArray.length;
     
     const tbody = document.querySelector('#excelPreviewTable tbody');
-    // We use .innerHTML structurally resolving rich text injections safely for preview mapping
     tbody.innerHTML = pendingExcelArray.slice(0, 50).map(q => 
-        `<tr><td>${q.text.substring(0,80)}...</td><td>${q.a}</td><td>${q.b}</td><td><mark>${q.answer}</mark></td></tr>`
+        `<tr><td>${q.text.substring(0,80)}...</td><td>${q.a}</td><td>${q.b}</td><td><mark style="padding:2px 6px; border-radius:4px; font-weight:bold;">${q.answer}</mark></td></tr>`
     ).join('');
     if(pendingExcelArray.length > 50) tbody.innerHTML += `<tr><td colspan="4" style="text-align:center;">... and ${pendingExcelArray.length - 50} more.</td></tr>`;
 }
@@ -477,11 +517,13 @@ async function commitCompiledQuizToRepository() {
     if(!title || !localCreatorQuestionArray.length) return displayNotificationToast("Provide Title and Questions.", "error");
     
     const shuffle = document.getElementById('creatorShuffle').checked;
+    
+    // FIX: Using Deep Copy (JSON parse stringify) severs reference ties. The array wasn't displaying in Workspace because it was being emptied below.
     const payload = { 
         id: "quiz_" + Date.now(), 
         title, 
         description: document.getElementById('creatorQuizDescription').value, 
-        questions: localCreatorQuestionArray, 
+        questions: JSON.parse(JSON.stringify(localCreatorQuestionArray)), 
         shuffle,
         createdAt: new Date().toISOString()
     };
@@ -490,20 +532,31 @@ async function commitCompiledQuizToRepository() {
     persistApplicationStateToStorage();
     if(db) try { await setDoc(doc(db, "quizzes", payload.id), payload); } catch(e){}
 
+    // Clear Creator Forms
     document.getElementById('creatorQuizTitle').value = '';
     document.getElementById('creatorQuizDescription').value = '';
     localCreatorQuestionArray = [];
     document.getElementById('pendingQuestionsCount').textContent = 0;
     
-    displayNotificationToast("Quiz Asset Published Globally.", "success");
-    switchViewportContext('librarySection');
+    displayNotificationToast("Quiz Staged. Routing to Workspace...", "success");
+    
+    // FIX: Auto-Opens directly into Workspace modifying visual canvas as requested instead of returning to Library.
+    window.appEngineAPI.stageWorkspace(payload.id);
 }
 
 // --- VISUAL WORKSPACE ---
 function renderVisualWorkspaceBoard() {
     const cvs = document.getElementById('visualCanvasContainer');
     cvs.className = enterpriseState.workspaceLayout === 'grid' ? 'visual-canvas-grid' : 'visual-canvas-list';
-    if(!activeWorkspaceQuizReference) return cvs.innerHTML = '<div style="grid-column:1/-1; padding:40px; text-align:center;">No Asset Targeted.</div>';
+    
+    if(!activeWorkspaceQuizReference || !activeWorkspaceQuizReference.questions || activeWorkspaceQuizReference.questions.length === 0) {
+        return cvs.innerHTML = `
+            <div style="grid-column:1/-1; padding:60px; text-align:center; background:var(--surface); border-radius:var(--radius); border:2px dashed var(--border);">
+                <i class="ri-file-search-line" style="font-size:3rem; color:var(--text-light); display:block; margin-bottom:10px;"></i>
+                <h3 style="color:var(--text-main);">No Nodes Detected in Canvas</h3>
+                <p style="color:var(--text-light); font-size:0.9rem;">Generate a quiz first via the Creator Studio before mapping it here.</p>
+            </div>`;
+    }
     
     document.getElementById('wsActiveQuizName').textContent = activeWorkspaceQuizReference.title;
     document.getElementById('wsStatSelected').textContent = activeWorkspaceQuizReference.questions.length;
@@ -512,14 +565,16 @@ function renderVisualWorkspaceBoard() {
         <div class="workspace-node-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain', ${i})" ondragover="event.preventDefault()" ondrop="window.appEngineAPI.reorderNode(event, ${i})">
             <div class="node-card-header"><span class="node-badge">Node #${i+1}</span>
                 <div class="node-actions">
-                    <button class="btn-node-tool" onclick="window.appEngineAPI.duplicateNode(${i})"><i class="ri-file-copy-line"></i></button>
-                    <button class="btn-node-tool" style="color:var(--danger)" onclick="window.appEngineAPI.purgeNode(${i})"><i class="ri-delete-bin-line"></i></button>
+                    <button class="btn-node-tool" onclick="window.appEngineAPI.duplicateNode(${i})" title="Duplicate Node"><i class="ri-file-copy-line"></i></button>
+                    <button class="btn-node-tool" style="color:var(--danger)" onclick="window.appEngineAPI.purgeNode(${i})" title="Delete Node"><i class="ri-delete-bin-line"></i></button>
                 </div>
             </div>
             <div class="node-card-body"><h4 style="font-weight: 500; font-size: 0.95rem; margin-bottom: 8px;">${q.text}</h4>
                 <div class="node-options-preview">
                     <div class="node-option-row ${q.answer==='A'?'correct-key':''}">${q.a}</div>
                     <div class="node-option-row ${q.answer==='B'?'correct-key':''}">${q.b}</div>
+                    ${q.c ? `<div class="node-option-row ${q.answer==='C'?'correct-key':''}">${q.c}</div>` : ''}
+                    ${q.d ? `<div class="node-option-row ${q.answer==='D'?'correct-key':''}">${q.d}</div>` : ''}
                 </div>
             </div>
         </div>`).join('');
@@ -578,7 +633,7 @@ async function saveCombinedExamGroupToState() {
     displayNotificationToast("Group Generated.", "success");
 }
 
-// --- SECURE QUIZ RUNNER UI (Stable Instance Render Matrix) ---
+// --- SECURE QUIZ RUNNER UI ---
 function initializeLiveQuizAttemptRunner(id, isGroup = false) {
     let targetQuizzes = [];
     if(isGroup) {
@@ -603,7 +658,7 @@ function initializeLiveQuizAttemptRunner(id, isGroup = false) {
     switchViewportContext('quizSection');
     document.getElementById('runnerQuizTitle').textContent = enterpriseState.activeQuiz.title;
     
-    clearInterval(enterpriseState.timerInterval); // Flush prior intervals
+    clearInterval(enterpriseState.timerInterval); 
     enterpriseState.timerInterval = setInterval(() => {
         enterpriseState.elapsedSeconds++;
         const pad = v => String(v).padStart(2,'0');
@@ -617,7 +672,6 @@ function renderRunnerActiveQuestionIndex() {
     const q = enterpriseState.activeQuestions[i];
     document.getElementById('runnerQuestionMeta').textContent = `Question ${i+1} of ${enterpriseState.activeQuestions.length}`;
     
-    // Renders as innerHTML ensuring Bold/Italics extracted natively from SheetJS map flawlessly onto DOM
     document.getElementById('runnerQuestionText').innerHTML = q.text; 
     
     document.getElementById('runnerOptionsGrid').innerHTML = ['A','B','C','D'].filter(opt => q[opt.toLowerCase()]).map(opt => `
@@ -692,13 +746,6 @@ function synchronizePDFSourceAssetSelector() {
         const q = enterpriseState.quizzes.find(x => x.id === e.target.value);
         if(q) document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${q.title}</div><div class="sim-body">Evaluation Sequence Length: ${q.questions.length} Items</div>`;
     };
-}
-
-// Utility formatting HTML removal algorithm protecting non-rich PDF structures from corrupting render lines
-function htmlToPdfRawText(htmlStr) {
-    const tmp = document.createElement("DIV");
-    tmp.innerHTML = htmlStr;
-    return tmp.textContent || tmp.innerText || "";
 }
 
 function triggerHighFidelityPDFExport(isKey = false) {

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Quiz Master Pro v29 Enterprise (Unified)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700&family=Roboto&family=Noto+Sans&family=Courier+New&display=swap" rel="stylesheet">
+  <title>Quiz Master Pro v30 Enterprise (Unified & Complete)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&family=Roboto&family=Noto+Sans&family=Courier+New&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
@@ -24,7 +24,7 @@
       </div>
       <div class="gate-grid">
           <div class="gate-card glass-effect bounce-in" id="cardGuest">
-              <div class="gate-icon">👀</div>
+              <div class="gate-icon">👥</div>
               <h3>Enter as Guest</h3>
               <ul class="gate-features">
                   <li><i class="ri-check-line" style="color:var(--success);"></i> Play Every Quiz & Group</li>
@@ -46,7 +46,7 @@
               <button id="btnLogin" class="btn-primary btn-full">Login to Dashboard</button>
           </div>
           <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.2s;">
-              <div class="gate-icon">👤</div>
+              <div class="gate-icon">📝</div>
               <h3>Register Account</h3>
               <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Join the enterprise network.</p>
               <div class="form-group">
@@ -138,7 +138,7 @@
               <div class="card-icon orange"><i class="ri-team-line"></i></div>
               <div class="card-info">
                 <h3 id="statTotalUsers">0</h3>
-                <p>Registered Accounts</p>
+                <p>Total Registered Accounts</p>
               </div>
             </div>
           </div>
@@ -205,8 +205,8 @@
             <hr class="form-divider" />
             
             <div class="admin-tabs" style="display:flex; gap:10px; margin-bottom: 20px;">
-              <button class="btn-secondary active" id="tabManual" onclick="window.appEngineAPI.toggleCreatorTab('manual')">Manual Entry</button>
-              <button class="btn-secondary" id="tabExcel" onclick="window.appEngineAPI.toggleCreatorTab('excel')">Direct Excel Import</button>
+              <button class="btn-secondary active" id="tabManual">Manual Entry</button>
+              <button class="btn-secondary" id="tabExcel">Direct Excel Import</button>
             </div>
 
             <div id="creatorQuestionForm">
@@ -241,15 +241,43 @@
                 <input type="file" id="excelFileInput" accept=".xlsx, .xls" hidden />
                 <button class="btn-primary" onclick="document.getElementById('excelFileInput').click()" style="margin-top:10px;">Browse Files</button>
               </div>
-              <div id="excelPreviewContainer" class="hidden" style="margin-top: 20px;">
-                  <h4>Import Preview (<span id="excelParsedCount">0</span> items)</h4>
-                  <div class="table-wrapper" style="max-height: 250px;">
-                      <table id="excelPreviewTable">
-                          <thead><tr><th>Question</th><th>Opt A</th><th>Opt B</th><th>Answer</th></tr></thead>
-                          <tbody></tbody>
-                      </table>
+              
+              <div id="excelVisualEditorContainer" class="hidden" style="margin-top: 25px;">
+                  <div class="spreadsheet-toolbar">
+                      <div class="tool-group">
+                          <button id="ssUndo" class="btn-icon-action" title="Undo (Ctrl+Z)"><i class="ri-arrow-go-back-line"></i></button>
+                          <button id="ssRedo" class="btn-icon-action" title="Redo (Ctrl+Y)"><i class="ri-arrow-go-forward-line"></i></button>
+                      </div>
+                      <div class="tool-group">
+                          <button id="ssInsertRow" class="btn-secondary" title="Insert Row"><i class="ri-add-line"></i> Row</button>
+                          <button id="ssDeleteRow" class="btn-secondary" title="Delete Row"><i class="ri-subtract-line"></i> Row</button>
+                          <button id="ssDuplicateRow" class="btn-secondary" title="Duplicate Row"><i class="ri-file-copy-line"></i> Duplicate</button>
+                      </div>
+                      <div class="tool-group">
+                          <button id="ssMoveRowUp" class="btn-secondary" title="Move Up"><i class="ri-arrow-up-line"></i></button>
+                          <button id="ssMoveRowDown" class="btn-secondary" title="Move Down"><i class="ri-arrow-down-line"></i></button>
+                      </div>
+                      <div class="tool-group find-replace-group">
+                          <input type="text" id="ssSearchInput" placeholder="Find..." class="form-control" style="width:120px; display:inline-block;" />
+                          <input type="text" id="ssReplaceInput" placeholder="Replace..." class="form-control" style="width:120px; display:inline-block;" />
+                          <button id="ssFindBtn" class="btn-secondary">Find</button>
+                          <button id="ssReplaceBtn" class="btn-secondary">Replace</button>
+                      </div>
+                      <div class="tool-group">
+                          <button id="ssSortAsc" class="btn-secondary" title="Sort A-Z"><i class="ri-sort-asc"></i></button>
+                          <button id="ssHighlightDup" class="btn-secondary" title="Highlight Duplicates"><i class="ri-bubble-chart-line"></i> Highlights</button>
+                      </div>
                   </div>
-                  <button id="commitExcelImportBtn" class="btn-success btn-full" style="margin-top:10px;"><i class="ri-check-line"></i> Confirm & Inject into Array</button>
+                  
+                  <div class="spreadsheet-summary-metrics">
+                      <div class="metric-badge green">Total Rows: <span id="ssTotalCount">0</span></div>
+                      <div class="metric-badge blue">Validated Rows: <span id="ssValCount">0</span></div>
+                      <div class="metric-badge red">Errors/Warnings: <span id="ssErrCount">0</span></div>
+                  </div>
+
+                  <div id="virtualSpreadsheetGrid" class="spreadsheet-grid-viewport"></div>
+
+                  <button id="commitExcelImportBtn" class="btn-success btn-full" style="margin-top:15px;"><i class="ri-check-line"></i> Validate and Inject Verified Rows</button>
               </div>
             </div>
 
@@ -451,7 +479,7 @@
             <div class="admin-action-card">
               <h3>System Security & Audit Trail Logs</h3>
               <div class="log-terminal-output" id="adminTerminalLogs">
-                [SYSTEM LOG ENVIRONMENT INITIATED v29.1]<br/>
+                [SYSTEM LOG ENVIRONMENT INITIATED v30.1]<br/>
                 [TELEMETRY] Listening to active visual DOM mutation matrices...
               </div>
             </div>

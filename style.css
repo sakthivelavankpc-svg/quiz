@@ -206,6 +206,15 @@ td { padding: 14px 18px; border-bottom: 1px solid var(--border); color: var(--te
 .asset-action-row { display: flex; gap: 10px; margin-top:15px; }
 .meta-pill { background-color: var(--secondary); color: var(--text-main); font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; margin-right: 6px; font-weight: 600; border: 1px solid var(--border); display:inline-block; margin-bottom:4px; }
 
+/* --- PDF PRINT OVERRIDES --- */
+.pdf-print-container * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+}
+.pdf-print-container b, .pdf-print-container strong { font-weight: bold !important; }
+.pdf-print-container i, .pdf-print-container em { font-style: italic !important; }
+.pdf-print-container u { text-decoration: underline !important; }
+
 .pdf-center-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
 .pdf-config-panel { background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
 .simulated-sheet { background-color: white; color: #1e293b; border: 1px solid #cbd5e1; box-shadow: var(--shadow); aspect-ratio: 1 / 1.414; padding: 40px; display: flex; flex-direction: column; justify-content: space-between; border-radius: 4px; }

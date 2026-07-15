@@ -3,17 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Quiz Master Pro v32 Enterprise (Unified)</title>
+  <title>Quiz Master Pro v33 Enterprise (Unified)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700&family=Roboto&family=Noto+Sans&family=Courier+New&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  
   <!-- Core Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-  <!-- High Fidelity PDF & Canvas Rendering Libraries -->
+  
+  <!-- High Fidelity PDF & Canvas & QR Rendering Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -169,7 +172,12 @@
         <section id="quizSection" class="view-section hidden">
           <div class="quiz-runner-box">
             <div class="runner-header">
-              <h2 id="runnerQuizTitle">Active Quiz Instance</h2>
+              <div style="display: flex; align-items: center; gap: 15px;">
+                  <h2 id="runnerQuizTitle" style="margin:0;">Active Quiz Instance</h2>
+                  <a href="https://www.youtube.com/@KALVIKADAL" target="_blank" title="KALVIKADAL YouTube Channel" style="color: #ef4444; font-size: 1.8rem; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                      <i class="ri-youtube-fill"></i>
+                  </a>
+              </div>
               <div id="runnerTimer" class="timer-badge">00:00</div>
             </div>
             <div class="progress-container">
@@ -198,7 +206,6 @@
           </div>
           
           <div class="creator-card">
-            <!-- Asset Metadata -->
             <div class="form-group">
               <label for="creatorQuizTitle">Quiz Structural Title</label>
               <input type="text" id="creatorQuizTitle" class="form-control" placeholder="Enter quiz title..." />
@@ -391,7 +398,7 @@
         <section id="pdfSection" class="view-section hidden">
           <div class="section-header">
             <h2>High-Fidelity Document Generation Center</h2>
-            <p>Compile production ready PDF files retaining full original rich text, colors, and formatting matrices.</p>
+            <p>Compile production ready PDF files retaining full original rich text, colors, symbols, and mathematical geometry.</p>
           </div>
           <div class="pdf-center-grid">
             <div class="pdf-config-panel">
@@ -400,16 +407,39 @@
                 <label>Target Source File</label>
                 <select id="pdfSourceAssetSelect" class="form-control"><option value="">Select Quiz Source Data Node...</option></select>
               </div>
+              
+              <div class="form-group">
+                  <label>Override Exam Name (Optional)</label>
+                  <input type="text" id="pdfExamName" class="form-control" placeholder="Defaults to Asset Title" />
+              </div>
+
               <div class="form-group-row">
                   <div class="form-group">
-                      <label>Total Marks (Header)</label>
-                      <input type="number" id="pdfMarksInput" class="form-control" placeholder="e.g. 100" />
+                      <label>Class / Grade</label>
+                      <input type="text" id="pdfClass" class="form-control" placeholder="Class" />
                   </div>
                   <div class="form-group">
-                      <label>Time Allowed (Minutes)</label>
-                      <input type="number" id="pdfTimeInput" class="form-control" placeholder="e.g. 90" />
+                      <label>Subject</label>
+                      <input type="text" id="pdfSubject" class="form-control" placeholder="Subject" />
                   </div>
               </div>
+
+              <div class="form-group-row">
+                  <div class="form-group">
+                      <label>Topic</label>
+                      <input type="text" id="pdfTopic" class="form-control" placeholder="Topic" />
+                  </div>
+                  <div class="form-group">
+                      <label>Total Marks</label>
+                      <input type="number" id="pdfMarksInput" class="form-control" placeholder="e.g. 100" />
+                  </div>
+              </div>
+
+              <div class="form-group">
+                  <label>Time Allowed (Minutes)</label>
+                  <input type="number" id="pdfTimeInput" class="form-control" placeholder="e.g. 90" />
+              </div>
+
               <div class="pdf-action-block" style="margin-top:20px;">
                 <button id="pdfGenerateDownloadBtn" class="btn-primary btn-full"><i class="ri-file-download-line"></i> Generate Document</button>
                 <button id="pdfGenerateKeyBtn" class="btn-secondary btn-full" style="margin-top:10px;"><i class="ri-key-line"></i> Generate Answer Key PDF</button>
@@ -485,7 +515,7 @@
             <div class="admin-action-card">
               <h3>System Security & Audit Trail Logs</h3>
               <div class="log-terminal-output" id="adminTerminalLogs">
-                [SYSTEM LOG ENVIRONMENT INITIATED v32.1]<br/>
+                [SYSTEM LOG ENVIRONMENT INITIATED v33.1]<br/>
                 [TELEMETRY] Listening to active visual DOM mutation matrices...
               </div>
             </div>

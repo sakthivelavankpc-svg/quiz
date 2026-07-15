@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- V32 FIREBASE INTEGRATION & AUTH MODEL ---
+// --- V33 FIREBASE INTEGRATION & AUTH MODEL ---
 const firebaseConfig = {
     apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
     authDomain: "quiz-master-3e489.firebaseapp.com",
@@ -19,7 +19,7 @@ try {
     console.error("Firebase Init Offline Bypass.");
 }
 
-// --- CORE ENTERPRISE STATE (Unified v32 Model) ---
+// --- CORE ENTERPRISE STATE (Unified v33 Model) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v32.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v33.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -157,7 +157,7 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V32 SAFE CLOUD-MERGE ENGINE ---
+// --- V33 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
@@ -348,7 +348,6 @@ function renderCentralAssetLibrary() {
         if(!isGroup && asset.metaSubject) metaTags += `<span class="meta-pill">${asset.metaSubject}</span>`;
         if(!isGroup && asset.metaTopic) metaTags += `<span class="meta-pill">${asset.metaTopic}</span>`;
 
-        // Card rendering logic applying distinct classes
         wrapper.innerHTML += `
             <div class="library-asset-card ${isGroup ? 'group-card' : 'quiz-card'}">
                 <div class="asset-card-meta">
@@ -367,7 +366,7 @@ function renderCentralAssetLibrary() {
     });
 }
 
-// --- EXCEL IMPORT ENGINE (Rich Text HTML & Correct Answer Context Parsing) ---
+// --- EXCEL IMPORT ENGINE ---
 let pendingExcelArray = [];
 
 function handleExcelDrop(e) {
@@ -426,7 +425,7 @@ function parseExcelFile(file) {
                 let cleanC = cText.replace(/<[^>]*>?/gm, '').trim().toUpperCase();
                 let cleanD = dText.replace(/<[^>]*>?/gm, '').trim().toUpperCase();
 
-                let finalAns = 'A'; // Base Fallback
+                let finalAns = 'A'; 
 
                 if (['A','B','C','D'].includes(cleanAns)) {
                     finalAns = cleanAns;
@@ -518,7 +517,6 @@ function transferCreatorToWorkspace() {
         createdAt: new Date().toISOString()
     };
 
-    // Clean Creator Slate
     document.getElementById('creatorQuizTitle').value = '';
     document.getElementById('creatorClass').value = '';
     document.getElementById('creatorSubject').value = '';
@@ -754,26 +752,44 @@ function renderRealtimeAnalyticsDashboard() {
 function synchronizePDFSourceAssetSelector() {
     const sel = document.getElementById('pdfSourceAssetSelect');
     sel.innerHTML = '<option value="">Select Quiz Matrix Configuration...</option>' + enterpriseState.quizzes.map(q => `<option value="${q.id}">${q.title}</option>`).join('');
+    
     sel.onchange = (e) => {
         const q = enterpriseState.quizzes.find(x => x.id === e.target.value);
-        if(q) document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${q.title}</div><div class="sim-body">Evaluation Sequence Length: ${q.questions.length} Items</div>`;
+        if(q) {
+            document.getElementById('pdfExamName').value = q.title || '';
+            document.getElementById('pdfClass').value = q.metaClass || '';
+            document.getElementById('pdfSubject').value = q.metaSubject || '';
+            document.getElementById('pdfTopic').value = q.metaTopic || '';
+            document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${q.title}</div><div class="sim-body">Evaluation Sequence Length: ${q.questions.length} Items</div>`;
+        }
     };
 }
 
-// Generates a true HTML DOM preserving original view for PDF snapshotting using html2canvas directly
+// Generates a robust hidden DOM to perfectly capture exact styling to Canvas and PDF format
 async function triggerHighFidelityPDFExport(isKey = false) {
-    if(!window.jspdf || !window.html2canvas) return displayNotificationToast("PDF rendering engines not fully loaded yet.", "error");
+    if(!window.jspdf || !window.html2canvas || !window.QRCode) return displayNotificationToast("PDF rendering engines initializing. Please try again.", "error");
     
     const qz = enterpriseState.quizzes.find(q => q.id === document.getElementById('pdfSourceAssetSelect').value);
     if(!qz) return displayNotificationToast("Select an asset source.", "error");
 
+    const eName = document.getElementById('pdfExamName').value || q.title || 'Assessment';
+    const eClass = document.getElementById('pdfClass').value || '___';
+    const eSubject = document.getElementById('pdfSubject').value || '___';
+    const eTopic = document.getElementById('pdfTopic').value || '___';
     const tMarks = document.getElementById('pdfMarksInput').value || 'N/A';
     const tTime = document.getElementById('pdfTimeInput').value || 'N/A';
 
     displayNotificationToast("Compiling Document Geometry... Please wait.", "success");
 
+    // Pre-Generate QR Code to a Canvas
+    const qrDiv = document.createElement('div');
+    new QRCode(qrDiv, { text: "https://www.youtube.com/@KALVIKADAL", width: 80, height: 80 });
+    const qrCanvas = qrDiv.querySelector('canvas');
+    const qrDataUrl = qrCanvas ? qrCanvas.toDataURL('image/png') : null;
+
     // Construct a staging container mimicking real paper, append to body but hide it via z-index
     const printDiv = document.createElement('div');
+    printDiv.className = 'pdf-print-container';
     printDiv.style.width = '800px'; 
     printDiv.style.padding = '40px';
     printDiv.style.fontFamily = "'Inter', 'Arial', sans-serif";
@@ -785,32 +801,33 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     printDiv.style.zIndex = '-9999';
     
     let htmlContent = `
-        <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-            <h1 style="font-size: 24px; margin-bottom: 8px; font-weight: bold;">${qz.title} ${isKey ? '(ANSWER KEY)' : ''}</h1>
-            <div style="font-size: 14px; display: flex; justify-content: space-between; max-width: 600px; margin: 0 auto;">
-                <span><b>Class:</b> ${qz.metaClass || '___'}</span>
-                <span><b>Subject:</b> ${qz.metaSubject || '___'}</span>
-                <span><b>Topic:</b> ${qz.metaTopic || '___'}</span>
+        <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px;">
+            <h1 style="font-size: 26px; margin-bottom: 12px; font-weight: bold; color: #000;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</h1>
+            <div style="font-size: 14px; display: flex; justify-content: space-between; max-width: 650px; margin: 0 auto; font-weight: bold;">
+                <span>Class: <span style="font-weight:normal;">${eClass}</span></span>
+                <span>Subject: <span style="font-weight:normal;">${eSubject}</span></span>
+                <span>Topic: <span style="font-weight:normal;">${eTopic}</span></span>
             </div>
-            <div style="font-size: 14px; display: flex; justify-content: space-between; max-width: 600px; margin: 5px auto 0;">
-                <span><b>Total Marks:</b> ${tMarks}</span>
-                <span><b>Time Allowed:</b> ${tTime} Mins</span>
+            <div style="font-size: 14px; display: flex; justify-content: space-between; max-width: 650px; margin: 8px auto 0; font-weight: bold;">
+                <span>Total Marks: <span style="font-weight:normal;">${tMarks}</span></span>
+                <span>Time Allowed: <span style="font-weight:normal;">${tTime} Mins</span></span>
             </div>
         </div>
     `;
 
     qz.questions.forEach((q, i) => {
-        htmlContent += `<div style="margin-bottom:20px; font-size: 15px; page-break-inside: avoid;">`;
-        htmlContent += `<div style="display:flex; margin-bottom:8px;"><strong style="margin-right:8px; min-width: 25px;">${i+1}.</strong> <div style="flex:1;">${q.text}</div></div>`;
+        htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;
+        htmlContent += `<div style="display:flex; margin-bottom:10px;"><strong style="margin-right:8px; min-width: 25px;">${i+1}.</strong> <div style="flex:1;">${q.text}</div></div>`;
         
         if(isKey) {
-            htmlContent += `<div style="margin-left:33px; padding: 4px; background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; color: #065f46; font-weight: bold;">Target Key: ${q.answer}</div>`;
+            htmlContent += `<div style="margin-left:33px; padding: 6px 12px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; color: #065f46; font-weight: bold;">Target Key: ${q.answer}</div>`;
         } else {
-            htmlContent += `<div style="margin-left: 33px; display: flex; flex-direction: column; gap: 8px;">`;
-            if(q.a) htmlContent += `<div style="display:flex;"><strong style="min-width: 30px;">A)</strong> <div style="flex:1;">${q.a}</div></div>`;
-            if(q.b) htmlContent += `<div style="display:flex;"><strong style="min-width: 30px;">B)</strong> <div style="flex:1;">${q.b}</div></div>`;
-            if(q.c) htmlContent += `<div style="display:flex;"><strong style="min-width: 30px;">C)</strong> <div style="flex:1;">${q.c}</div></div>`;
-            if(q.d) htmlContent += `<div style="display:flex;"><strong style="min-width: 30px;">D)</strong> <div style="flex:1;">${q.d}</div></div>`;
+            // Options grouped in 2-line Flex layout 
+            htmlContent += `<div style="margin-left: 33px; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 5px;">`;
+            if(q.a) htmlContent += `<div style="display:flex; width: 45%;"><strong style="min-width: 30px;">A)</strong> <div style="flex:1;">${q.a}</div></div>`;
+            if(q.b) htmlContent += `<div style="display:flex; width: 45%;"><strong style="min-width: 30px;">B)</strong> <div style="flex:1;">${q.b}</div></div>`;
+            if(q.c) htmlContent += `<div style="display:flex; width: 45%;"><strong style="min-width: 30px;">C)</strong> <div style="flex:1;">${q.c}</div></div>`;
+            if(q.d) htmlContent += `<div style="display:flex; width: 45%;"><strong style="min-width: 30px;">D)</strong> <div style="flex:1;">${q.d}</div></div>`;
             htmlContent += `</div>`;
         }
         htmlContent += `</div>`;
@@ -820,35 +837,47 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     document.body.appendChild(printDiv);
 
     try {
-        // Await full canvas rendering
+        // Await high-fidelity canvas snapshot
         const canvas = await html2canvas(printDiv, { scale: 2, useCORS: true, logging: false });
         const imgData = canvas.toDataURL('image/png');
         
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'pt', 'a4'); // Using points for exact scaling
+        const pdf = new jsPDF('p', 'pt', 'a4'); 
         
-        const pdfWidth = pdf.internal.pageSize.getWidth(); // roughly 595.28
-        const pageHeight = pdf.internal.pageSize.getHeight(); // roughly 841.89
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
         const imgHeight = (canvas.height * pdfWidth) / canvas.width;
         
         let heightLeft = imgHeight;
         let position = 0;
         
+        const addQRCodetoPage = () => {
+            if(qrDataUrl) {
+                pdf.addImage(qrDataUrl, 'PNG', pdfWidth - 70, pageHeight - 70, 50, 50);
+                pdf.setFontSize(8);
+                pdf.setTextColor(150);
+                pdf.text("YouTube: KALVIKADAL", pdfWidth - 110, pageHeight - 10);
+            }
+        };
+
+        // First page
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        addQRCodetoPage();
         heightLeft -= pageHeight;
         
-        // Multi-page slicer
+        // Slicer for subsequent pages
         while (heightLeft > 0) {
-            position -= pageHeight; // Shift image up by exactly one page height
+            position -= pageHeight; 
             pdf.addPage();
             pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            addQRCodetoPage();
             heightLeft -= pageHeight;
         }
 
-        pdf.save(`${qz.title.replace(/\s+/g, '_')}_${isKey ? 'Key' : 'Exam'}.pdf`);
+        pdf.save(`${eName.replace(/\s+/g, '_')}_${isKey ? 'Key' : 'Exam'}.pdf`);
     } catch(err) {
         console.error("PDF engine failure:", err);
-        displayNotificationToast("PDF Generation Failed. Ensure content is readable.", "error");
+        displayNotificationToast("PDF Generation Failed.", "error");
     } finally {
         document.body.removeChild(printDiv);
     }

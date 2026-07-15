@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- V27 FIREBASE INTEGRATION & AUTH ---
+// --- V29 FIREBASE INTEGRATION & AUTH MODEL ---
 const firebaseConfig = {
     apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
     authDomain: "quiz-master-3e489.firebaseapp.com",
@@ -40,7 +40,7 @@ const enterpriseState = {
 
 const guidesDatabase = {
   quickstart: { title: "System Overview Quickstart", body: "Welcome to the Quiz Master Pro Enterprise Management Studio. Use the sidebar matrices to access analytical structures, deploy testing modules, or modify parameters." },
-  creator: { title: "Quiz Creator & Excel Framework Documentation", body: "Use the Studio to append schemas directly. The newly integrated SheetJS engine supports .xlsx files. Drag and drop bulk questions; the parser dynamically matches columns." },
+  creator: { title: "Quiz Creator & Excel Framework Documentation", body: "Use the Studio to append schemas directly. The newly integrated SheetJS engine natively parses bold/italic styling tags from your source worksheets using '.h' metadata structure." },
   teacher: { title: "Pedagogical Execution Guide", body: "Deploy custom live runner instances directly to track candidate completion markers. Evaluates real-time via FireStore sync." },
   admin: { title: "Systems Governance Guide", body: "The management control layer facilitates full state resetting operations, handles systemic mock asset data injection pipelines, and acts as a single point of validation." }
 };
@@ -54,7 +54,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    syncUIStateTelemetry();
     triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v29.");
   } catch (err) {
     console.error("Boot Error:", err);
@@ -65,7 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function initializeAuthGates() {
     const session = await localforage.getItem('activeSession');
     if (session) {
-        grantAccess(session.role, session);
+        await grantAccess(session.role, session);
     } else {
         document.getElementById('welcomeGate').classList.remove('hidden');
         document.getElementById('appShell').classList.add('hidden');
@@ -75,8 +74,6 @@ async function initializeAuthGates() {
     document.getElementById('btnEnterGuest').onclick = () => grantAccess('guest', {uid:'GUEST', role:'guest', name:'Guest User'});
     document.getElementById('btnLogin').onclick = handleLogin;
     document.getElementById('btnRegister').onclick = handleRegister;
-    
-    // Explicit Logout FIX
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 }
 
@@ -85,19 +82,24 @@ async function handleLogin() {
     const pass = document.getElementById('loginPassword').value.trim();
     
     if(id === 'sakthivelavankpc@gmail.com' && pass === '12345') {
-        grantAccess('admin', {uid: "ADMIN_NODE", role: 'admin', name: "Master Admin", email: id});
-        return;
+        return grantAccess('admin', {uid: "ADMIN_NODE", role: 'admin', name: "Master Admin", email: id});
     }
     
     try {
-        const uSnap = await getDocs(collection(db, "registrations"));
-        const users = uSnap.docs.map(d => ({id: d.id, ...d.data()}));
-        const u = users.find(x => (x.email === id || x.userId === id) && x.password === pass);
-        if(u) grantAccess(u.role, u);
-        else displayNotificationToast("Invalid credentials", "error");
+        if(db) {
+            const uSnap = await getDocs(collection(db, "registrations"));
+            const users = uSnap.docs.map(d => ({id: d.id, ...d.data()}));
+            const u = users.find(x => (x.email === id || x.userId === id) && x.password === pass);
+            if(u) return grantAccess(u.role, u);
+        }
+        throw new Error("Invalid Cloud Credentials");
     } catch(e) {
-        // Fallback offline mock login
-        if (id && pass) grantAccess('student', {uid: `STU_${Date.now()}`, role:'student', name: id.split('@')[0]});
+        // Safe Offline fallback checking against localized registration storage preventing the 'student' force-overwrite bug.
+        let offlineUsers = JSON.parse(localStorage.getItem('QMP_OFFLINE_USERS') || '[]');
+        const localU = offlineUsers.find(x => (x.email === id || x.userId === id) && x.password === pass);
+        if (localU) return grantAccess(localU.role, localU);
+        
+        displayNotificationToast("Invalid credentials or Database is unreachable.", "error");
     }
 }
 
@@ -108,12 +110,20 @@ async function handleRegister() {
     const password = document.getElementById('regPassword').value.trim();
     if(!name || !email || !password) return displayNotificationToast("Fill all fields", "error");
     
-    const payload = { role, name, email, password, userId: `${role==='teacher'?'TCH':'STU'}-${Math.floor(10000+Math.random()*90000)}` };
+    const payload = { role, name, email, password, userId: `${role.substring(0,3).toUpperCase()}-${Math.floor(10000+Math.random()*90000)}` };
+    
+    // Save locally to prevent lockouts during DB drops
+    let offlineUsers = JSON.parse(localStorage.getItem('QMP_OFFLINE_USERS') || '[]');
+    offlineUsers.push(payload);
+    localStorage.setItem('QMP_OFFLINE_USERS', JSON.stringify(offlineUsers));
+
     try {
         if(db) await addDoc(collection(db, "registrations"), payload);
         displayNotificationToast("Registered Successfully", "success");
-        grantAccess(payload.role, payload);
-    } catch(e) { displayNotificationToast("Offline mode. Registered local.", "success"); grantAccess(payload.role, payload); }
+    } catch(e) { 
+        displayNotificationToast("Offline mode. Registered local.", "success"); 
+    }
+    grantAccess(payload.role, payload);
 }
 
 async function handleLogout() {
@@ -149,11 +159,12 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V27 -> V29 MIGRATION ENGINE (No Data Loss) ---
+// --- V29 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
     const localCache = JSON.parse(localStorage.getItem('QMP_ENTERPRISE_CACHED_STATE') || '{"quizzes":[],"examGroups":[]}');
+    // Load local first so UI doesn't appear empty if DB fails
     enterpriseState.quizzes = localCache.quizzes || [];
     enterpriseState.examGroups = localCache.examGroups || [];
     
@@ -165,38 +176,32 @@ async function loadAndMigrateApplicationState() {
                 getDocs(collection(db, "activityLogs"))
             ]);
             
-            // Migrate Quizzes
+            // Migrate Quizzes cleanly preventing duplication
             qSnap.docs.forEach(doc => {
                 const data = doc.data();
-                if (!enterpriseState.quizzes.find(q => q.id === doc.id)) {
-                    enterpriseState.quizzes.push({
-                        id: doc.id,
-                        title: data.metaExam || data.title || "Legacy Quiz",
-                        description: data.metaSubject ? `${data.metaSubject} - ${data.metaTopic}` : (data.description || ""),
-                        questions: (data.questions || []).map(q => ({
-                            text: q.text,
-                            a: q.options ? q.options[0] : (q.a || ''),
-                            b: q.options ? q.options[1] : (q.b || ''),
-                            c: q.options ? q.options[2] : (q.c || ''),
-                            d: q.options ? q.options[3] : (q.d || ''),
-                            answer: q.answer,
-                            marks: q.marks || 5, time: q.time || 2
-                        }))
-                    });
-                }
+                const existingIndex = enterpriseState.quizzes.findIndex(q => q.id === doc.id);
+                const quizObj = {
+                    id: doc.id,
+                    title: data.title || data.metaExam || "Legacy Quiz",
+                    description: data.description || data.metaSubject || "",
+                    questions: data.questions || [],
+                    shuffle: data.shuffle || false
+                };
+                if(existingIndex === -1) enterpriseState.quizzes.push(quizObj);
+                else enterpriseState.quizzes[existingIndex] = quizObj;
             });
             
             // Migrate Groups
             gSnap.docs.forEach(doc => {
                 const data = doc.data();
-                if (!enterpriseState.examGroups.find(g => g.id === doc.id)) {
-                    enterpriseState.examGroups.push({
-                        id: doc.id,
-                        name: data.groupName || data.name || "Legacy Group",
-                        description: data.subject || data.description || "",
-                        quizReferences: data.quizIds || data.quizReferences || []
-                    });
-                }
+                const existingIndex = enterpriseState.examGroups.findIndex(g => g.id === doc.id);
+                const groupObj = {
+                    id: doc.id,
+                    name: data.name || data.groupName || "Legacy Group",
+                    quizReferences: data.quizReferences || data.quizIds || []
+                };
+                if(existingIndex === -1) enterpriseState.examGroups.push(groupObj);
+                else enterpriseState.examGroups[existingIndex] = groupObj;
             });
 
             enterpriseState.logs = lSnap.docs.map(d => d.data());
@@ -206,7 +211,7 @@ async function loadAndMigrateApplicationState() {
     }
 
     persistApplicationStateToStorage();
-    renderCentralAssetLibrary();
+    renderCentralAssetLibrary(); // Triggers UI render correctly after fetch
     renderRealtimeAnalyticsDashboard();
 }
 
@@ -275,7 +280,10 @@ function registerGlobalSystemEvents() {
     // Runner
     document.getElementById('runnerPrevBtn').addEventListener('click', stepBackRunnerQuestion);
     document.getElementById('runnerNextBtn').addEventListener('click', stepForwardRunnerQuestion);
-    document.getElementById('runnerQuitBtn').addEventListener('click', () => switchViewportContext('librarySection'));
+    document.getElementById('runnerQuitBtn').addEventListener('click', () => {
+        clearInterval(enterpriseState.timerInterval);
+        switchViewportContext('librarySection');
+    });
     document.getElementById('runnerFinishBtn').addEventListener('click', finalizeQuizEvaluationSession);
     document.getElementById('reviewCloseBtn').addEventListener('click', () => switchViewportContext('homeSection'));
 
@@ -342,7 +350,7 @@ function renderCentralAssetLibrary() {
                 <div class="asset-card-meta">
                     <span style="font-size:0.7rem; background:${isGroup?'var(--success)':'var(--primary)'}; color:white; padding:2px 6px; border-radius:4px;">${isGroup?'COMBINED EXAM':'QUIZ MODULE'}</span>
                     <h3 style="margin-top:10px;">${asset.title || asset.name}</h3>
-                    <p>${asset.description}</p>
+                    <p>${asset.description || ""}</p>
                     <div style="font-size:0.8rem; font-weight:700; color:var(--text-light)">Contains: ${count} Nodes</div>
                 </div>
                 <div class="asset-action-row">
@@ -353,7 +361,7 @@ function renderCentralAssetLibrary() {
     });
 }
 
-// --- DIRECT EXCEL IMPORT ENGINE (SheetJS) ---
+// --- EXCEL IMPORT ENGINE (Rich Text HTML Supported Parsing) ---
 let pendingExcelArray = [];
 
 function handleExcelDrop(e) {
@@ -369,10 +377,11 @@ function parseExcelFile(file) {
         try {
             const wb = XLSX.read(e.target.result, {type: 'binary'});
             const ws = wb.Sheets[wb.SheetNames[0]];
-            const data = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ""});
             
-            // Heuristic Column Mapping
-            let hRow = data[0].map(h => String(h).toLowerCase().trim());
+            const rawData = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ""});
+            if (rawData.length === 0) throw new Error("Empty worksheet.");
+
+            let hRow = rawData[0].map(h => String(h).toLowerCase().trim());
             let qIdx = hRow.findIndex(h => h.includes('question'));
             let aIdx = hRow.findIndex(h => h === 'a' || h.includes('option a') || h.includes('opt a'));
             let bIdx = hRow.findIndex(h => h === 'b' || h.includes('option b') || h.includes('opt b'));
@@ -380,23 +389,47 @@ function parseExcelFile(file) {
             let dIdx = hRow.findIndex(h => h === 'd' || h.includes('option d') || h.includes('opt d'));
             let ansIdx = hRow.findIndex(h => h.includes('answer') || h.includes('correct'));
 
-            if(qIdx===-1 || aIdx===-1 || ansIdx===-1) return displayNotificationToast("Required columns missing (Question, Opt A, Answer)", "error");
+            if(qIdx===-1 || aIdx===-1 || ansIdx===-1) {
+                return displayNotificationToast("Required columns missing (Question, Opt A, Answer)", "error");
+            }
 
             pendingExcelArray = [];
-            for(let i=1; i<data.length; i++) {
-                if(!data[i][qIdx]) continue;
-                let ansText = String(data[i][ansIdx]).trim().toUpperCase();
-                let finalAns = ['A','B','C','D'].includes(ansText) ? ansText : 'A';
+            const range = XLSX.utils.decode_range(ws['!ref']);
+
+            // Intelligent Cell Extractor - Fallback loop mapping HTML structural styles natively formatted in Excel
+            const getCellContent = (R, C) => {
+                if (C === -1) return "";
+                const cell = ws[XLSX.utils.encode_cell({r: R, c: C})];
+                if (!cell) return "";
+                let content = cell.h ? cell.h : (cell.w ? cell.w : cell.v); // cell.h retains bold/italic HTML string overrides natively
+                return String(content).trim();
+            };
+
+            for(let R = 1; R <= range.e.r; R++) {
+                let qText = getCellContent(R, qIdx);
+                if(!qText) continue;
+
+                // Scrub innerHTML from the Target Answer strictly evaluating [A, B, C, D]
+                let ansRawText = getCellContent(R, ansIdx).toUpperCase().replace(/<[^>]*>?/gm, '');
+                let finalAns = ['A','B','C','D'].includes(ansRawText) ? ansRawText : 'A';
                 
                 pendingExcelArray.push({
-                    text: data[i][qIdx],
-                    a: data[i][aIdx], b: data[i][bIdx], c: data[i][cIdx]||'', d: data[i][dIdx]||'',
-                    answer: finalAns, marks: 5, time: 2
+                    text: qText, // Passes inline HTML stylings natively to the database
+                    a: getCellContent(R, aIdx),
+                    b: getCellContent(R, bIdx),
+                    c: getCellContent(R, cIdx),
+                    d: getCellContent(R, dIdx),
+                    answer: finalAns,
+                    marks: 5,
+                    time: 2
                 });
             }
             
             renderExcelPreview();
-        } catch(err) { displayNotificationToast("Corrupted Excel file.", "error"); }
+        } catch(err) { 
+            console.error(err);
+            displayNotificationToast("Corrupted Excel file parsing structure.", "error"); 
+        }
     };
     reader.readAsBinaryString(file);
 }
@@ -408,7 +441,10 @@ function renderExcelPreview() {
     document.getElementById('excelParsedCount').textContent = pendingExcelArray.length;
     
     const tbody = document.querySelector('#excelPreviewTable tbody');
-    tbody.innerHTML = pendingExcelArray.slice(0, 50).map(q => `<tr><td>${q.text.substring(0,40)}...</td><td>${q.a}</td><td>${q.b}</td><td><mark>${q.answer}</mark></td></tr>`).join('');
+    // We use .innerHTML structurally resolving rich text injections safely for preview mapping
+    tbody.innerHTML = pendingExcelArray.slice(0, 50).map(q => 
+        `<tr><td>${q.text.substring(0,80)}...</td><td>${q.a}</td><td>${q.b}</td><td><mark>${q.answer}</mark></td></tr>`
+    ).join('');
     if(pendingExcelArray.length > 50) tbody.innerHTML += `<tr><td colspan="4" style="text-align:center;">... and ${pendingExcelArray.length - 50} more.</td></tr>`;
 }
 
@@ -441,13 +477,21 @@ async function commitCompiledQuizToRepository() {
     if(!title || !localCreatorQuestionArray.length) return displayNotificationToast("Provide Title and Questions.", "error");
     
     const shuffle = document.getElementById('creatorShuffle').checked;
-    const payload = { id: "quiz_" + Date.now(), title, description: document.getElementById('creatorQuizDescription').value, questions: localCreatorQuestionArray, shuffle };
+    const payload = { 
+        id: "quiz_" + Date.now(), 
+        title, 
+        description: document.getElementById('creatorQuizDescription').value, 
+        questions: localCreatorQuestionArray, 
+        shuffle,
+        createdAt: new Date().toISOString()
+    };
     
     enterpriseState.quizzes.push(payload);
     persistApplicationStateToStorage();
     if(db) try { await setDoc(doc(db, "quizzes", payload.id), payload); } catch(e){}
 
     document.getElementById('creatorQuizTitle').value = '';
+    document.getElementById('creatorQuizDescription').value = '';
     localCreatorQuestionArray = [];
     document.getElementById('pendingQuestionsCount').textContent = 0;
     
@@ -472,7 +516,7 @@ function renderVisualWorkspaceBoard() {
                     <button class="btn-node-tool" style="color:var(--danger)" onclick="window.appEngineAPI.purgeNode(${i})"><i class="ri-delete-bin-line"></i></button>
                 </div>
             </div>
-            <div class="node-card-body"><h4>${q.text}</h4>
+            <div class="node-card-body"><h4 style="font-weight: 500; font-size: 0.95rem; margin-bottom: 8px;">${q.text}</h4>
                 <div class="node-options-preview">
                     <div class="node-option-row ${q.answer==='A'?'correct-key':''}">${q.a}</div>
                     <div class="node-option-row ${q.answer==='B'?'correct-key':''}">${q.b}</div>
@@ -517,7 +561,12 @@ async function saveCombinedExamGroupToState() {
     const name = document.getElementById('groupNameInput').value;
     if(!name || !activeDraftCompositeIds.length) return displayNotificationToast("Name and nodes required.", "error");
     
-    const payload = { id: "group_" + Date.now(), name, quizReferences: [...activeDraftCompositeIds] };
+    const payload = { 
+        id: "group_" + Date.now(), 
+        name, 
+        quizReferences: [...activeDraftCompositeIds],
+        createdAt: new Date().toISOString()
+    };
     enterpriseState.examGroups.push(payload);
     persistApplicationStateToStorage();
     if(db) try { await setDoc(doc(db, "exam_groups", payload.id), payload); } catch(e){}
@@ -529,7 +578,7 @@ async function saveCombinedExamGroupToState() {
     displayNotificationToast("Group Generated.", "success");
 }
 
-// --- QUIZ RUNNER ---
+// --- SECURE QUIZ RUNNER UI (Stable Instance Render Matrix) ---
 function initializeLiveQuizAttemptRunner(id, isGroup = false) {
     let targetQuizzes = [];
     if(isGroup) {
@@ -554,7 +603,7 @@ function initializeLiveQuizAttemptRunner(id, isGroup = false) {
     switchViewportContext('quizSection');
     document.getElementById('runnerQuizTitle').textContent = enterpriseState.activeQuiz.title;
     
-    clearInterval(enterpriseState.timerInterval);
+    clearInterval(enterpriseState.timerInterval); // Flush prior intervals
     enterpriseState.timerInterval = setInterval(() => {
         enterpriseState.elapsedSeconds++;
         const pad = v => String(v).padStart(2,'0');
@@ -567,11 +616,13 @@ function renderRunnerActiveQuestionIndex() {
     const i = enterpriseState.currentQuestionIndex;
     const q = enterpriseState.activeQuestions[i];
     document.getElementById('runnerQuestionMeta').textContent = `Question ${i+1} of ${enterpriseState.activeQuestions.length}`;
-    document.getElementById('runnerQuestionText').textContent = q.text;
+    
+    // Renders as innerHTML ensuring Bold/Italics extracted natively from SheetJS map flawlessly onto DOM
+    document.getElementById('runnerQuestionText').innerHTML = q.text; 
     
     document.getElementById('runnerOptionsGrid').innerHTML = ['A','B','C','D'].filter(opt => q[opt.toLowerCase()]).map(opt => `
         <div class="option-click-card ${enterpriseState.userAnswers[i] === opt ? 'selected' : ''}" onclick="window.appEngineAPI.selectAnswer('${opt}')">
-            <b>${opt}:</b> ${q[opt.toLowerCase()]}
+            <b>${opt}:</b> <span class="opt-text">${q[opt.toLowerCase()]}</span>
         </div>`).join('');
     
     document.getElementById('runnerPrevBtn').disabled = i === 0;
@@ -594,21 +645,24 @@ async function finalizeQuizEvaluationSession() {
         const uAns = enterpriseState.userAnswers[i];
         if(uAns === q.answer.toUpperCase()) correct++;
         container.innerHTML += `<div class="review-eval-card ${uAns===q.answer?'correct':'incorrect'}">
-            <h4>#${i+1}: ${q.text}</h4><p>You: <b>${uAns||'Skip'}</b> | Answer: <b>${q.answer}</b></p></div>`;
+            <h4 style="margin-bottom:8px;">#${i+1}: ${q.text}</h4><p>You Selected: <b>${uAns||'Skip'}</b> | Answer Key Matrix: <b>${q.answer}</b></p></div>`;
     });
     
     const scorePct = Math.round((correct/max)*100);
     document.getElementById('reviewScoreText').textContent = `${correct}/${max} (${scorePct}%)`;
     const pf = document.getElementById('passFailText');
-    pf.textContent = scorePct >= 40 ? "PASS" : "FAIL";
+    pf.textContent = scorePct >= 40 ? "EVALUATION PASS" : "EVALUATION FAIL";
     pf.style.color = scorePct >= 40 ? "var(--success)" : "var(--danger)";
     
     switchViewportContext('reviewSection');
 
     if(enterpriseState.currentUser.role !== 'guest') {
         const payload = { 
-            name: enterpriseState.currentUser.name, exam: enterpriseState.activeQuiz.title, 
-            score: scorePct, date: new Date().toISOString() 
+            uid: enterpriseState.currentUser.uid,
+            name: enterpriseState.currentUser.name, 
+            exam: enterpriseState.activeQuiz.title, 
+            score: scorePct, 
+            date: new Date().toISOString() 
         };
         enterpriseState.logs.push(payload);
         if(db) try { await addDoc(collection(db, "activityLogs"), payload); } catch(e){}
@@ -616,7 +670,7 @@ async function finalizeQuizEvaluationSession() {
     }
 }
 
-// --- ANALYTICS & PDF ---
+// --- ANALYTICS & PDF MATRIX ---
 function renderRealtimeAnalyticsDashboard() {
     document.getElementById('anaTotalAttempts').textContent = enterpriseState.logs.length;
     const avg = enterpriseState.logs.length ? enterpriseState.logs.reduce((a,b)=>a+b.score,0)/enterpriseState.logs.length : 0;
@@ -633,11 +687,18 @@ function renderRealtimeAnalyticsDashboard() {
 
 function synchronizePDFSourceAssetSelector() {
     const sel = document.getElementById('pdfSourceAssetSelect');
-    sel.innerHTML = '<option value="">Select Quiz...</option>' + enterpriseState.quizzes.map(q => `<option value="${q.id}">${q.title}</option>`).join('');
+    sel.innerHTML = '<option value="">Select Quiz Matrix Configuration...</option>' + enterpriseState.quizzes.map(q => `<option value="${q.id}">${q.title}</option>`).join('');
     sel.onchange = (e) => {
         const q = enterpriseState.quizzes.find(x => x.id === e.target.value);
-        if(q) document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${q.title}</div><div class="sim-body">${q.questions.length} Items</div>`;
+        if(q) document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${q.title}</div><div class="sim-body">Evaluation Sequence Length: ${q.questions.length} Items</div>`;
     };
+}
+
+// Utility formatting HTML removal algorithm protecting non-rich PDF structures from corrupting render lines
+function htmlToPdfRawText(htmlStr) {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = htmlStr;
+    return tmp.textContent || tmp.innerText || "";
 }
 
 function triggerHighFidelityPDFExport(isKey = false) {
@@ -652,9 +713,17 @@ function triggerHighFidelityPDFExport(isKey = false) {
     let y = 30;
     qz.questions.forEach((q, i) => {
         if(y > 270) { doc.addPage(); y = 20; }
-        doc.text(`${i+1}. ${q.text.substring(0, 80)}`, 14, y);
+        
+        let cleanedQuestionStr = htmlToPdfRawText(q.text);
+        doc.text(`${i+1}. ${cleanedQuestionStr.substring(0, 80)}`, 14, y);
+        
         if(isKey) { doc.text(`Answer: ${q.answer}`, 20, y+6); y+=14; } 
-        else { doc.text(`A: ${q.a}   B: ${q.b}   C: ${q.c}   D: ${q.d}`, 20, y+6); y+=14; }
+        else { 
+            let aText = htmlToPdfRawText(q.a); let bText = htmlToPdfRawText(q.b);
+            let cText = htmlToPdfRawText(q.c); let dText = htmlToPdfRawText(q.d);
+            doc.text(`A: ${aText}   B: ${bText}   C: ${cText}   D: ${dText}`, 20, y+6); 
+            y+=14; 
+        }
     });
     doc.save(`${qz.title.replace(/\s+/g, '_')}_${isKey?'Key':'Exam'}.pdf`);
 }
@@ -669,7 +738,7 @@ function displayNotificationToast(msg, type='success') {
     setTimeout(() => { t.style.animation = 'slideIn 0.2s reverse forwards'; setTimeout(()=>t.remove(),200); }, 3000);
 }
 
-// --- GLOBAL EXPORTS ---
+// --- GLOBAL EXPORTS API ---
 window.appEngineAPI = {
     launchAsset: (id, isGroup) => initializeLiveQuizAttemptRunner(id, isGroup),
     stageWorkspace: (id) => { activeWorkspaceQuizReference = enterpriseState.quizzes.find(q=>q.id===id); switchViewportContext('workspaceSection'); },

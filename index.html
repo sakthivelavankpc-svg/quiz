@@ -24,7 +24,7 @@
       </div>
       <div class="gate-grid">
           <div class="gate-card glass-effect bounce-in" id="cardGuest">
-              <div class="gate-icon">👀</div>
+              <div class="gate-icon">操</div>
               <h3>Enter as Guest</h3>
               <ul class="gate-features">
                   <li><i class="ri-check-line" style="color:var(--success);"></i> Play Every Quiz & Group</li>
@@ -34,7 +34,7 @@
               <button id="btnEnterGuest" class="btn-secondary btn-full">Continue as Guest</button>
           </div>
           <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.1s;">
-              <div class="gate-icon">🔐</div>
+              <div class="gate-icon">柏</div>
               <h3>Secure Login</h3>
               <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Auto-detects Student, Teacher, or Admin role.</p>
               <div class="form-group">
@@ -46,13 +46,14 @@
               <button id="btnLogin" class="btn-primary btn-full">Login to Dashboard</button>
           </div>
           <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.2s;">
-              <div class="gate-icon">👤</div>
+              <div class="gate-icon">側</div>
               <h3>Register Account</h3>
               <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Join the enterprise network.</p>
               <div class="form-group">
                   <select id="regRole" class="form-control">
                       <option value="student">I am a Student</option>
                       <option value="teacher">I am a Teacher</option>
+                      <option value="admin">I am an Admin</option>
                   </select>
               </div>
               <div class="form-group"><input type="text" id="regName" placeholder="Full Name" class="form-control" /></div>
@@ -138,7 +139,7 @@
               <div class="card-icon orange"><i class="ri-team-line"></i></div>
               <div class="card-info">
                 <h3 id="statTotalUsers">0</h3>
-                <p>Registered Accounts</p>
+                <p>Registered Questions</p>
               </div>
             </div>
           </div>
@@ -237,7 +238,7 @@
               <div class="excel-drop-zone" id="excelDropZone">
                 <i class="ri-file-excel-2-line" style="font-size:3rem; color:var(--success);"></i>
                 <h3>Drag & Drop Excel File Here</h3>
-                <p>Supports .xlsx, .xls</p>
+                <p>Supports .xlsx, .xls with Text Styling Natively</p>
                 <input type="file" id="excelFileInput" accept=".xlsx, .xls" hidden />
                 <button class="btn-primary" onclick="document.getElementById('excelFileInput').click()" style="margin-top:10px;">Browse Files</button>
               </div>

@@ -125,7 +125,7 @@ textarea.form-control { min-height: 100px; resize: vertical; }
 .sticky-home-btn { position: fixed; bottom: 32px; right: 32px; width: 56px; height: 56px; border-radius: 50%; background-color: var(--accent); color: white; border: none; box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; z-index: 999; transition: transform 0.2s; }
 .sticky-home-btn:hover { transform: scale(1.1); }
 
-/* --- Quiz Engine --- */
+/* --- Quiz Engine Config --- */
 .quiz-runner-box { background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow); max-width: 800px; margin: 0 auto; }
 .runner-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .timer-badge { background-color: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 8px 16px; border-radius: 20px; font-family: 'Courier New', monospace; font-weight: 700; font-size: 1.1rem; }
@@ -136,9 +136,10 @@ textarea.form-control { min-height: 100px; resize: vertical; }
 .option-click-card { background-color: var(--bg-body); border: 2px solid var(--border); padding: 16px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 12px; }
 .option-click-card:hover { border-color: var(--primary); background-color: var(--secondary); }
 .option-click-card.selected { border-color: var(--primary); background-color: rgba(13, 148, 136, 0.1); font-weight: 700; }
+.option-click-card span.opt-text { display: inline-block; width: 100%; } 
 .runner-controls { display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 24px; margin-top: 20px;}
 
-/* --- Workspace --- */
+/* --- Workspace Controls --- */
 .workspace-header-panel { display: flex; justify-content: space-between; align-items: center; background-color: var(--surface); padding: 24px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
 .workspace-controls-cluster { display: flex; align-items: center; gap: 10px; }
 .btn-icon-action { width: 42px; height: 42px; border-radius: var(--radius); border: 1px solid var(--border); background-color: var(--surface); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }

@@ -24,7 +24,7 @@
       </div>
       <div class="gate-grid">
           <div class="gate-card glass-effect bounce-in" id="cardGuest">
-              <div class="gate-icon">👥</div>
+              <div class="gate-icon">則</div>
               <h3>Enter as Guest</h3>
               <ul class="gate-features">
                   <li><i class="ri-check-line" style="color:var(--success);"></i> Play Every Quiz & Group</li>
@@ -34,7 +34,7 @@
               <button id="btnEnterGuest" class="btn-secondary btn-full">Continue as Guest</button>
           </div>
           <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.1s;">
-              <div class="gate-icon">🔐</div>
+              <div class="gate-icon">柏</div>
               <h3>Secure Login</h3>
               <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Auto-detects Student, Teacher, or Admin role.</p>
               <div class="form-group">
@@ -46,7 +46,7 @@
               <button id="btnLogin" class="btn-primary btn-full">Login to Dashboard</button>
           </div>
           <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.2s;">
-              <div class="gate-icon">📝</div>
+              <div class="gate-icon">統</div>
               <h3>Register Account</h3>
               <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Join the enterprise network.</p>
               <div class="form-group">
@@ -104,7 +104,7 @@
         <div class="header-right">
           <div class="global-search-container">
             <i class="ri-search-2-line search-icon"></i>
-            <input type="text" id="globalSearchInput" placeholder="Search entire project (quizzes, groups, metrics)..." />
+            <input type="text" id="globalSearchInput" placeholder="Search entire project..." />
             <div id="searchSuggestions" class="search-suggestions-box hidden"></div>
           </div>
           <button id="themeToggleBtn" class="btn-icon-header"><i class="ri-moon-line"></i></button>
@@ -199,7 +199,7 @@
               <textarea id="creatorQuizDescription" class="form-control" placeholder="Provide context or instructions for this evaluation matrix..."></textarea>
             </div>
             <div class="form-group">
-              <label><input type="checkbox" id="creatorShuffle" /> Enable Random Question Shuffle</label>
+              <label class="checkbox-label"><input type="checkbox" id="creatorShuffle" /> Enable Random Question Shuffle</label>
             </div>
 
             <hr class="form-divider" />
@@ -237,7 +237,7 @@
               <div class="excel-drop-zone" id="excelDropZone">
                 <i class="ri-file-excel-2-line" style="font-size:3rem; color:var(--success);"></i>
                 <h3>Drag & Drop Excel File Here</h3>
-                <p>Supports .xlsx, .xls</p>
+                <p>Supports .xlsx, .xls (Maintains rich-text formatting)</p>
                 <input type="file" id="excelFileInput" accept=".xlsx, .xls" hidden />
                 <button class="btn-primary" onclick="document.getElementById('excelFileInput').click()" style="margin-top:10px;">Browse Files</button>
               </div>
@@ -251,11 +251,7 @@
                       <div class="tool-group">
                           <button id="ssInsertRow" class="btn-secondary" title="Insert Row"><i class="ri-add-line"></i> Row</button>
                           <button id="ssDeleteRow" class="btn-secondary" title="Delete Row"><i class="ri-subtract-line"></i> Row</button>
-                          <button id="ssDuplicateRow" class="btn-secondary" title="Duplicate Row"><i class="ri-file-copy-line"></i> Duplicate</button>
-                      </div>
-                      <div class="tool-group">
-                          <button id="ssMoveRowUp" class="btn-secondary" title="Move Up"><i class="ri-arrow-up-line"></i></button>
-                          <button id="ssMoveRowDown" class="btn-secondary" title="Move Down"><i class="ri-arrow-down-line"></i></button>
+                          <button id="ssDuplicateRow" class="btn-secondary" title="Duplicate Row"><i class="ri-file-copy-line"></i> Dup</button>
                       </div>
                       <div class="tool-group find-replace-group">
                           <input type="text" id="ssSearchInput" placeholder="Find..." class="form-control" style="width:120px; display:inline-block;" />
@@ -275,7 +271,10 @@
                       <div class="metric-badge red">Errors/Warnings: <span id="ssErrCount">0</span></div>
                   </div>
 
-                  <div id="virtualSpreadsheetGrid" class="spreadsheet-grid-viewport"></div>
+                  <div id="virtualSpreadsheetGrid" class="spreadsheet-grid-viewport">
+                      <div class="vs-spacer" id="vsSpacer"></div>
+                      <div class="vs-content" id="vsContent"></div>
+                  </div>
 
                   <button id="commitExcelImportBtn" class="btn-success btn-full" style="margin-top:15px;"><i class="ri-check-line"></i> Validate and Inject Verified Rows</button>
               </div>
@@ -435,7 +434,10 @@
               </div>
             </div>
             <div class="guides-content-viewport">
-              <div id="guideContentBody" class="markdown-rendered-view"></div>
+              <div id="guideContentBody" class="markdown-rendered-view">
+                  <h2>Enterprise Guide Dashboard</h2>
+                  <p>Select a guide from the structural index to review best practices and architectural behaviors.</p>
+              </div>
             </div>
           </div>
         </section>

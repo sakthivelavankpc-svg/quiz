@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- V31 FIREBASE INTEGRATION & AUTH MODEL ---
+// --- V32 FIREBASE INTEGRATION & AUTH MODEL ---
 const firebaseConfig = {
     apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
     authDomain: "quiz-master-3e489.firebaseapp.com",
@@ -19,7 +19,7 @@ try {
     console.error("Firebase Init Offline Bypass.");
 }
 
-// --- CORE ENTERPRISE STATE (Unified v31 Model) ---
+// --- CORE ENTERPRISE STATE (Unified v32 Model) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v31.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v32.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -157,7 +157,7 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V31 SAFE CLOUD-MERGE ENGINE ---
+// --- V32 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
@@ -334,7 +334,7 @@ function processGlobalAutocompleteQuery(term) {
     container.classList.remove('hidden');
 }
 
-// --- LIBRARY ---
+// --- LIBRARY (WITH ADMIN DELETE & COLOR CARDS) ---
 function renderCentralAssetLibrary() {
     const wrapper = document.getElementById('libraryContainer');
     wrapper.innerHTML = '';
@@ -343,14 +343,14 @@ function renderCentralAssetLibrary() {
         const isGroup = !!asset.quizReferences;
         const count = isGroup ? asset.quizReferences.length : (asset.questions?.length||0);
         
-        // Metadata Pill compilation
         let metaTags = '';
         if(!isGroup && asset.metaClass) metaTags += `<span class="meta-pill">${asset.metaClass}</span>`;
         if(!isGroup && asset.metaSubject) metaTags += `<span class="meta-pill">${asset.metaSubject}</span>`;
         if(!isGroup && asset.metaTopic) metaTags += `<span class="meta-pill">${asset.metaTopic}</span>`;
 
+        // Card rendering logic applying distinct classes
         wrapper.innerHTML += `
-            <div class="library-asset-card" style="border-top: 4px solid ${isGroup?'var(--success)':'var(--primary)'};">
+            <div class="library-asset-card ${isGroup ? 'group-card' : 'quiz-card'}">
                 <div class="asset-card-meta">
                     <span style="font-size:0.7rem; background:${isGroup?'var(--success)':'var(--primary)'}; color:white; padding:2px 6px; border-radius:4px; margin-bottom:8px; display:inline-block;">${isGroup?'COMBINED EXAM':'QUIZ MODULE'}</span>
                     <h3 style="margin-top:5px; margin-bottom: 5px;">${asset.title || asset.name}</h3>
@@ -358,9 +358,10 @@ function renderCentralAssetLibrary() {
                     <p style="font-size: 0.85rem; color:var(--text-light);">${asset.description || ""}</p>
                     <div style="font-size:0.8rem; font-weight:700; color:var(--text-main); margin-top:10px;">Contains: ${count} Nodes</div>
                 </div>
-                <div class="asset-action-row">
+                <div class="asset-action-row" style="flex-wrap:wrap;">
                     <button class="btn-primary" onclick="window.appEngineAPI.launchAsset('${asset.id}', ${isGroup})"><i class="ri-play-fill"></i> Launch</button>
                     ${!isGroup && enterpriseState.currentUser.role !== 'guest' ? `<button class="btn-secondary" onclick="window.appEngineAPI.stageWorkspace('${asset.id}')"><i class="ri-layout-grid-line"></i> Edit Canvas</button>` : ''}
+                    ${enterpriseState.currentUser.role === 'admin' ? `<button class="btn-danger" style="margin-left:auto;" onclick="window.appEngineAPI.deleteAsset('${asset.id}', ${isGroup})"><i class="ri-delete-bin-line"></i> Delete</button>` : ''}
                 </div>
             </div>`;
     });
@@ -735,7 +736,7 @@ async function finalizeQuizEvaluationSession() {
     }
 }
 
-// --- ANALYTICS & PDF MATRIX (HIGH FIDELITY) ---
+// --- ANALYTICS & PDF MATRIX (HIGH FIDELITY WYSIWYG) ---
 function renderRealtimeAnalyticsDashboard() {
     document.getElementById('anaTotalAttempts').textContent = enterpriseState.logs.length;
     const avg = enterpriseState.logs.length ? enterpriseState.logs.reduce((a,b)=>a+b.score,0)/enterpriseState.logs.length : 0;
@@ -759,7 +760,7 @@ function synchronizePDFSourceAssetSelector() {
     };
 }
 
-// Generates a true HTML DOM preserving original view for PDF snapshotting
+// Generates a true HTML DOM preserving original view for PDF snapshotting using html2canvas directly
 async function triggerHighFidelityPDFExport(isKey = false) {
     if(!window.jspdf || !window.html2canvas) return displayNotificationToast("PDF rendering engines not fully loaded yet.", "error");
     
@@ -771,20 +772,21 @@ async function triggerHighFidelityPDFExport(isKey = false) {
 
     displayNotificationToast("Compiling Document Geometry... Please wait.", "success");
 
-    // Construct a hidden staging container mimicking real paper
+    // Construct a staging container mimicking real paper, append to body but hide it via z-index
     const printDiv = document.createElement('div');
     printDiv.style.width = '800px'; 
     printDiv.style.padding = '40px';
-    printDiv.style.fontFamily = "'Arial', sans-serif";
+    printDiv.style.fontFamily = "'Inter', 'Arial', sans-serif";
     printDiv.style.color = '#000000';
     printDiv.style.background = '#ffffff';
     printDiv.style.position = 'absolute';
-    printDiv.style.top = '-9999px'; 
-    printDiv.style.left = '-9999px';
+    printDiv.style.top = '0'; 
+    printDiv.style.left = '0';
+    printDiv.style.zIndex = '-9999';
     
     let htmlContent = `
         <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-            <h1 style="font-size: 24px; margin-bottom: 8px;">${qz.title} ${isKey ? '(ANSWER KEY)' : ''}</h1>
+            <h1 style="font-size: 24px; margin-bottom: 8px; font-weight: bold;">${qz.title} ${isKey ? '(ANSWER KEY)' : ''}</h1>
             <div style="font-size: 14px; display: flex; justify-content: space-between; max-width: 600px; margin: 0 auto;">
                 <span><b>Class:</b> ${qz.metaClass || '___'}</span>
                 <span><b>Subject:</b> ${qz.metaSubject || '___'}</span>
@@ -799,16 +801,16 @@ async function triggerHighFidelityPDFExport(isKey = false) {
 
     qz.questions.forEach((q, i) => {
         htmlContent += `<div style="margin-bottom:20px; font-size: 15px; page-break-inside: avoid;">`;
-        htmlContent += `<div style="display:flex;"><strong style="margin-right:8px;">${i+1}.</strong> <div>${q.text}</div></div>`;
+        htmlContent += `<div style="display:flex; margin-bottom:8px;"><strong style="margin-right:8px; min-width: 25px;">${i+1}.</strong> <div style="flex:1;">${q.text}</div></div>`;
         
         if(isKey) {
-            htmlContent += `<div style="margin-left:22px; margin-top:6px; color: green; font-weight: bold;">Target Key: ${q.answer}</div>`;
+            htmlContent += `<div style="margin-left:33px; padding: 4px; background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; color: #065f46; font-weight: bold;">Target Key: ${q.answer}</div>`;
         } else {
-            htmlContent += `<div style="margin-left: 22px; margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">`;
-            if(q.a) htmlContent += `<div style="display:flex;"><strong style="width: 25px;">A)</strong> <div>${q.a}</div></div>`;
-            if(q.b) htmlContent += `<div style="display:flex;"><strong style="width: 25px;">B)</strong> <div>${q.b}</div></div>`;
-            if(q.c) htmlContent += `<div style="display:flex;"><strong style="width: 25px;">C)</strong> <div>${q.c}</div></div>`;
-            if(q.d) htmlContent += `<div style="display:flex;"><strong style="width: 25px;">D)</strong> <div>${q.d}</div></div>`;
+            htmlContent += `<div style="margin-left: 33px; display: flex; flex-direction: column; gap: 8px;">`;
+            if(q.a) htmlContent += `<div style="display:flex;"><strong style="min-width: 30px;">A)</strong> <div style="flex:1;">${q.a}</div></div>`;
+            if(q.b) htmlContent += `<div style="display:flex;"><strong style="min-width: 30px;">B)</strong> <div style="flex:1;">${q.b}</div></div>`;
+            if(q.c) htmlContent += `<div style="display:flex;"><strong style="min-width: 30px;">C)</strong> <div style="flex:1;">${q.c}</div></div>`;
+            if(q.d) htmlContent += `<div style="display:flex;"><strong style="min-width: 30px;">D)</strong> <div style="flex:1;">${q.d}</div></div>`;
             htmlContent += `</div>`;
         }
         htmlContent += `</div>`;
@@ -817,23 +819,38 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     printDiv.innerHTML = htmlContent;
     document.body.appendChild(printDiv);
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'pt', 'a4');
-
     try {
-        await doc.html(printDiv, {
-            callback: function (doc) {
-                doc.save(`${qz.title.replace(/\s+/g, '_')}_${isKey ? 'Key' : 'Exam'}.pdf`);
-                document.body.removeChild(printDiv);
-            },
-            x: 20,
-            y: 20,
-            width: 550, // fits into A4 points (~595 width)
-            windowWidth: 800 // match the container width for accurate rendering mapping
-        });
+        // Await full canvas rendering
+        const canvas = await html2canvas(printDiv, { scale: 2, useCORS: true, logging: false });
+        const imgData = canvas.toDataURL('image/png');
+        
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'a4'); // Using points for exact scaling
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth(); // roughly 595.28
+        const pageHeight = pdf.internal.pageSize.getHeight(); // roughly 841.89
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        // Multi-page slicer
+        while (heightLeft > 0) {
+            position -= pageHeight; // Shift image up by exactly one page height
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+
+        pdf.save(`${qz.title.replace(/\s+/g, '_')}_${isKey ? 'Key' : 'Exam'}.pdf`);
     } catch(err) {
+        console.error("PDF engine failure:", err);
+        displayNotificationToast("PDF Generation Failed. Ensure content is readable.", "error");
+    } finally {
         document.body.removeChild(printDiv);
-        displayNotificationToast("PDF Generation Failed.", "error");
     }
 }
 
@@ -850,6 +867,24 @@ function displayNotificationToast(msg, type='success') {
 // --- GLOBAL EXPORTS API & RICH TEXT CONTROLS ---
 window.appEngineAPI = {
     launchAsset: (id, isGroup) => initializeLiveQuizAttemptRunner(id, isGroup),
+    
+    // ADMIN ONLY PERMANENT DELETE ROUTINE
+    deleteAsset: async (id, isGroup) => {
+        if(!confirm("Warning: Are you sure you want to permanently delete this asset from the Cloud?")) return;
+        
+        if (isGroup) {
+            enterpriseState.examGroups = enterpriseState.examGroups.filter(g => g.id !== id);
+            if(db) try { await deleteDoc(doc(db, "exam_groups", id)); } catch(e){}
+        } else {
+            enterpriseState.quizzes = enterpriseState.quizzes.filter(q => q.id !== id);
+            if(db) try { await deleteDoc(doc(db, "quizzes", id)); } catch(e){}
+        }
+        
+        persistApplicationStateToStorage();
+        renderCentralAssetLibrary();
+        displayNotificationToast("Asset Deleted Successfully", "success");
+    },
+    
     stageWorkspace: (id) => { 
         activeWorkspaceQuizReference = JSON.parse(JSON.stringify(enterpriseState.quizzes.find(q=>q.id===id))); 
         switchViewportContext('workspaceSection'); 

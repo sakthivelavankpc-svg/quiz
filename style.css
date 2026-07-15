@@ -117,6 +117,7 @@ textarea.form-control { min-height: 100px; resize: vertical; }
 .btn-secondary:hover { background-color: var(--border); }
 .btn-success { background-color: var(--success); color: white; }
 .btn-danger { background-color: var(--danger); color: white; }
+.btn-danger:hover { background-color: #dc2626; }
 .btn-full { width: 100%; }
 
 /* --- EXCEL DRAG & DROP ZONE --- */
@@ -194,9 +195,14 @@ table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9
 th { background-color: var(--secondary); color: var(--text-main); font-weight: 700; padding: 14px 18px; border-bottom: 1px solid var(--border); }
 td { padding: 14px 18px; border-bottom: 1px solid var(--border); color: var(--text-main); }
 
+/* --- COLORED LIBRARY CARDS --- */
 .library-toolbar { display: flex; gap: 16px; margin-bottom: 24px; }
 .library-grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-.library-asset-card { background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; }
+.library-asset-card { border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; transition: transform 0.2s; }
+.library-asset-card.quiz-card { border: 1px solid var(--primary); border-left: 6px solid var(--primary); background: linear-gradient(135deg, rgba(13,148,136,0.05) 0%, var(--surface) 100%); }
+.library-asset-card.group-card { border: 1px solid var(--success); border-left: 6px solid var(--success); background: linear-gradient(135deg, rgba(16,185,129,0.05) 0%, var(--surface) 100%); }
+.library-asset-card:hover { transform: translateY(-3px); }
+
 .asset-action-row { display: flex; gap: 10px; margin-top:15px; }
 .meta-pill { background-color: var(--secondary); color: var(--text-main); font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; margin-right: 6px; font-weight: 600; border: 1px solid var(--border); display:inline-block; margin-bottom:4px; }
 

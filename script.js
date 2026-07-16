@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- V33 FIREBASE INTEGRATION & AUTH MODEL ---
+// --- V34 FIREBASE INTEGRATION & AUTH MODEL ---
 const firebaseConfig = {
     apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
     authDomain: "quiz-master-3e489.firebaseapp.com",
@@ -19,7 +19,7 @@ try {
     console.error("Firebase Init Offline Bypass.");
 }
 
-// --- CORE ENTERPRISE STATE (Unified v33 Model) ---
+// --- CORE ENTERPRISE STATE (Unified v34 Model) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v33.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v34.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -157,7 +157,7 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V33 SAFE CLOUD-MERGE ENGINE ---
+// --- V34 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
@@ -822,12 +822,22 @@ async function triggerHighFidelityPDFExport(isKey = false) {
         if(isKey) {
             htmlContent += `<div style="margin-left:33px; padding: 6px 12px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; color: #065f46; font-weight: bold;">Target Key: ${q.answer}</div>`;
         } else {
-            // Options grouped in 2-line Flex layout 
-            htmlContent += `<div style="margin-left: 33px; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 5px;">`;
-            if(q.a) htmlContent += `<div style="display:flex; width: 45%;"><strong style="min-width: 30px;">A)</strong> <div style="flex:1;">${q.a}</div></div>`;
-            if(q.b) htmlContent += `<div style="display:flex; width: 45%;"><strong style="min-width: 30px;">B)</strong> <div style="flex:1;">${q.b}</div></div>`;
-            if(q.c) htmlContent += `<div style="display:flex; width: 45%;"><strong style="min-width: 30px;">C)</strong> <div style="flex:1;">${q.c}</div></div>`;
-            if(q.d) htmlContent += `<div style="display:flex; width: 45%;"><strong style="min-width: 30px;">D)</strong> <div style="flex:1;">${q.d}</div></div>`;
+            // Options grouped in 2-line using strictly inline-block layouts to bypass flex render bugs in html2canvas
+            htmlContent += `<div style="margin-left: 33px; margin-top: 5px;">`;
+            
+            // Line 1: A and B
+            htmlContent += `<div style="margin-bottom: 8px; width: 100%;">`;
+            if(q.a) htmlContent += `<div style="display: inline-block; width: 49%; vertical-align: top;"><strong style="margin-right:4px;">A)</strong> <span style="display:inline-block; vertical-align:top; width:calc(100% - 25px);">${q.a}</span></div>`;
+            if(q.b) htmlContent += `<div style="display: inline-block; width: 49%; vertical-align: top;"><strong style="margin-right:4px;">B)</strong> <span style="display:inline-block; vertical-align:top; width:calc(100% - 25px);">${q.b}</span></div>`;
+            htmlContent += `</div>`;
+            
+            // Line 2: C and D
+            if(q.c || q.d) {
+                htmlContent += `<div style="width: 100%;">`;
+                if(q.c) htmlContent += `<div style="display: inline-block; width: 49%; vertical-align: top;"><strong style="margin-right:4px;">C)</strong> <span style="display:inline-block; vertical-align:top; width:calc(100% - 25px);">${q.c}</span></div>`;
+                if(q.d) htmlContent += `<div style="display: inline-block; width: 49%; vertical-align: top;"><strong style="margin-right:4px;">D)</strong> <span style="display:inline-block; vertical-align:top; width:calc(100% - 25px);">${q.d}</span></div>`;
+                htmlContent += `</div>`;
+            }
             htmlContent += `</div>`;
         }
         htmlContent += `</div>`;

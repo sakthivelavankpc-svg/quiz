@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v37.2.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v37.3.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -159,7 +159,8 @@ async function grantAccess(role, profile) {
 }
 
 // --- BULLETPROOF DATA EXTRACTION UTILITY ---
-const extractOption = (q, letter, idx) => {
+// This function is now made globally accessible so the PDF Engine can forcefully use it at runtime.
+window.extractOption = (q, letter, idx) => {
     if (!q) return "";
     const up = letter.toUpperCase();
     const low = letter.toLowerCase();
@@ -200,18 +201,20 @@ async function loadAndMigrateApplicationState() {
             
             qSnap.docs.forEach(doc => {
                 const data = doc.data();
-                // NEW: Capture exactly what Firestore sent back before normalizing
+                // Capture exactly what Firestore sent back before normalizing for the JSON dump
                 enterpriseState.rawCloudData.quizzes.push({ id: doc.id, ...data });
                 
                 const existingIndex = enterpriseState.quizzes.findIndex(q => q.id === doc.id);
                 
-                // MAPPING FIX: Interrogate data with aggressive extractor
+                // MAPPING FIX: Interrogate data with aggressive extractor BUT retain original payload properties (using ...q)
+                // This prevents the application from accidentally wiping out the "options" array in the cache.
                 const sanitizedQuestions = (data.questions || []).map(q => ({
+                    ...q, 
                     text: q.text || q.question || q.title || "Empty Question Data",
-                    a: extractOption(q, 'a', 0),
-                    b: extractOption(q, 'b', 1),
-                    c: extractOption(q, 'c', 2),
-                    d: extractOption(q, 'd', 3),
+                    a: window.extractOption(q, 'a', 0),
+                    b: window.extractOption(q, 'b', 1),
+                    c: window.extractOption(q, 'c', 2),
+                    d: window.extractOption(q, 'd', 3),
                     answer: q.answer || q.correct || q.correctAnswer || "A",
                     marks: q.marks || 5,
                     time: q.time || 2
@@ -332,7 +335,7 @@ function registerGlobalSystemEvents() {
     document.getElementById('adminResetDataBtn').addEventListener('click', () => { localStorage.removeItem('QMP_ENTERPRISE_CACHED_STATE'); window.location.reload(); });
     document.getElementById('adminForceSyncBtn').addEventListener('click', loadAndMigrateApplicationState);
     
-    // NEW: Download Database JSON Dump Feature
+    // Download Database JSON Dump Feature
     document.getElementById('adminDownloadDumpBtn').addEventListener('click', generateDatabaseJSONDump);
     
     document.getElementById('pdfGenerateDownloadBtn').addEventListener('click', () => triggerHighFidelityPDFExport(false));
@@ -353,14 +356,13 @@ function registerGlobalSystemEvents() {
     });
 }
 
-// --- NEW FEATURE: ADMIN FIRESTORE DEBUGGER DUMP ---
+// --- ADMIN FIRESTORE DEBUGGER DUMP ---
 function generateDatabaseJSONDump() {
     if(enterpriseState.currentUser.role !== 'admin') {
         return displayNotificationToast("Admin clearance required.", "error");
     }
     
     // Determine which dataset to provide. Favor the raw intercepted data from Firestore.
-    // If running offline and raw Cloud Data is empty, fallback to the local cached arrays.
     const hasRawData = enterpriseState.rawCloudData && enterpriseState.rawCloudData.quizzes.length > 0;
     const dumpData = hasRawData ? enterpriseState.rawCloudData : { 
         quizzes: enterpriseState.quizzes, 
@@ -370,7 +372,6 @@ function generateDatabaseJSONDump() {
 
     const dumpStr = JSON.stringify(dumpData, null, 2);
     
-    // Generate an artificial download link in the DOM to trigger a secure file download
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(dumpStr);
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute("href", dataStr);
@@ -826,18 +827,48 @@ function renderRealtimeAnalyticsDashboard() {
     ).join('');
 }
 
+// FIXED: Now populates the dropdown with both Quizzes AND Combined Exam Groups!
 function synchronizePDFSourceAssetSelector() {
     const sel = document.getElementById('pdfSourceAssetSelect');
-    sel.innerHTML = '<option value="">Select Quiz Matrix Configuration...</option>' + enterpriseState.quizzes.map(q => `<option value="${q.id}">${q.title}</option>`).join('');
+    let optionsHTML = '<option value="">Select Target Evaluation Node...</option>';
+    
+    optionsHTML += '<optgroup label="Quizzes (Standalone)">';
+    enterpriseState.quizzes.forEach(q => {
+        optionsHTML += `<option value="${q.id}" data-type="quiz">${q.title}</option>`;
+    });
+    optionsHTML += '</optgroup>';
+    
+    optionsHTML += '<optgroup label="Combined Exam Groups">';
+    enterpriseState.examGroups.forEach(g => {
+        optionsHTML += `<option value="${g.id}" data-type="group">${g.name}</option>`;
+    });
+    optionsHTML += '</optgroup>';
+    
+    sel.innerHTML = optionsHTML;
     
     sel.onchange = (e) => {
-        const q = enterpriseState.quizzes.find(x => x.id === e.target.value);
-        if(q) {
-            document.getElementById('pdfExamName').value = q.title || '';
-            document.getElementById('pdfClass').value = q.metaClass || '';
-            document.getElementById('pdfSubject').value = q.metaSubject || '';
-            document.getElementById('pdfTopic').value = q.metaTopic || '';
-            document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${q.title}</div><div class="sim-body">Evaluation Sequence Length: ${q.questions.length} Items</div>`;
+        const selectedOpt = e.target.options[e.target.selectedIndex];
+        let assetName = '';
+        if(selectedOpt.getAttribute('data-type') === 'group') {
+            const g = enterpriseState.examGroups.find(x => x.id === e.target.value);
+            if(g) {
+                assetName = g.name;
+                document.getElementById('pdfExamName').value = assetName;
+                document.getElementById('pdfClass').value = g.class || '';
+                document.getElementById('pdfSubject').value = g.subject || '';
+                document.getElementById('pdfTopic').value = g.topics || '';
+                document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${assetName}</div><div class="sim-body">Evaluation Sequence Length: ${g.questionCount || 'Combined'} Items</div>`;
+            }
+        } else {
+            const q = enterpriseState.quizzes.find(x => x.id === e.target.value);
+            if(q) {
+                assetName = q.title;
+                document.getElementById('pdfExamName').value = assetName;
+                document.getElementById('pdfClass').value = q.metaClass || '';
+                document.getElementById('pdfSubject').value = q.metaSubject || '';
+                document.getElementById('pdfTopic').value = q.metaTopic || '';
+                document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${assetName}</div><div class="sim-body">Evaluation Sequence Length: ${q.questions.length} Items</div>`;
+            }
         }
     };
 }
@@ -846,10 +877,25 @@ function synchronizePDFSourceAssetSelector() {
 async function triggerHighFidelityPDFExport(isKey = false) {
     if(!window.jspdf || !window.html2canvas || !window.QRCode) return displayNotificationToast("PDF rendering engines initializing. Please try again.", "error");
     
-    const qz = enterpriseState.quizzes.find(q => q.id === document.getElementById('pdfSourceAssetSelect').value);
-    if(!qz) return displayNotificationToast("Select an asset source.", "error");
+    const sel = document.getElementById('pdfSourceAssetSelect');
+    const selectedOpt = sel.options[sel.selectedIndex];
+    if(!selectedOpt.value) return displayNotificationToast("Select an asset source.", "error");
 
-    const eName = document.getElementById('pdfExamName').value || qz.title || 'Assessment';
+    let targetQuestions = [];
+    if(selectedOpt.getAttribute('data-type') === 'group') {
+        const targetAsset = enterpriseState.examGroups.find(g => g.id === selectedOpt.value);
+        targetAsset.quizReferences.forEach(ref => {
+            const qz = enterpriseState.quizzes.find(q => q.id === ref);
+            if(qz && qz.questions) targetQuestions.push(...qz.questions);
+        });
+    } else {
+        const targetAsset = enterpriseState.quizzes.find(q => q.id === selectedOpt.value);
+        if(targetAsset && targetAsset.questions) targetQuestions = targetAsset.questions;
+    }
+
+    if(targetQuestions.length === 0) return displayNotificationToast("Target asset contains no questions.", "error");
+
+    const eName = document.getElementById('pdfExamName').value || 'Assessment';
     const eClass = document.getElementById('pdfClass').value || '___';
     const eSubject = document.getElementById('pdfSubject').value || '___';
     const eTopic = document.getElementById('pdfTopic').value || '___';
@@ -902,21 +948,26 @@ async function triggerHighFidelityPDFExport(isKey = false) {
         </div>
     `;
 
-    qz.questions.forEach((q, i) => {
+    targetQuestions.forEach((q, i) => {
         if(isKey) {
             let ansLetter = q.answer ? q.answer.toUpperCase() : 'A';
-            let ansText = q[ansLetter.toLowerCase()] || '______';
+            let ansText = window.extractOption(q, ansLetter, 0) || '______';
             // For Answer Key: Strictly number, answer letter, and answer text only
             htmlContent += `<div style="margin-bottom:16px; font-size: 16px; color: #000; page-break-inside: avoid; font-weight: bold;">`;
             htmlContent += `${i+1}. ${ansLetter}. ${ansText}`;
             htmlContent += `</div>`;
         } else {
-            // Evaluates as true fallback ONLY if the string is genuinely empty after deep extraction.
-            // Using .trim() to catch strings that are just empty spaces which bypassed the fallback previously.
-            let optA = (q.a && q.a.trim() !== '') ? q.a : '_________________';
-            let optB = (q.b && q.b.trim() !== '') ? q.b : '_________________';
-            let optC = (q.c && q.c.trim() !== '') ? q.c : '_________________';
-            let optD = (q.d && q.d.trim() !== '') ? q.d : '_________________';
+            // FIX: Force runtime extraction. If local cache dropped the mapping, we forcefully pull from the raw array here.
+            let optA = window.extractOption(q, 'a', 0);
+            let optB = window.extractOption(q, 'b', 1);
+            let optC = window.extractOption(q, 'c', 2);
+            let optD = window.extractOption(q, 'd', 3);
+            
+            optA = (optA && optA.trim() !== '') ? optA : '_________________';
+            optB = (optB && optB.trim() !== '') ? optB : '_________________';
+            optC = (optC && optC.trim() !== '') ? optC : '_________________';
+            optD = (optD && optD.trim() !== '') ? optD : '_________________';
+            
             let qText = (q.text && q.text.trim() !== '') ? q.text : 'Missing Target Question...';
             
             htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;
@@ -1051,10 +1102,10 @@ window.appEngineAPI = {
         currentlyEditingNodeIndex = i;
         const q = activeWorkspaceQuizReference.questions[i];
         document.getElementById('rtEditQuestion').innerHTML = q.text || '';
-        document.getElementById('rtEditOptA').innerHTML = q.a || '';
-        document.getElementById('rtEditOptB').innerHTML = q.b || '';
-        document.getElementById('rtEditOptC').innerHTML = q.c || '';
-        document.getElementById('rtEditOptD').innerHTML = q.d || '';
+        document.getElementById('rtEditOptA').innerHTML = window.extractOption(q, 'a', 0) || '';
+        document.getElementById('rtEditOptB').innerHTML = window.extractOption(q, 'b', 1) || '';
+        document.getElementById('rtEditOptC').innerHTML = window.extractOption(q, 'c', 2) || '';
+        document.getElementById('rtEditOptD').innerHTML = window.extractOption(q, 'd', 3) || '';
         document.getElementById('rtEditAnswer').value = q.answer || 'A';
         document.getElementById('richTextEditorModal').classList.remove('hidden');
     },

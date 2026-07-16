@@ -206,7 +206,6 @@
           </div>
           
           <div class="creator-card">
-            <!-- Asset Metadata -->
             <div class="form-group">
               <label for="creatorQuizTitle">Quiz Structural Title</label>
               <input type="text" id="creatorQuizTitle" class="form-control" placeholder="Enter quiz title..." />
@@ -498,7 +497,7 @@
           </div>
         </section>
 
-        <!-- ADMIN -->
+        <!-- ADMIN (NEW DATABASE DEBUGGER INCLUDED) -->
         <section id="adminSection" class="view-section hidden">
           <div class="section-header">
             <h2>System Administration & Control Matrix</h2>
@@ -513,10 +512,19 @@
                 <button id="adminForceSyncBtn" class="btn-success"><i class="ri-database-2-line"></i> Force Cloud Sync & Legacy Migration</button>
               </div>
             </div>
+            
             <div class="admin-action-card">
+              <h3>Database Schema Debugger</h3>
+              <p>Export the exact raw Firestore JSON structure to identify missing or incorrectly named keys in your offline arrays.</p>
+              <div class="btn-vertical-stack">
+                <button id="adminDownloadDumpBtn" class="btn-primary" style="background-color: var(--accent);"><i class="ri-download-cloud-2-line"></i> Download Firestore Data Dump (JSON)</button>
+              </div>
+            </div>
+            
+            <div class="admin-action-card" style="grid-column: 1 / -1;">
               <h3>System Security & Audit Trail Logs</h3>
               <div class="log-terminal-output" id="adminTerminalLogs">
-                [SYSTEM LOG ENVIRONMENT INITIATED v37.1]<br/>
+                [SYSTEM LOG ENVIRONMENT INITIATED v37.2]<br/>
                 [TELEMETRY] Listening to active visual DOM mutation matrices...
               </div>
             </div>

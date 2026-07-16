@@ -24,6 +24,7 @@ const enterpriseState = {
   quizzes: [],
   examGroups: [],
   logs: [],
+  rawCloudData: { quizzes: [], examGroups: [] }, // NEW: Captures exact untouched schema for JSON dump
   activeQuiz: null,
   activeQuestions: [],
   userAnswers: {},
@@ -55,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v37.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v37.2.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -158,25 +159,19 @@ async function grantAccess(role, profile) {
 }
 
 // --- BULLETPROOF DATA EXTRACTION UTILITY ---
-// Scans every possible legacy variation of option formatting in Firestore
 const extractOption = (q, letter, idx) => {
     if (!q) return "";
     const up = letter.toUpperCase();
     const low = letter.toLowerCase();
     
-    // 1. Direct letter keys (a, A)
     if (q[low] !== undefined && q[low] !== null && String(q[low]).trim() !== "") return String(q[low]);
     if (q[up] !== undefined && q[up] !== null && String(q[up]).trim() !== "") return String(q[up]);
-    
-    // 2. Named keys (optionA, OptionA, optA, opt_a, option1)
     if (q[`option${up}`] !== undefined && q[`option${up}`] !== null) return String(q[`option${up}`]);
     if (q[`Option${up}`] !== undefined && q[`Option${up}`] !== null) return String(q[`Option${up}`]);
     if (q[`opt${up}`] !== undefined && q[`opt${up}`] !== null) return String(q[`opt${up}`]);
     if (q[`opt_${low}`] !== undefined && q[`opt_${low}`] !== null) return String(q[`opt_${low}`]);
     if (q[`option${idx + 1}`] !== undefined && q[`option${idx + 1}`] !== null) return String(q[`option${idx + 1}`]);
     if (q[`Option${idx + 1}`] !== undefined && q[`Option${idx + 1}`] !== null) return String(q[`Option${idx + 1}`]);
-    
-    // 3. Array structures (options[], choices[], answers[])
     if (Array.isArray(q.options) && q.options[idx] !== undefined) return String(q.options[idx]);
     if (Array.isArray(q.choices) && q.choices[idx] !== undefined) return String(q.choices[idx]);
     if (Array.isArray(q.answers) && q.answers[idx] !== undefined) return String(q.answers[idx]);
@@ -192,6 +187,9 @@ async function loadAndMigrateApplicationState() {
     enterpriseState.quizzes = localCache.quizzes || [];
     enterpriseState.examGroups = localCache.examGroups || [];
     
+    // Clear previously captured raw data
+    enterpriseState.rawCloudData = { quizzes: [], examGroups: [] };
+    
     try {
         if (db) {
             const [qSnap, gSnap, lSnap] = await Promise.all([
@@ -202,6 +200,9 @@ async function loadAndMigrateApplicationState() {
             
             qSnap.docs.forEach(doc => {
                 const data = doc.data();
+                // NEW: Capture exactly what Firestore sent back before normalizing
+                enterpriseState.rawCloudData.quizzes.push({ id: doc.id, ...data });
+                
                 const existingIndex = enterpriseState.quizzes.findIndex(q => q.id === doc.id);
                 
                 // MAPPING FIX: Interrogate data with aggressive extractor
@@ -232,6 +233,8 @@ async function loadAndMigrateApplicationState() {
             
             gSnap.docs.forEach(doc => {
                 const data = doc.data();
+                enterpriseState.rawCloudData.examGroups.push({ id: doc.id, ...data });
+                
                 const existingIndex = enterpriseState.examGroups.findIndex(g => g.id === doc.id);
                 const groupObj = {
                     id: doc.id,
@@ -328,6 +331,10 @@ function registerGlobalSystemEvents() {
     // Admin & PDF
     document.getElementById('adminResetDataBtn').addEventListener('click', () => { localStorage.removeItem('QMP_ENTERPRISE_CACHED_STATE'); window.location.reload(); });
     document.getElementById('adminForceSyncBtn').addEventListener('click', loadAndMigrateApplicationState);
+    
+    // NEW: Download Database JSON Dump Feature
+    document.getElementById('adminDownloadDumpBtn').addEventListener('click', generateDatabaseJSONDump);
+    
     document.getElementById('pdfGenerateDownloadBtn').addEventListener('click', () => triggerHighFidelityPDFExport(false));
     document.getElementById('pdfGenerateKeyBtn').addEventListener('click', () => triggerHighFidelityPDFExport(true));
     document.getElementById('profileSaveBtn').addEventListener('click', () => {
@@ -344,6 +351,36 @@ function registerGlobalSystemEvents() {
             renderActiveGuideView(btn.getAttribute('data-guide'));
         });
     });
+}
+
+// --- NEW FEATURE: ADMIN FIRESTORE DEBUGGER DUMP ---
+function generateDatabaseJSONDump() {
+    if(enterpriseState.currentUser.role !== 'admin') {
+        return displayNotificationToast("Admin clearance required.", "error");
+    }
+    
+    // Determine which dataset to provide. Favor the raw intercepted data from Firestore.
+    // If running offline and raw Cloud Data is empty, fallback to the local cached arrays.
+    const hasRawData = enterpriseState.rawCloudData && enterpriseState.rawCloudData.quizzes.length > 0;
+    const dumpData = hasRawData ? enterpriseState.rawCloudData : { 
+        quizzes: enterpriseState.quizzes, 
+        examGroups: enterpriseState.examGroups,
+        notice: "Notice: You are offline. Showing processed local arrays instead of raw cloud schema."
+    };
+
+    const dumpStr = JSON.stringify(dumpData, null, 2);
+    
+    // Generate an artificial download link in the DOM to trigger a secure file download
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(dumpStr);
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "firestore_raw_schema_dump.json");
+    document.body.appendChild(dlAnchorElem);
+    dlAnchorElem.click();
+    dlAnchorElem.remove();
+    
+    displayNotificationToast("Raw Database Structure Downloaded successfully.", "success");
+    triggerLogTrail("[DEBUG] Executed Raw Firestore JSON Dump File Export.");
 }
 
 function switchViewportContext(targetId) {
@@ -875,11 +912,12 @@ async function triggerHighFidelityPDFExport(isKey = false) {
             htmlContent += `</div>`;
         } else {
             // Evaluates as true fallback ONLY if the string is genuinely empty after deep extraction.
-            let optA = q.a ? q.a : '_________________';
-            let optB = q.b ? q.b : '_________________';
-            let optC = q.c ? q.c : '_________________';
-            let optD = q.d ? q.d : '_________________';
-            let qText = q.text || q.question || 'Missing Target Question...';
+            // Using .trim() to catch strings that are just empty spaces which bypassed the fallback previously.
+            let optA = (q.a && q.a.trim() !== '') ? q.a : '_________________';
+            let optB = (q.b && q.b.trim() !== '') ? q.b : '_________________';
+            let optC = (q.c && q.c.trim() !== '') ? q.c : '_________________';
+            let optD = (q.d && q.d.trim() !== '') ? q.d : '_________________';
+            let qText = (q.text && q.text.trim() !== '') ? q.text : 'Missing Target Question...';
             
             htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;
             

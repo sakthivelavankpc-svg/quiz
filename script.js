@@ -24,7 +24,8 @@ const enterpriseState = {
   quizzes: [],
   examGroups: [],
   logs: [],
-  rawCloudData: { quizzes: [], examGroups: [] }, // NEW: Captures exact untouched schema for JSON dump
+  users: [], // NEW: Manage registered users
+  rawCloudData: { quizzes: [], examGroups: [] }, 
   activeQuiz: null,
   activeQuestions: [],
   userAnswers: {},
@@ -56,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v37.3.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v37.4.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -152,14 +153,16 @@ async function grantAccess(role, profile) {
         else el.classList.remove('hidden');
     });
     
-    if (role === 'admin') document.getElementById('sidebarAdminLink').classList.remove('hidden');
+    if (role === 'admin') {
+        document.getElementById('sidebarAdminLink').classList.remove('hidden');
+        document.getElementById('sidebarUsersLink').classList.remove('hidden'); // Show User Manager
+    }
 
     displayNotificationToast(`Welcome, ${profile.name}`, "success");
     await loadAndMigrateApplicationState();
 }
 
 // --- BULLETPROOF DATA EXTRACTION UTILITY ---
-// This function is now made globally accessible so the PDF Engine can forcefully use it at runtime.
 window.extractOption = (q, letter, idx) => {
     if (!q) return "";
     const up = letter.toUpperCase();
@@ -188,7 +191,6 @@ async function loadAndMigrateApplicationState() {
     enterpriseState.quizzes = localCache.quizzes || [];
     enterpriseState.examGroups = localCache.examGroups || [];
     
-    // Clear previously captured raw data
     enterpriseState.rawCloudData = { quizzes: [], examGroups: [] };
     
     try {
@@ -201,13 +203,10 @@ async function loadAndMigrateApplicationState() {
             
             qSnap.docs.forEach(doc => {
                 const data = doc.data();
-                // Capture exactly what Firestore sent back before normalizing for the JSON dump
                 enterpriseState.rawCloudData.quizzes.push({ id: doc.id, ...data });
                 
                 const existingIndex = enterpriseState.quizzes.findIndex(q => q.id === doc.id);
                 
-                // MAPPING FIX: Interrogate data with aggressive extractor BUT retain original payload properties (using ...q)
-                // This prevents the application from accidentally wiping out the "options" array in the cache.
                 const sanitizedQuestions = (data.questions || []).map(q => ({
                     ...q, 
                     text: q.text || q.question || q.title || "Empty Question Data",
@@ -252,6 +251,21 @@ async function loadAndMigrateApplicationState() {
         }
     } catch(e) {
         console.warn("Offline DB Read bypass.", e);
+    }
+    
+    // NEW: Load Users for Admin
+    if(enterpriseState.currentUser.role === 'admin') {
+        try {
+            if(db) {
+                const uSnap = await getDocs(collection(db, "registrations"));
+                enterpriseState.users = uSnap.docs.map(d => ({id: d.id, ...d.data()}));
+            } else {
+                enterpriseState.users = JSON.parse(localStorage.getItem('QMP_OFFLINE_USERS') || '[]');
+            }
+        } catch(e) {
+            enterpriseState.users = JSON.parse(localStorage.getItem('QMP_OFFLINE_USERS') || '[]');
+        }
+        renderUsersTable();
     }
 
     persistApplicationStateToStorage();
@@ -331,12 +345,12 @@ function registerGlobalSystemEvents() {
     document.getElementById('runnerFinishBtn').addEventListener('click', finalizeQuizEvaluationSession);
     document.getElementById('reviewCloseBtn').addEventListener('click', () => switchViewportContext('homeSection'));
 
-    // Admin & PDF
+    // Admin & Users & PDF
     document.getElementById('adminResetDataBtn').addEventListener('click', () => { localStorage.removeItem('QMP_ENTERPRISE_CACHED_STATE'); window.location.reload(); });
     document.getElementById('adminForceSyncBtn').addEventListener('click', loadAndMigrateApplicationState);
     
-    // Download Database JSON Dump Feature
     document.getElementById('adminDownloadDumpBtn').addEventListener('click', generateDatabaseJSONDump);
+    document.getElementById('adminDownloadUsersBtn').addEventListener('click', downloadUsersData); // New Users dump
     
     document.getElementById('pdfGenerateDownloadBtn').addEventListener('click', () => triggerHighFidelityPDFExport(false));
     document.getElementById('pdfGenerateKeyBtn').addEventListener('click', () => triggerHighFidelityPDFExport(true));
@@ -356,22 +370,47 @@ function registerGlobalSystemEvents() {
     });
 }
 
-// --- ADMIN FIRESTORE DEBUGGER DUMP ---
+// --- ADMIN USER MANAGEMENT ROUTINES ---
+function renderUsersTable() {
+    const tbody = document.getElementById('usersTableBody');
+    if(!tbody) return;
+    tbody.innerHTML = enterpriseState.users.map(u => `
+        <tr>
+            <td>${u.email || u.userId}</td>
+            <td><b>${u.name}</b></td>
+            <td style="text-transform: capitalize;">${u.role}</td>
+            <td>${u.password || '***'}</td>
+            <td>
+                <button class="btn-node-tool" style="color:var(--primary)" onclick="window.appEngineAPI.editUser('${u.id}')"><i class="ri-edit-2-line"></i></button>
+                <button class="btn-node-tool" style="color:var(--danger)" onclick="window.appEngineAPI.deleteUser('${u.id}')"><i class="ri-delete-bin-line"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function downloadUsersData() {
+    const dumpStr = JSON.stringify(enterpriseState.users, null, 2);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(dumpStr);
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "qmp_users_database.json");
+    document.body.appendChild(dlAnchorElem);
+    dlAnchorElem.click();
+    dlAnchorElem.remove();
+    displayNotificationToast("Users database downloaded successfully.", "success");
+}
+
 function generateDatabaseJSONDump() {
     if(enterpriseState.currentUser.role !== 'admin') {
         return displayNotificationToast("Admin clearance required.", "error");
     }
-    
-    // Determine which dataset to provide. Favor the raw intercepted data from Firestore.
     const hasRawData = enterpriseState.rawCloudData && enterpriseState.rawCloudData.quizzes.length > 0;
     const dumpData = hasRawData ? enterpriseState.rawCloudData : { 
         quizzes: enterpriseState.quizzes, 
         examGroups: enterpriseState.examGroups,
         notice: "Notice: You are offline. Showing processed local arrays instead of raw cloud schema."
     };
-
     const dumpStr = JSON.stringify(dumpData, null, 2);
-    
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(dumpStr);
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute("href", dataStr);
@@ -379,9 +418,7 @@ function generateDatabaseJSONDump() {
     document.body.appendChild(dlAnchorElem);
     dlAnchorElem.click();
     dlAnchorElem.remove();
-    
     displayNotificationToast("Raw Database Structure Downloaded successfully.", "success");
-    triggerLogTrail("[DEBUG] Executed Raw Firestore JSON Dump File Export.");
 }
 
 function switchViewportContext(targetId) {
@@ -827,7 +864,6 @@ function renderRealtimeAnalyticsDashboard() {
     ).join('');
 }
 
-// FIXED: Now populates the dropdown with both Quizzes AND Combined Exam Groups!
 function synchronizePDFSourceAssetSelector() {
     const sel = document.getElementById('pdfSourceAssetSelect');
     let optionsHTML = '<option value="">Select Target Evaluation Node...</option>';
@@ -874,6 +910,7 @@ function synchronizePDFSourceAssetSelector() {
 }
 
 // Generates a robust hidden DOM to perfectly capture exact styling to Canvas and PDF format
+// MODIFIED: Aggressive padding/margin removal to fit exactly 12 questions per A4 page natively
 async function triggerHighFidelityPDFExport(isKey = false) {
     if(!window.jspdf || !window.html2canvas || !window.QRCode) return displayNotificationToast("PDF rendering engines initializing. Please try again.", "error");
     
@@ -902,19 +939,18 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     const tMarks = document.getElementById('pdfMarksInput').value || '___';
     const tTime = document.getElementById('pdfTimeInput').value || '___';
 
-    displayNotificationToast("Compiling Reduced Document Geometry... Please wait.", "success");
+    displayNotificationToast("Compiling Dense Layout Document Geometry... Please wait.", "success");
 
-    // Pre-Generate QR Code to a Canvas and compress it
     const qrDiv = document.createElement('div');
-    new QRCode(qrDiv, { text: "https://www.youtube.com/@KALVIKADAL", width: 80, height: 80 });
+    new QRCode(qrDiv, { text: "https://www.youtube.com/@KALVIKADAL", width: 60, height: 60 });
     const qrCanvas = qrDiv.querySelector('canvas');
     const qrDataUrl = qrCanvas ? qrCanvas.toDataURL('image/jpeg', 0.8) : null;
 
-    // Construct a staging container mimicking real paper, append to body but hide it via z-index
+    // Constructed with a wider base width (800px) but tighter paddings to simulate more space
     const printDiv = document.createElement('div');
     printDiv.className = 'pdf-print-container';
     printDiv.style.width = '800px'; 
-    printDiv.style.padding = '40px';
+    printDiv.style.padding = '30px 40px'; 
     printDiv.style.fontFamily = "'Inter', 'Arial', sans-serif";
     printDiv.style.color = '#000000';
     printDiv.style.background = '#ffffff';
@@ -923,28 +959,28 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     printDiv.style.left = '0';
     printDiv.style.zIndex = '-9999';
     
-    // Exact Header Replication matching the required format
+    // Header with minimized margin
     let htmlContent = `
-        <div style="margin-bottom: 25px;">
-            <table style="width: 100%; font-size: 14px; font-weight: bold; margin-bottom: 5px; border-collapse: collapse; color: #000;">
+        <div style="margin-bottom: 12px;">
+            <table style="width: 100%; font-size: 13px; font-weight: bold; margin-bottom: 2px; border-collapse: collapse; color: #000;">
                 <tr>
-                    <td style="text-align: left; width: 50%; padding-bottom: 8px;">CLASS: <span style="font-weight:normal;">${eClass}</span></td>
-                    <td style="text-align: right; width: 50%; padding-bottom: 8px; text-transform: uppercase;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</td>
+                    <td style="text-align: left; width: 50%; padding-bottom: 4px;">CLASS: <span style="font-weight:normal;">${eClass}</span></td>
+                    <td style="text-align: right; width: 50%; padding-bottom: 4px; text-transform: uppercase;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</td>
                 </tr>
                 <tr>
-                    <td style="text-align: left; width: 50%; padding-bottom: 8px;">SUBJECT: <span style="font-weight:normal;">${eSubject}</span></td>
-                    <td style="text-align: right; width: 50%; padding-bottom: 8px;">NAME / REGISTER NO: _______________________</td>
+                    <td style="text-align: left; width: 50%; padding-bottom: 4px;">SUBJECT: <span style="font-weight:normal;">${eSubject}</span></td>
+                    <td style="text-align: right; width: 50%; padding-bottom: 4px;">NAME / REGISTER NO: _______________________</td>
                 </tr>
                 <tr>
-                    <td style="text-align: left; width: 50%; padding-bottom: 8px;">TOPIC: <span style="font-weight:normal;">${eTopic}</span></td>
-                    <td style="text-align: right; width: 50%; padding-bottom: 8px;">DATE: _______________________</td>
+                    <td style="text-align: left; width: 50%; padding-bottom: 4px;">TOPIC: <span style="font-weight:normal;">${eTopic}</span></td>
+                    <td style="text-align: right; width: 50%; padding-bottom: 4px;">DATE: _______________________</td>
                 </tr>
                 <tr>
                     <td style="text-align: left; width: 50%;">MARKS: <span style="font-weight:normal;">${tMarks}</span></td>
                     <td style="text-align: right; width: 50%;">TIME: <span style="font-weight:normal;">${tTime} Mins</span></td>
                 </tr>
             </table>
-            <hr style="border: none; border-bottom: 2px solid #000; margin-bottom: 20px;" />
+            <hr style="border: none; border-bottom: 2px solid #000; margin-bottom: 8px;" />
         </div>
     `;
 
@@ -952,43 +988,42 @@ async function triggerHighFidelityPDFExport(isKey = false) {
         if(isKey) {
             let ansLetter = q.answer ? q.answer.toUpperCase() : 'A';
             let ansText = window.extractOption(q, ansLetter, 0) || '______';
-            // For Answer Key: Strictly number, answer letter, and answer text only
-            htmlContent += `<div style="margin-bottom:16px; font-size: 16px; color: #000; page-break-inside: avoid; font-weight: bold;">`;
+            // Reduced margins for keys too
+            htmlContent += `<div style="margin-bottom:10px; font-size: 13px; color: #000; page-break-inside: avoid; font-weight: bold;">`;
             htmlContent += `${i+1}. ${ansLetter}. ${ansText}`;
             htmlContent += `</div>`;
         } else {
-            // FIX: Force runtime extraction. If local cache dropped the mapping, we forcefully pull from the raw array here.
             let optA = window.extractOption(q, 'a', 0);
             let optB = window.extractOption(q, 'b', 1);
             let optC = window.extractOption(q, 'c', 2);
             let optD = window.extractOption(q, 'd', 3);
             
-            optA = (optA && optA.trim() !== '') ? optA : '_________________';
-            optB = (optB && optB.trim() !== '') ? optB : '_________________';
-            optC = (optC && optC.trim() !== '') ? optC : '_________________';
-            optD = (optD && optD.trim() !== '') ? optD : '_________________';
+            optA = (optA && optA.trim() !== '') ? optA : '_____';
+            optB = (optB && optB.trim() !== '') ? optB : '_____';
+            optC = (optC && optC.trim() !== '') ? optC : '_____';
+            optD = (optD && optD.trim() !== '') ? optD : '_____';
             
             let qText = (q.text && q.text.trim() !== '') ? q.text : 'Missing Target Question...';
             
-            htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;
+            // Reduced to 11px font and 10px margin bottom to easily fit 12 questions
+            htmlContent += `<div style="margin-bottom:10px; font-size: 11px; page-break-inside: avoid; color: #000;">`;
             
-            // Render Question string inside a safe table
-            htmlContent += `<table style="width: 100%; border-collapse: collapse; color: #000; margin-bottom: 8px;">`;
+            htmlContent += `<table style="width: 100%; border-collapse: collapse; color: #000; margin-bottom: 4px;">`;
             htmlContent += `<tr>`;
-            htmlContent += `<td style="vertical-align: top; width: 30px;"><strong>${i+1}.</strong></td>`;
+            htmlContent += `<td style="vertical-align: top; width: 25px;"><strong>${i+1}.</strong></td>`;
             htmlContent += `<td style="vertical-align: top;">${qText}</td>`;
             htmlContent += `</tr>`;
             htmlContent += `</table>`;
             
-            // Options grouped strictly using HTML tables (2x2 Grid) to unconditionally print A, B, C, D
-            htmlContent += `<table style="margin-left: 30px; width: 95%; table-layout: fixed; border-collapse: collapse; color: #000;">`;
+            // Tightened padding on options. Removed the transparent line block logic completely.
+            htmlContent += `<table style="margin-left: 25px; width: 95%; table-layout: fixed; border-collapse: collapse; color: #000;">`;
             htmlContent += `<tr>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 12px;"><strong>A.</strong> ${optA}</td>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 12px;"><strong>B.</strong> ${optB}</td>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 4px;"><strong>A.</strong> ${optA}</td>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 4px;"><strong>B.</strong> ${optB}</td>`;
             htmlContent += `</tr>`;
             htmlContent += `<tr>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 12px;"><strong>C.</strong> ${optC}</td>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 12px;"><strong>D.</strong> ${optD}</td>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 0px;"><strong>C.</strong> ${optC}</td>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 0px;"><strong>D.</strong> ${optD}</td>`;
             htmlContent += `</tr>`;
             htmlContent += `</table>`;
             
@@ -1000,10 +1035,7 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     document.body.appendChild(printDiv);
 
     try {
-        // Await high-fidelity canvas snapshot but compress scale down to save immense file size.
         const canvas = await html2canvas(printDiv, { scale: 1.5, useCORS: true, logging: false });
-        
-        // COMPRESSION FIX: Use JPEG instead of PNG format, set Quality factor to 0.75 for huge size savings
         const imgData = canvas.toDataURL('image/jpeg', 0.75); 
         
         const { jsPDF } = window.jspdf;
@@ -1018,21 +1050,18 @@ async function triggerHighFidelityPDFExport(isKey = false) {
         
         const addQRCodetoPage = () => {
             if(qrDataUrl) {
-                // Use explicit FAST rendering profile compression 
-                pdf.addImage(qrDataUrl, 'JPEG', pdfWidth - 70, pageHeight - 70, 50, 50, undefined, 'FAST');
-                pdf.setFontSize(10);
+                pdf.addImage(qrDataUrl, 'JPEG', pdfWidth - 65, pageHeight - 65, 45, 45, undefined, 'FAST');
+                pdf.setFontSize(9);
                 pdf.setTextColor(0, 0, 0);
                 pdf.setFont("helvetica", "bold");
-                pdf.text("YouTube: KALVIKADAL", pdfWidth - 220, pageHeight - 40);
+                pdf.text("YouTube: KALVIKADAL", pdfWidth - 190, pageHeight - 35);
             }
         };
 
-        // First page logic with compression pipeline
         pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
         addQRCodetoPage();
         heightLeft -= pageHeight;
         
-        // Slicer for subsequent pages
         while (heightLeft > 0) {
             position -= pageHeight; 
             pdf.addPage();
@@ -1097,7 +1126,7 @@ window.appEngineAPI = {
         document.getElementById('creatorExcelForm').classList.toggle('hidden', tab!=='excel');
     },
     
-    // Rich Text Editor Specific Logic
+    // Rich Text Editor
     openEditModal: (i) => {
         currentlyEditingNodeIndex = i;
         const q = activeWorkspaceQuizReference.questions[i];
@@ -1138,5 +1167,50 @@ window.appEngineAPI = {
             let newText = text === text.toUpperCase() ? text.toLowerCase() : text.toUpperCase();
             document.execCommand('insertText', false, newText);
         }
+    },
+    
+    // ADMIN USER METHODS
+    editUser: (id) => {
+        const u = enterpriseState.users.find(x => x.id === id);
+        if(!u) return;
+        document.getElementById('editUserId').value = u.id;
+        document.getElementById('editUserName').value = u.name || '';
+        document.getElementById('editUserEmail').value = u.email || u.userId || '';
+        document.getElementById('editUserRole').value = u.role || 'student';
+        document.getElementById('editUserPassword').value = u.password || '';
+        document.getElementById('editUserModal').classList.remove('hidden');
+    },
+    closeUserModal: () => document.getElementById('editUserModal').classList.add('hidden'),
+    saveUserModal: async () => {
+        const id = document.getElementById('editUserId').value;
+        const uIdx = enterpriseState.users.findIndex(x => x.id === id);
+        if(uIdx === -1) return;
+        
+        enterpriseState.users[uIdx].name = document.getElementById('editUserName').value;
+        enterpriseState.users[uIdx].email = document.getElementById('editUserEmail').value;
+        enterpriseState.users[uIdx].role = document.getElementById('editUserRole').value;
+        enterpriseState.users[uIdx].password = document.getElementById('editUserPassword').value;
+        
+        if(db) {
+            try { await setDoc(doc(db, "registrations", id), enterpriseState.users[uIdx]); } catch(e){}
+        } else {
+            localStorage.setItem('QMP_OFFLINE_USERS', JSON.stringify(enterpriseState.users));
+        }
+        
+        window.appEngineAPI.closeUserModal();
+        renderUsersTable();
+        displayNotificationToast("User updated successfully.", "success");
+    },
+    deleteUser: async (id) => {
+        if(!confirm("Are you sure you want to permanently delete this user?")) return;
+        
+        enterpriseState.users = enterpriseState.users.filter(x => x.id !== id);
+        if(db) {
+            try { await deleteDoc(doc(db, "registrations", id)); } catch(e){}
+        } else {
+            localStorage.setItem('QMP_OFFLINE_USERS', JSON.stringify(enterpriseState.users));
+        }
+        renderUsersTable();
+        displayNotificationToast("User deleted.", "success");
     }
 };

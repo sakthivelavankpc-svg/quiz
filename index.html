@@ -93,6 +93,8 @@
         <a href="#" class="nav-link" data-target="guidesSection"><i class="ri-compass-3-line"></i> <span>Enterprise Guides</span></a>
         <a href="#" class="nav-link auth-required" data-target="profileSection"><i class="ri-user-settings-line"></i> <span>Profile</span></a>
         <a href="#" class="nav-link hidden" data-target="adminSection" id="sidebarAdminLink"><i class="ri-shield-user-line"></i> <span>Admin Control</span></a>
+        <!-- NEW: User Management Nav Link -->
+        <a href="#" class="nav-link hidden" data-target="usersSection" id="sidebarUsersLink"><i class="ri-group-line"></i> <span>User Management</span></a>
       </nav>
       <div class="sidebar-footer">
         <button id="logoutBtn" class="btn-logout"><i class="ri-logout-box-r-line"></i> <span>Log Out</span></button>
@@ -458,6 +460,31 @@
           </div>
         </section>
 
+        <!-- NEW: USER MANAGEMENT SECTION -->
+        <section id="usersSection" class="view-section hidden">
+          <div class="section-header">
+            <h2>User Management Matrix</h2>
+            <p>Modify, remove, or export registered candidate and staff profiles.</p>
+          </div>
+          <div class="creator-card">
+             <button id="adminDownloadUsersBtn" class="btn-success" style="margin-bottom: 15px;"><i class="ri-download-2-line"></i> Download User Database Dump (JSON)</button>
+             <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User ID / Email</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Password</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+             </div>
+          </div>
+        </section>
+
         <!-- GUIDES -->
         <section id="guidesSection" class="view-section hidden">
           <div class="guides-container-layout">
@@ -519,14 +546,14 @@
               <h3>Database Schema Debugger</h3>
               <p>Export the exact raw Firestore JSON structure to identify missing or incorrectly named keys in your offline arrays.</p>
               <div class="btn-vertical-stack">
-                <button id="adminDownloadDumpBtn" class="btn-primary" style="background-color: var(--accent);"><i class="ri-download-cloud-2-line"></i> Download Firestore Data Dump (JSON)</button>
+                <button id="adminDownloadDumpBtn" class="btn-primary" style="background-color: var(--accent);"><i class="ri-download-cloud-2-line"></i> Download Quiz Data Dump (JSON)</button>
               </div>
             </div>
             
             <div class="admin-action-card" style="grid-column: 1 / -1;">
               <h3>System Security & Audit Trail Logs</h3>
               <div class="log-terminal-output" id="adminTerminalLogs">
-                [SYSTEM LOG ENVIRONMENT INITIATED v37.3]<br/>
+                [SYSTEM LOG ENVIRONMENT INITIATED v37.4]<br/>
                 [TELEMETRY] Listening to active visual DOM mutation matrices...
               </div>
             </div>
@@ -626,6 +653,43 @@
           <div class="modal-footer">
               <button class="btn-secondary" onclick="window.appEngineAPI.closeEditModal()">Cancel</button>
               <button class="btn-primary" onclick="window.appEngineAPI.saveEditModal()">Save Node Modifications</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- NEW: EDIT USER MODAL -->
+  <div id="editUserModal" class="modal-overlay hidden">
+      <div class="modal-content" style="max-width: 450px;">
+          <div class="modal-header">
+              <h3>Edit Registered User</h3>
+              <button class="btn-icon-toggle" onclick="window.appEngineAPI.closeUserModal()"><i class="ri-close-line"></i></button>
+          </div>
+          <div class="modal-body">
+              <input type="hidden" id="editUserId" />
+              <div class="form-group">
+                  <label>Full Name</label>
+                  <input type="text" id="editUserName" class="form-control" />
+              </div>
+              <div class="form-group">
+                  <label>Email / User ID</label>
+                  <input type="text" id="editUserEmail" class="form-control" />
+              </div>
+              <div class="form-group">
+                  <label>Role</label>
+                  <select id="editUserRole" class="form-control">
+                      <option value="student">Student</option>
+                      <option value="teacher">Teacher</option>
+                      <option value="admin">Admin</option>
+                  </select>
+              </div>
+              <div class="form-group">
+                  <label>Password</label>
+                  <input type="text" id="editUserPassword" class="form-control" />
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn-secondary" onclick="window.appEngineAPI.closeUserModal()">Cancel</button>
+              <button class="btn-primary" onclick="window.appEngineAPI.saveUserModal()">Save Changes</button>
           </div>
       </div>
   </div>

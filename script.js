@@ -157,7 +157,7 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V37 SAFE CLOUD-MERGE ENGINE ---
+// --- V37 SAFE CLOUD-MERGE ENGINE (FIRESTORE EMPTY NODE FIX APPLIED) ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
@@ -176,6 +176,19 @@ async function loadAndMigrateApplicationState() {
             qSnap.docs.forEach(doc => {
                 const data = doc.data();
                 const existingIndex = enterpriseState.quizzes.findIndex(q => q.id === doc.id);
+                
+                // MAPPING FIX: Account for legacy or improperly formatted Firestore fields
+                const sanitizedQuestions = (data.questions || []).map(q => ({
+                    text: q.text || q.question || "Empty Question Data",
+                    a: q.a || q.optionA || q.optA || "",
+                    b: q.b || q.optionB || q.optB || "",
+                    c: q.c || q.optionC || q.optC || "",
+                    d: q.d || q.optionD || q.optD || "",
+                    answer: q.answer || q.correct || "A",
+                    marks: q.marks || 5,
+                    time: q.time || 2
+                }));
+
                 const quizObj = {
                     id: doc.id,
                     title: data.title || data.metaExam || "Legacy Quiz",
@@ -183,7 +196,7 @@ async function loadAndMigrateApplicationState() {
                     metaClass: data.metaClass || "",
                     metaSubject: data.metaSubject || "",
                     metaTopic: data.metaTopic || "",
-                    questions: data.questions || [],
+                    questions: sanitizedQuestions,
                     shuffle: data.shuffle || false
                 };
                 if(existingIndex === -1) enterpriseState.quizzes.push(quizObj);
@@ -766,26 +779,27 @@ function synchronizePDFSourceAssetSelector() {
 }
 
 // Generates a robust hidden DOM to perfectly capture exact styling to Canvas and PDF format
+// APPLIED FIXES: Small PDF scaling, heavy JPEG Compression, strict fallback properties for visual tables. 
 async function triggerHighFidelityPDFExport(isKey = false) {
     if(!window.jspdf || !window.html2canvas || !window.QRCode) return displayNotificationToast("PDF rendering engines initializing. Please try again.", "error");
     
     const qz = enterpriseState.quizzes.find(q => q.id === document.getElementById('pdfSourceAssetSelect').value);
     if(!qz) return displayNotificationToast("Select an asset source.", "error");
 
-    const eName = document.getElementById('pdfExamName').value || q.title || 'Assessment';
+    const eName = document.getElementById('pdfExamName').value || qz.title || 'Assessment';
     const eClass = document.getElementById('pdfClass').value || '___';
     const eSubject = document.getElementById('pdfSubject').value || '___';
     const eTopic = document.getElementById('pdfTopic').value || '___';
     const tMarks = document.getElementById('pdfMarksInput').value || '___';
     const tTime = document.getElementById('pdfTimeInput').value || '___';
 
-    displayNotificationToast("Compiling Document Geometry... Please wait.", "success");
+    displayNotificationToast("Compiling Reduced Document Geometry... Please wait.", "success");
 
-    // Pre-Generate QR Code to a Canvas
+    // Pre-Generate QR Code to a Canvas and compress it
     const qrDiv = document.createElement('div');
     new QRCode(qrDiv, { text: "https://www.youtube.com/@KALVIKADAL", width: 80, height: 80 });
     const qrCanvas = qrDiv.querySelector('canvas');
-    const qrDataUrl = qrCanvas ? qrCanvas.toDataURL('image/png') : null;
+    const qrDataUrl = qrCanvas ? qrCanvas.toDataURL('image/jpeg', 0.8) : null;
 
     // Construct a staging container mimicking real paper, append to body but hide it via z-index
     const printDiv = document.createElement('div');
@@ -828,17 +842,18 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     qz.questions.forEach((q, i) => {
         if(isKey) {
             let ansLetter = q.answer ? q.answer.toUpperCase() : 'A';
-            let ansText = q[ansLetter.toLowerCase()] || '';
+            let ansText = q[ansLetter.toLowerCase()] || '______';
             // For Answer Key: Strictly number, answer letter, and answer text only (e.g. 1. B. bit)
             htmlContent += `<div style="margin-bottom:16px; font-size: 16px; color: #000; page-break-inside: avoid; font-weight: bold;">`;
             htmlContent += `${i+1}. ${ansLetter}. ${ansText}`;
             htmlContent += `</div>`;
         } else {
-            // For Main Exam: Question + 4 Options (A, B, C, D) forced render
-            let optA = q.a || '';
-            let optB = q.b || '';
-            let optC = q.c || '';
-            let optD = q.d || '';
+            // SAFEGUARD MAPPING: If missing exact keys, fallback to underscores to ensure spacing
+            let optA = q.a || q.optionA || q.optA || '_________________';
+            let optB = q.b || q.optionB || q.optB || '_________________';
+            let optC = q.c || q.optionC || q.optC || '_________________';
+            let optD = q.d || q.optionD || q.optD || '_________________';
+            let qText = q.text || q.question || 'Missing Target Question...';
             
             htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;
             
@@ -846,7 +861,7 @@ async function triggerHighFidelityPDFExport(isKey = false) {
             htmlContent += `<table style="width: 100%; border-collapse: collapse; color: #000; margin-bottom: 8px;">`;
             htmlContent += `<tr>`;
             htmlContent += `<td style="vertical-align: top; width: 30px;"><strong>${i+1}.</strong></td>`;
-            htmlContent += `<td style="vertical-align: top;">${q.text}</td>`;
+            htmlContent += `<td style="vertical-align: top;">${qText}</td>`;
             htmlContent += `</tr>`;
             htmlContent += `</table>`;
             
@@ -870,12 +885,14 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     document.body.appendChild(printDiv);
 
     try {
-        // Await high-fidelity canvas snapshot
-        const canvas = await html2canvas(printDiv, { scale: 2, useCORS: true, logging: false });
-        const imgData = canvas.toDataURL('image/png');
+        // Await high-fidelity canvas snapshot but compress scale down to save immense file size.
+        const canvas = await html2canvas(printDiv, { scale: 1.5, useCORS: true, logging: false });
+        
+        // COMPRESSION FIX: Use JPEG instead of PNG format, set Quality factor to 0.75 for huge size savings
+        const imgData = canvas.toDataURL('image/jpeg', 0.75); 
         
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'pt', 'a4'); 
+        const pdf = new jsPDF('p', 'pt', 'a4', true); 
         
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
@@ -886,7 +903,8 @@ async function triggerHighFidelityPDFExport(isKey = false) {
         
         const addQRCodetoPage = () => {
             if(qrDataUrl) {
-                pdf.addImage(qrDataUrl, 'PNG', pdfWidth - 70, pageHeight - 70, 50, 50);
+                // Use explicit FAST rendering profile compression 
+                pdf.addImage(qrDataUrl, 'JPEG', pdfWidth - 70, pageHeight - 70, 50, 50, undefined, 'FAST');
                 pdf.setFontSize(10);
                 pdf.setTextColor(0, 0, 0);
                 pdf.setFont("helvetica", "bold");
@@ -894,8 +912,8 @@ async function triggerHighFidelityPDFExport(isKey = false) {
             }
         };
 
-        // First page
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        // First page logic with compression pipeline
+        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
         addQRCodetoPage();
         heightLeft -= pageHeight;
         
@@ -903,7 +921,7 @@ async function triggerHighFidelityPDFExport(isKey = false) {
         while (heightLeft > 0) {
             position -= pageHeight; 
             pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
             addQRCodetoPage();
             heightLeft -= pageHeight;
         }

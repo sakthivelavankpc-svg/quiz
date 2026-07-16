@@ -157,7 +157,34 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V37 SAFE CLOUD-MERGE ENGINE (FIRESTORE EMPTY NODE FIX APPLIED) ---
+// --- BULLETPROOF DATA EXTRACTION UTILITY ---
+// Scans every possible legacy variation of option formatting in Firestore
+const extractOption = (q, letter, idx) => {
+    if (!q) return "";
+    const up = letter.toUpperCase();
+    const low = letter.toLowerCase();
+    
+    // 1. Direct letter keys (a, A)
+    if (q[low] !== undefined && q[low] !== null && String(q[low]).trim() !== "") return String(q[low]);
+    if (q[up] !== undefined && q[up] !== null && String(q[up]).trim() !== "") return String(q[up]);
+    
+    // 2. Named keys (optionA, OptionA, optA, opt_a, option1)
+    if (q[`option${up}`] !== undefined && q[`option${up}`] !== null) return String(q[`option${up}`]);
+    if (q[`Option${up}`] !== undefined && q[`Option${up}`] !== null) return String(q[`Option${up}`]);
+    if (q[`opt${up}`] !== undefined && q[`opt${up}`] !== null) return String(q[`opt${up}`]);
+    if (q[`opt_${low}`] !== undefined && q[`opt_${low}`] !== null) return String(q[`opt_${low}`]);
+    if (q[`option${idx + 1}`] !== undefined && q[`option${idx + 1}`] !== null) return String(q[`option${idx + 1}`]);
+    if (q[`Option${idx + 1}`] !== undefined && q[`Option${idx + 1}`] !== null) return String(q[`Option${idx + 1}`]);
+    
+    // 3. Array structures (options[], choices[], answers[])
+    if (Array.isArray(q.options) && q.options[idx] !== undefined) return String(q.options[idx]);
+    if (Array.isArray(q.choices) && q.choices[idx] !== undefined) return String(q.choices[idx]);
+    if (Array.isArray(q.answers) && q.answers[idx] !== undefined) return String(q.answers[idx]);
+
+    return ""; 
+};
+
+// --- V37 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
@@ -177,14 +204,14 @@ async function loadAndMigrateApplicationState() {
                 const data = doc.data();
                 const existingIndex = enterpriseState.quizzes.findIndex(q => q.id === doc.id);
                 
-                // MAPPING FIX: Account for legacy or improperly formatted Firestore fields
+                // MAPPING FIX: Interrogate data with aggressive extractor
                 const sanitizedQuestions = (data.questions || []).map(q => ({
-                    text: q.text || q.question || "Empty Question Data",
-                    a: q.a || q.optionA || q.optA || "",
-                    b: q.b || q.optionB || q.optB || "",
-                    c: q.c || q.optionC || q.optC || "",
-                    d: q.d || q.optionD || q.optD || "",
-                    answer: q.answer || q.correct || "A",
+                    text: q.text || q.question || q.title || "Empty Question Data",
+                    a: extractOption(q, 'a', 0),
+                    b: extractOption(q, 'b', 1),
+                    c: extractOption(q, 'c', 2),
+                    d: extractOption(q, 'd', 3),
+                    answer: q.answer || q.correct || q.correctAnswer || "A",
                     marks: q.marks || 5,
                     time: q.time || 2
                 }));
@@ -779,7 +806,6 @@ function synchronizePDFSourceAssetSelector() {
 }
 
 // Generates a robust hidden DOM to perfectly capture exact styling to Canvas and PDF format
-// APPLIED FIXES: Small PDF scaling, heavy JPEG Compression, strict fallback properties for visual tables. 
 async function triggerHighFidelityPDFExport(isKey = false) {
     if(!window.jspdf || !window.html2canvas || !window.QRCode) return displayNotificationToast("PDF rendering engines initializing. Please try again.", "error");
     
@@ -843,16 +869,16 @@ async function triggerHighFidelityPDFExport(isKey = false) {
         if(isKey) {
             let ansLetter = q.answer ? q.answer.toUpperCase() : 'A';
             let ansText = q[ansLetter.toLowerCase()] || '______';
-            // For Answer Key: Strictly number, answer letter, and answer text only (e.g. 1. B. bit)
+            // For Answer Key: Strictly number, answer letter, and answer text only
             htmlContent += `<div style="margin-bottom:16px; font-size: 16px; color: #000; page-break-inside: avoid; font-weight: bold;">`;
             htmlContent += `${i+1}. ${ansLetter}. ${ansText}`;
             htmlContent += `</div>`;
         } else {
-            // SAFEGUARD MAPPING: If missing exact keys, fallback to underscores to ensure spacing
-            let optA = q.a || q.optionA || q.optA || '_________________';
-            let optB = q.b || q.optionB || q.optB || '_________________';
-            let optC = q.c || q.optionC || q.optC || '_________________';
-            let optD = q.d || q.optionD || q.optD || '_________________';
+            // Evaluates as true fallback ONLY if the string is genuinely empty after deep extraction.
+            let optA = q.a ? q.a : '_________________';
+            let optB = q.b ? q.b : '_________________';
+            let optC = q.c ? q.c : '_________________';
+            let optD = q.d ? q.d : '_________________';
             let qText = q.text || q.question || 'Missing Target Question...';
             
             htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;

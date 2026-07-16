@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- V36 FIREBASE INTEGRATION & AUTH MODEL ---
+// --- V37 FIREBASE INTEGRATION & AUTH MODEL ---
 const firebaseConfig = {
     apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
     authDomain: "quiz-master-3e489.firebaseapp.com",
@@ -19,7 +19,7 @@ try {
     console.error("Firebase Init Offline Bypass.");
 }
 
-// --- CORE ENTERPRISE STATE (Unified v36 Model) ---
+// --- CORE ENTERPRISE STATE (Unified v37 Model) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v36.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v37.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -157,7 +157,7 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V36 SAFE CLOUD-MERGE ENGINE ---
+// --- V37 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
@@ -800,32 +800,28 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     printDiv.style.left = '0';
     printDiv.style.zIndex = '-9999';
     
-    // Exact Header Replication
+    // Exact Header Replication matching the required format
     let htmlContent = `
-        <div style="border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px;">
-            <h1 style="text-align:center; font-size: 26px; margin-bottom: 15px; font-weight: bold; color: #000; text-transform: uppercase;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</h1>
-            
-            <table style="width: 100%; font-size: 14px; font-weight: bold; margin-bottom: 8px; border-collapse: collapse; color: #000;">
+        <div style="margin-bottom: 25px;">
+            <table style="width: 100%; font-size: 14px; font-weight: bold; margin-bottom: 5px; border-collapse: collapse; color: #000;">
                 <tr>
-                    <td style="text-align: left; width: 50%;">CLASS: <span style="font-weight:normal;">${eClass}</span></td>
-                    <td style="text-align: left; width: 50%;">SUBJECT: <span style="font-weight:normal;">${eSubject}</span></td>
+                    <td style="text-align: left; width: 50%; padding-bottom: 8px;">CLASS: <span style="font-weight:normal;">${eClass}</span></td>
+                    <td style="text-align: right; width: 50%; padding-bottom: 8px; text-transform: uppercase;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left; width: 50%; padding-bottom: 8px;">SUBJECT: <span style="font-weight:normal;">${eSubject}</span></td>
+                    <td style="text-align: right; width: 50%; padding-bottom: 8px;">NAME / REGISTER NO: _______________________</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left; width: 50%; padding-bottom: 8px;">TOPIC: <span style="font-weight:normal;">${eTopic}</span></td>
+                    <td style="text-align: right; width: 50%; padding-bottom: 8px;">DATE: _______________________</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left; width: 50%;">MARKS: <span style="font-weight:normal;">${tMarks}</span></td>
+                    <td style="text-align: right; width: 50%;">TIME: <span style="font-weight:normal;">${tTime} Mins</span></td>
                 </tr>
             </table>
-            
-            <table style="width: 100%; font-size: 14px; font-weight: bold; margin-bottom: 8px; border-collapse: collapse; color: #000;">
-                <tr>
-                    <td style="text-align: left; width: 50%;">NAME / REGISTER NO: _______________________</td>
-                    <td style="text-align: left; width: 50%;">TOPIC: <span style="font-weight:normal;">${eTopic}</span></td>
-                </tr>
-            </table>
-
-            <table style="width: 100%; font-size: 14px; font-weight: bold; border-collapse: collapse; color: #000;">
-                <tr>
-                    <td style="text-align: left; width: 50%;">DATE: _______________________</td>
-                    <td style="text-align: left; width: 25%;">MARKS: <span style="font-weight:normal;">${tMarks}</span></td>
-                    <td style="text-align: left; width: 25%;">TIME: <span style="font-weight:normal;">${tTime} Mins</span></td>
-                </tr>
-            </table>
+            <hr style="border: none; border-bottom: 2px solid #000; margin-bottom: 20px;" />
         </div>
     `;
 
@@ -834,11 +830,16 @@ async function triggerHighFidelityPDFExport(isKey = false) {
             let ansLetter = q.answer ? q.answer.toUpperCase() : 'A';
             let ansText = q[ansLetter.toLowerCase()] || '';
             // For Answer Key: Strictly number, answer letter, and answer text only (e.g. 1. B. bit)
-            htmlContent += `<div style="margin-bottom:16px; font-size: 16px; color: #000; page-break-inside: avoid;">`;
-            htmlContent += `<strong>${i+1}.</strong> ${ansLetter}. ${ansText}`;
+            htmlContent += `<div style="margin-bottom:16px; font-size: 16px; color: #000; page-break-inside: avoid; font-weight: bold;">`;
+            htmlContent += `${i+1}. ${ansLetter}. ${ansText}`;
             htmlContent += `</div>`;
         } else {
-            // For Main Exam: Question + 2-Column Options
+            // For Main Exam: Question + 4 Options (A, B, C, D) forced render
+            let optA = q.a || '';
+            let optB = q.b || '';
+            let optC = q.c || '';
+            let optD = q.d || '';
+            
             htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;
             
             // Render Question string inside a safe table
@@ -849,20 +850,18 @@ async function triggerHighFidelityPDFExport(isKey = false) {
             htmlContent += `</tr>`;
             htmlContent += `</table>`;
             
-            // Options grouped strictly using HTML tables (2x2 Grid)
+            // Options grouped strictly using HTML tables (2x2 Grid) to unconditionally print A, B, C, D
             htmlContent += `<table style="margin-left: 30px; width: 95%; table-layout: fixed; border-collapse: collapse; color: #000;">`;
             htmlContent += `<tr>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 8px;"><strong>A.</strong> ${q.a || ''}</td>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 8px;"><strong>B.</strong> ${q.b || ''}</td>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 12px;"><strong>A.</strong> ${optA}</td>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 12px;"><strong>B.</strong> ${optB}</td>`;
             htmlContent += `</tr>`;
-            
-            if(q.c || q.d) {
-                htmlContent += `<tr>`;
-                htmlContent += `<td style="vertical-align: top; width: 50%;"><strong>C.</strong> ${q.c || ''}</td>`;
-                htmlContent += `<td style="vertical-align: top; width: 50%;"><strong>D.</strong> ${q.d || ''}</td>`;
-                htmlContent += `</tr>`;
-            }
+            htmlContent += `<tr>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 12px;"><strong>C.</strong> ${optC}</td>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 12px;"><strong>D.</strong> ${optD}</td>`;
+            htmlContent += `</tr>`;
             htmlContent += `</table>`;
+            
             htmlContent += `</div>`;
         }
     });

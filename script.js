@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- V34 FIREBASE INTEGRATION & AUTH MODEL ---
+// --- V35 FIREBASE INTEGRATION & AUTH MODEL ---
 const firebaseConfig = {
     apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
     authDomain: "quiz-master-3e489.firebaseapp.com",
@@ -19,7 +19,7 @@ try {
     console.error("Firebase Init Offline Bypass.");
 }
 
-// --- CORE ENTERPRISE STATE (Unified v34 Model) ---
+// --- CORE ENTERPRISE STATE (Unified v35 Model) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v34.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v35.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -157,7 +157,7 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V34 SAFE CLOUD-MERGE ENGINE ---
+// --- V35 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
@@ -776,8 +776,8 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     const eClass = document.getElementById('pdfClass').value || '___';
     const eSubject = document.getElementById('pdfSubject').value || '___';
     const eTopic = document.getElementById('pdfTopic').value || '___';
-    const tMarks = document.getElementById('pdfMarksInput').value || 'N/A';
-    const tTime = document.getElementById('pdfTimeInput').value || 'N/A';
+    const tMarks = document.getElementById('pdfMarksInput').value || '___';
+    const tTime = document.getElementById('pdfTimeInput').value || '___';
 
     displayNotificationToast("Compiling Document Geometry... Please wait.", "success");
 
@@ -801,44 +801,64 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     printDiv.style.zIndex = '-9999';
     
     let htmlContent = `
-        <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px;">
-            <h1 style="font-size: 26px; margin-bottom: 12px; font-weight: bold; color: #000;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</h1>
-            <div style="font-size: 14px; display: flex; justify-content: space-between; max-width: 650px; margin: 0 auto; font-weight: bold;">
-                <span>Class: <span style="font-weight:normal;">${eClass}</span></span>
-                <span>Subject: <span style="font-weight:normal;">${eSubject}</span></span>
-                <span>Topic: <span style="font-weight:normal;">${eTopic}</span></span>
-            </div>
-            <div style="font-size: 14px; display: flex; justify-content: space-between; max-width: 650px; margin: 8px auto 0; font-weight: bold;">
-                <span>Total Marks: <span style="font-weight:normal;">${tMarks}</span></span>
-                <span>Time Allowed: <span style="font-weight:normal;">${tTime} Mins</span></span>
-            </div>
+        <div style="border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px;">
+            <h1 style="text-align:center; font-size: 26px; margin-bottom: 15px; font-weight: bold; color: #000;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</h1>
+            
+            <table style="width: 100%; font-size: 14px; font-weight: bold; margin-bottom: 8px; border-collapse: collapse; color: #000;">
+                <tr>
+                    <td style="text-align: left; width: 70%;">Name / Register No: _______________________</td>
+                    <td style="text-align: right; width: 30%;">Date: _______________</td>
+                </tr>
+            </table>
+            
+            <table style="width: 100%; font-size: 14px; font-weight: bold; margin-bottom: 8px; border-collapse: collapse; color: #000;">
+                <tr>
+                    <td style="text-align: left; width: 33%;">Class: <span style="font-weight:normal;">${eClass}</span></td>
+                    <td style="text-align: center; width: 34%;">Subject: <span style="font-weight:normal;">${eSubject}</span></td>
+                    <td style="text-align: right; width: 33%;">Topic: <span style="font-weight:normal;">${eTopic}</span></td>
+                </tr>
+            </table>
+
+            <table style="width: 100%; font-size: 14px; font-weight: bold; border-collapse: collapse; color: #000;">
+                <tr>
+                    <td style="text-align: left; width: 50%;">Total Marks: <span style="font-weight:normal;">${tMarks}</span></td>
+                    <td style="text-align: right; width: 50%;">Time Allowed: <span style="font-weight:normal;">${tTime} Mins</span></td>
+                </tr>
+            </table>
         </div>
     `;
 
     qz.questions.forEach((q, i) => {
         htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;
-        htmlContent += `<div style="display:flex; margin-bottom:10px;"><strong style="margin-right:8px; min-width: 25px;">${i+1}.</strong> <div style="flex:1;">${q.text}</div></div>`;
+        
+        // Render Question string inside a safe table to avoid inline-block rendering errors
+        htmlContent += `<table style="width: 100%; border-collapse: collapse; color: #000;">`;
+        htmlContent += `<tr>`;
+        htmlContent += `<td style="vertical-align: top; width: 30px;"><strong>${i+1}.</strong></td>`;
+        htmlContent += `<td style="vertical-align: top;">${q.text}</td>`;
+        htmlContent += `</tr>`;
+        htmlContent += `</table>`;
         
         if(isKey) {
-            htmlContent += `<div style="margin-left:33px; padding: 6px 12px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; color: #065f46; font-weight: bold;">Target Key: ${q.answer}</div>`;
+            htmlContent += `<div style="margin-left:30px; margin-top:6px; padding: 6px 12px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; color: #065f46; font-weight: bold;">Target Key: ${q.answer}</div>`;
         } else {
-            // Options grouped in 2-line using strictly inline-block layouts to bypass flex render bugs in html2canvas
-            htmlContent += `<div style="margin-left: 33px; margin-top: 5px;">`;
+            // Options grouped strictly using HTML tables to completely negate buggy flex-box and block wrapping in html2canvas
+            htmlContent += `<table style="margin-left: 30px; margin-top: 8px; width: 95%; table-layout: fixed; border-collapse: collapse; color: #000;">`;
             
             // Line 1: A and B
-            htmlContent += `<div style="margin-bottom: 8px; width: 100%;">`;
-            if(q.a) htmlContent += `<div style="display: inline-block; width: 49%; vertical-align: top;"><strong style="margin-right:4px;">A)</strong> <span style="display:inline-block; vertical-align:top; width:calc(100% - 25px);">${q.a}</span></div>`;
-            if(q.b) htmlContent += `<div style="display: inline-block; width: 49%; vertical-align: top;"><strong style="margin-right:4px;">B)</strong> <span style="display:inline-block; vertical-align:top; width:calc(100% - 25px);">${q.b}</span></div>`;
-            htmlContent += `</div>`;
+            htmlContent += `<tr>`;
+            if(q.a) htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 8px;"><strong>A)</strong> ${q.a}</td>`;
+            if(q.b) htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 8px;"><strong>B)</strong> ${q.b}</td>`;
+            htmlContent += `</tr>`;
             
             // Line 2: C and D
             if(q.c || q.d) {
-                htmlContent += `<div style="width: 100%;">`;
-                if(q.c) htmlContent += `<div style="display: inline-block; width: 49%; vertical-align: top;"><strong style="margin-right:4px;">C)</strong> <span style="display:inline-block; vertical-align:top; width:calc(100% - 25px);">${q.c}</span></div>`;
-                if(q.d) htmlContent += `<div style="display: inline-block; width: 49%; vertical-align: top;"><strong style="margin-right:4px;">D)</strong> <span style="display:inline-block; vertical-align:top; width:calc(100% - 25px);">${q.d}</span></div>`;
-                htmlContent += `</div>`;
+                htmlContent += `<tr>`;
+                if(q.c) htmlContent += `<td style="vertical-align: top; width: 50%;"><strong>C)</strong> ${q.c}</td>`;
+                if(q.d) htmlContent += `<td style="vertical-align: top; width: 50%;"><strong>D)</strong> ${q.d}</td>`;
+                htmlContent += `</tr>`;
             }
-            htmlContent += `</div>`;
+            htmlContent += `</table>`;
         }
         htmlContent += `</div>`;
     });
@@ -864,9 +884,10 @@ async function triggerHighFidelityPDFExport(isKey = false) {
         const addQRCodetoPage = () => {
             if(qrDataUrl) {
                 pdf.addImage(qrDataUrl, 'PNG', pdfWidth - 70, pageHeight - 70, 50, 50);
-                pdf.setFontSize(8);
-                pdf.setTextColor(150);
-                pdf.text("YouTube: KALVIKADAL", pdfWidth - 110, pageHeight - 10);
+                pdf.setFontSize(10);
+                pdf.setTextColor(0, 0, 0);
+                pdf.setFont("helvetica", "bold");
+                pdf.text("YouTube: KALVIKADAL", pdfWidth - 215, pageHeight - 40);
             }
         };
 

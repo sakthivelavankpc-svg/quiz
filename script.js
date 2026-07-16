@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- V35 FIREBASE INTEGRATION & AUTH MODEL ---
+// --- V36 FIREBASE INTEGRATION & AUTH MODEL ---
 const firebaseConfig = {
     apiKey: "AIzaSyAnxIsftWdUxtHEh7nxX1UPRA29c0n1444",
     authDomain: "quiz-master-3e489.firebaseapp.com",
@@ -19,7 +19,7 @@ try {
     console.error("Firebase Init Offline Bypass.");
 }
 
-// --- CORE ENTERPRISE STATE (Unified v35 Model) ---
+// --- CORE ENTERPRISE STATE (Unified v36 Model) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
     await initializeAuthGates();
-    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v35.");
+    triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v36.");
   } catch (err) {
     console.error("Boot Error:", err);
   }
@@ -157,7 +157,7 @@ async function grantAccess(role, profile) {
     await loadAndMigrateApplicationState();
 }
 
-// --- V35 SAFE CLOUD-MERGE ENGINE ---
+// --- V36 SAFE CLOUD-MERGE ENGINE ---
 async function loadAndMigrateApplicationState() {
     displayNotificationToast("Synchronizing Cloud Vectors...", "success");
     
@@ -800,67 +800,71 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     printDiv.style.left = '0';
     printDiv.style.zIndex = '-9999';
     
+    // Exact Header Replication
     let htmlContent = `
         <div style="border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px;">
-            <h1 style="text-align:center; font-size: 26px; margin-bottom: 15px; font-weight: bold; color: #000;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</h1>
+            <h1 style="text-align:center; font-size: 26px; margin-bottom: 15px; font-weight: bold; color: #000; text-transform: uppercase;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</h1>
             
             <table style="width: 100%; font-size: 14px; font-weight: bold; margin-bottom: 8px; border-collapse: collapse; color: #000;">
                 <tr>
-                    <td style="text-align: left; width: 70%;">Name / Register No: _______________________</td>
-                    <td style="text-align: right; width: 30%;">Date: _______________</td>
+                    <td style="text-align: left; width: 50%;">CLASS: <span style="font-weight:normal;">${eClass}</span></td>
+                    <td style="text-align: left; width: 50%;">SUBJECT: <span style="font-weight:normal;">${eSubject}</span></td>
                 </tr>
             </table>
             
             <table style="width: 100%; font-size: 14px; font-weight: bold; margin-bottom: 8px; border-collapse: collapse; color: #000;">
                 <tr>
-                    <td style="text-align: left; width: 33%;">Class: <span style="font-weight:normal;">${eClass}</span></td>
-                    <td style="text-align: center; width: 34%;">Subject: <span style="font-weight:normal;">${eSubject}</span></td>
-                    <td style="text-align: right; width: 33%;">Topic: <span style="font-weight:normal;">${eTopic}</span></td>
+                    <td style="text-align: left; width: 50%;">NAME / REGISTER NO: _______________________</td>
+                    <td style="text-align: left; width: 50%;">TOPIC: <span style="font-weight:normal;">${eTopic}</span></td>
                 </tr>
             </table>
 
             <table style="width: 100%; font-size: 14px; font-weight: bold; border-collapse: collapse; color: #000;">
                 <tr>
-                    <td style="text-align: left; width: 50%;">Total Marks: <span style="font-weight:normal;">${tMarks}</span></td>
-                    <td style="text-align: right; width: 50%;">Time Allowed: <span style="font-weight:normal;">${tTime} Mins</span></td>
+                    <td style="text-align: left; width: 50%;">DATE: _______________________</td>
+                    <td style="text-align: left; width: 25%;">MARKS: <span style="font-weight:normal;">${tMarks}</span></td>
+                    <td style="text-align: left; width: 25%;">TIME: <span style="font-weight:normal;">${tTime} Mins</span></td>
                 </tr>
             </table>
         </div>
     `;
 
     qz.questions.forEach((q, i) => {
-        htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;
-        
-        // Render Question string inside a safe table to avoid inline-block rendering errors
-        htmlContent += `<table style="width: 100%; border-collapse: collapse; color: #000;">`;
-        htmlContent += `<tr>`;
-        htmlContent += `<td style="vertical-align: top; width: 30px;"><strong>${i+1}.</strong></td>`;
-        htmlContent += `<td style="vertical-align: top;">${q.text}</td>`;
-        htmlContent += `</tr>`;
-        htmlContent += `</table>`;
-        
         if(isKey) {
-            htmlContent += `<div style="margin-left:30px; margin-top:6px; padding: 6px 12px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; color: #065f46; font-weight: bold;">Target Key: ${q.answer}</div>`;
+            let ansLetter = q.answer ? q.answer.toUpperCase() : 'A';
+            let ansText = q[ansLetter.toLowerCase()] || '';
+            // For Answer Key: Strictly number, answer letter, and answer text only (e.g. 1. B. bit)
+            htmlContent += `<div style="margin-bottom:16px; font-size: 16px; color: #000; page-break-inside: avoid;">`;
+            htmlContent += `<strong>${i+1}.</strong> ${ansLetter}. ${ansText}`;
+            htmlContent += `</div>`;
         } else {
-            // Options grouped strictly using HTML tables to completely negate buggy flex-box and block wrapping in html2canvas
-            htmlContent += `<table style="margin-left: 30px; margin-top: 8px; width: 95%; table-layout: fixed; border-collapse: collapse; color: #000;">`;
+            // For Main Exam: Question + 2-Column Options
+            htmlContent += `<div style="margin-bottom:24px; font-size: 15px; page-break-inside: avoid; color: #000;">`;
             
-            // Line 1: A and B
+            // Render Question string inside a safe table
+            htmlContent += `<table style="width: 100%; border-collapse: collapse; color: #000; margin-bottom: 8px;">`;
             htmlContent += `<tr>`;
-            if(q.a) htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 8px;"><strong>A)</strong> ${q.a}</td>`;
-            if(q.b) htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 8px;"><strong>B)</strong> ${q.b}</td>`;
+            htmlContent += `<td style="vertical-align: top; width: 30px;"><strong>${i+1}.</strong></td>`;
+            htmlContent += `<td style="vertical-align: top;">${q.text}</td>`;
+            htmlContent += `</tr>`;
+            htmlContent += `</table>`;
+            
+            // Options grouped strictly using HTML tables (2x2 Grid)
+            htmlContent += `<table style="margin-left: 30px; width: 95%; table-layout: fixed; border-collapse: collapse; color: #000;">`;
+            htmlContent += `<tr>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 8px;"><strong>A.</strong> ${q.a || ''}</td>`;
+            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 8px;"><strong>B.</strong> ${q.b || ''}</td>`;
             htmlContent += `</tr>`;
             
-            // Line 2: C and D
             if(q.c || q.d) {
                 htmlContent += `<tr>`;
-                if(q.c) htmlContent += `<td style="vertical-align: top; width: 50%;"><strong>C)</strong> ${q.c}</td>`;
-                if(q.d) htmlContent += `<td style="vertical-align: top; width: 50%;"><strong>D)</strong> ${q.d}</td>`;
+                htmlContent += `<td style="vertical-align: top; width: 50%;"><strong>C.</strong> ${q.c || ''}</td>`;
+                htmlContent += `<td style="vertical-align: top; width: 50%;"><strong>D.</strong> ${q.d || ''}</td>`;
                 htmlContent += `</tr>`;
             }
             htmlContent += `</table>`;
+            htmlContent += `</div>`;
         }
-        htmlContent += `</div>`;
     });
 
     printDiv.innerHTML = htmlContent;
@@ -887,7 +891,7 @@ async function triggerHighFidelityPDFExport(isKey = false) {
                 pdf.setFontSize(10);
                 pdf.setTextColor(0, 0, 0);
                 pdf.setFont("helvetica", "bold");
-                pdf.text("YouTube: KALVIKADAL", pdfWidth - 215, pageHeight - 40);
+                pdf.text("YouTube: KALVIKADAL", pdfWidth - 220, pageHeight - 40);
             }
         };
 

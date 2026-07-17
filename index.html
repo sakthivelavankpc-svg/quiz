@@ -659,7 +659,18 @@
             <h3>Final Score Index: <span id="reviewScoreText">0/0</span></h3>
             <div id="passFailText" style="font-weight:bold; font-size:1.2rem; margin-top:10px;">--</div>
           </div>
+          
           <div id="reviewAnalysisContainer" class="review-cards-stack"></div>
+          
+          <div class="review-share-block">
+              <h3 style="margin-bottom: 12px;"><i class="ri-share-line"></i> Distribution Actions</h3>
+              <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 15px;">Send verified PDFs detailing student response logs and high-fidelity certificates directly to Teachers or personal timelines.</p>
+              <div class="btn-vertical-stack" style="gap: 12px;">
+                  <button id="btnShareResponseTeacher" class="btn-secondary btn-full"><i class="ri-file-text-line"></i> Share Response Payload PDF to Teacher</button>
+                  <button id="btnShareCertificate" class="btn-success btn-full"><i class="ri-award-line"></i> Generate & Share Award Certificate</button>
+              </div>
+          </div>
+
           <button id="reviewCloseBtn" class="btn-primary btn-full" style="margin-top:20px;"><i class="ri-home-wifi-line"></i> Terminate Review Run and Return Home</button>
         </section>
 
@@ -674,7 +685,6 @@
               <h3>Edit Assessment Node</h3>
               <button class="btn-icon-toggle" onclick="window.appEngineAPI.closeEditModal()"><i class="ri-close-line"></i></button>
           </div>
-          
           <div class="wysiwyg-toolbar">
               <button class="wysiwyg-btn" title="Bold" onclick="document.execCommand('bold', false, null)"><i class="ri-bold"></i></button>
               <button class="wysiwyg-btn" title="Italic" onclick="document.execCommand('italic', false, null)"><i class="ri-italic"></i></button>
@@ -703,7 +713,6 @@
                   <option value="Ω">Ω (Omega)</option>
               </select>
           </div>
-
           <div class="modal-body">
               <div class="form-group">
                   <label>Question Text</label>
@@ -779,6 +788,33 @@
           <div class="modal-footer">
               <button class="btn-secondary" onclick="window.appEngineAPI.closeUserModal()">Cancel</button>
               <button class="btn-primary" onclick="window.appEngineAPI.saveUserModal()">Save Changes</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- GLOBAL SOCIAL SHARE MODAL -->
+  <div id="socialShareModal" class="modal-overlay hidden">
+      <div class="modal-content" style="max-width: 420px; text-align: center;">
+          <div class="modal-header">
+              <h3>Share Access Link</h3>
+              <button class="btn-icon-toggle" onclick="document.getElementById('socialShareModal').classList.add('hidden')"><i class="ri-close-line"></i></button>
+          </div>
+          <div class="modal-body">
+              <p style="margin-bottom: 18px; color: var(--text-light); font-size: 0.9rem;">Distribute this live play link to candidates via any platform:</p>
+              <div class="social-share-grid">
+                  <button class="btn-secondary btn-full" id="shareWA"><i class="ri-whatsapp-fill" style="color: #25D366;"></i> WhatsApp</button>
+                  <button class="btn-secondary btn-full" id="shareFB"><i class="ri-facebook-circle-fill" style="color: #1877F2;"></i> Facebook</button>
+                  <button class="btn-secondary btn-full" id="shareTW"><i class="ri-twitter-x-line"></i> Twitter (X)</button>
+                  <button class="btn-secondary btn-full" id="shareGM"><i class="ri-mail-fill" style="color: #EA4335;"></i> Gmail</button>
+                  <button class="btn-secondary btn-full" id="shareNative" style="grid-column: 1 / -1; background: var(--primary); color: white; border: none;"><i class="ri-share-forward-fill"></i> Native App Share</button>
+              </div>
+              <div style="margin-top: 20px; text-align: left;">
+                  <label style="font-size: 0.8rem; font-weight: 600;">Manual URL Token:</label>
+                  <div style="display: flex; gap: 8px; margin-top: 5px;">
+                      <input type="text" id="shareLinkInput" class="form-control" readonly style="font-size: 0.8rem;" />
+                      <button class="btn-secondary" onclick="window.appEngineAPI.copyShareLink()" title="Copy Link"><i class="ri-file-copy-2-line"></i></button>
+                  </div>
+              </div>
           </div>
       </div>
   </div>

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Quiz Master Pro v37 Enterprise (Unified)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700&family=Roboto&family=Noto+Sans&family=Courier+New&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700&family=Roboto&family=Noto+Sans:wght@400;700&family=Courier+New&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   
@@ -30,7 +30,7 @@
       </div>
       <div class="gate-grid">
           <div class="gate-card glass-effect bounce-in" id="cardGuest">
-              <div class="gate-icon">操</div>
+              <div class="gate-icon">🧑‍💻</div>
               <h3>Enter as Guest</h3>
               <ul class="gate-features">
                   <li><i class="ri-check-line" style="color:var(--success);"></i> Play Every Quiz & Group</li>
@@ -40,7 +40,7 @@
               <button id="btnEnterGuest" class="btn-secondary btn-full">Continue as Guest</button>
           </div>
           <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.1s;">
-              <div class="gate-icon">柏</div>
+              <div class="gate-icon">🔐</div>
               <h3>Secure Login</h3>
               <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Auto-detects Student, Teacher, or Admin role.</p>
               <div class="form-group">
@@ -52,7 +52,7 @@
               <button id="btnLogin" class="btn-primary btn-full">Login to Dashboard</button>
           </div>
           <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.2s;">
-              <div class="gate-icon">側</div>
+              <div class="gate-icon">📝</div>
               <h3>Register Account</h3>
               <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Join the enterprise network.</p>
               <div class="form-group">
@@ -83,6 +83,7 @@
       </div>
       <nav class="sidebar-menu">
         <a href="#" class="nav-link active" data-target="homeSection"><i class="ri-dashboard-line"></i> <span>Dashboard</span></a>
+        <a href="#" class="nav-link auth-required" data-target="quizProSection" id="sidebarQuizProLink"><i class="ri-vip-crown-line"></i> <span>Quiz Pro</span></a>
         <a href="#" class="nav-link" data-target="librarySection"><i class="ri-book-open-line"></i> <span>Library</span></a>
         <a href="#" class="nav-link auth-required" data-target="creatorSection"><i class="ri-magic-line"></i> <span>Creator</span></a>
         <a href="#" class="nav-link auth-required" data-target="workspaceSection"><i class="ri-layout-grid-line"></i> <span>Workspace</span></a>
@@ -93,7 +94,6 @@
         <a href="#" class="nav-link" data-target="guidesSection"><i class="ri-compass-3-line"></i> <span>Enterprise Guides</span></a>
         <a href="#" class="nav-link auth-required" data-target="profileSection"><i class="ri-user-settings-line"></i> <span>Profile</span></a>
         <a href="#" class="nav-link hidden" data-target="adminSection" id="sidebarAdminLink"><i class="ri-shield-user-line"></i> <span>Admin Control</span></a>
-        <!-- NEW: User Management Nav Link -->
         <a href="#" class="nav-link hidden" data-target="usersSection" id="sidebarUsersLink"><i class="ri-group-line"></i> <span>User Management</span></a>
       </nav>
       <div class="sidebar-footer">
@@ -154,6 +154,95 @@
           </div>
         </section>
 
+        <!-- QUIZ PRO SECTION -->
+        <section id="quizProSection" class="view-section hidden">
+          <div class="section-header">
+            <h2>Quiz Pro Master Matrix</h2>
+            <p>Instantly search, select, compile individual or combined question structures across topics and broadcast shareable practice targets to student channels.</p>
+          </div>
+          <div class="quiz-pro-container">
+            <div class="creator-card">
+              <h3>1. Configuration Blueprint</h3>
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Exam/Custom Title</label>
+                  <input type="text" id="proExamTitle" class="form-control" placeholder="E.g., Special Tamil & English Mixed Evaluation" />
+                </div>
+                <div class="form-group">
+                  <label>Duration Limit (Minutes)</label>
+                  <input type="number" id="proExamTimer" class="form-control" value="30" min="1" />
+                </div>
+              </div>
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Class/Grade</label>
+                  <input type="text" id="proExamClass" class="form-control" placeholder="E.g., 10th Standard" />
+                </div>
+                <div class="form-group">
+                  <label>Subject Layer</label>
+                  <input type="text" id="proExamSubject" class="form-control" placeholder="E.g., Language Matrix" />
+                </div>
+              </div>
+            </div>
+
+            <div class="pro-workspace-split">
+              <!-- Selection Checklist Column -->
+              <div class="creator-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                  <h3>2. Granular Question Checklist Inventory</h3>
+                  <div class="pro-counter-badge"><i class="ri-checkbox-circle-line"></i> Selected Node Count: <span id="proSelectedCounterText">0</span></div>
+                </div>
+                <div class="form-group">
+                  <input type="text" id="proInventoryFilter" class="form-control" placeholder="🔍 Instant dynamic text or topic search parameter filtering..." />
+                </div>
+                <div id="proChecklistWrapper" class="pro-checklist-scrollbox">
+                  <!-- Generated via Script -->
+                </div>
+              </div>
+
+              <!-- Save and Share Distribution Column -->
+              <div class="creator-card" style="height: fit-content;">
+                <h3>3. Production Deployment & Action Control</h3>
+                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 15px;">Compile selections to local/remote cloud spaces, broadcast tokens, or export assets.</p>
+                
+                <div class="btn-vertical-stack" style="gap: 12px; margin-bottom: 20px;">
+                  <button id="btnProSaveExam" class="btn-primary btn-full"><i class="ri-cloud-upload-line"></i> Compile & Save Combined Exam Block</button>
+                  <button id="btnProGenerateLink" class="btn-success btn-full"><i class="ri-share-forward-line"></i> Generate Live Play URL Link</button>
+                </div>
+
+                <div id="proLinkShareContainer" class="share-box-display hidden">
+                  <label>Active Distribution Play URL Token:</label>
+                  <div style="display: flex; gap: 8px; margin-top: 5px; margin-bottom: 15px;">
+                    <input type="text" id="proGeneratedLinkInput" class="form-control" readonly style="font-size:0.8rem;" />
+                    <button class="btn-secondary" id="btnProCopyLink" title="Copy URL Link"><i class="ri-file-copy-2-line"></i></button>
+                  </div>
+                </div>
+
+                <hr class="form-divider" />
+                
+                <h3>4. Alternative Multi-Channel Distribution Matrix</h3>
+                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 12px;">Simultaneously download high-fidelity payloads or deploy across social networks.</p>
+                
+                <div class="form-group">
+                  <label><input type="checkbox" id="chkProIncludeResponses" checked /> Include High-Fidelity Student Response PDF Data Sheet</label>
+                  <label style="margin-top: 8px; display: block;"><input type="checkbox" id="chkProIncludeCertificate" checked /> Include Automated Achievement Certificate</label>
+                </div>
+
+                <div class="form-group">
+                  <label>Target Channel</label>
+                  <select id="proShareChannelSelect" class="form-control">
+                    <option value="whatsapp">WhatsApp Business API</option>
+                    <option value="gmail">Google Gmail Engine</option>
+                    <option value="native">Native Platform Web Share Intent</option>
+                  </select>
+                </div>
+
+                <button id="btnProTriggerDistributionShare" class="btn-accent btn-full"><i class="ri-send-plane-fill"></i> Execute Selected Component Share</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- LIBRARY -->
         <section id="librarySection" class="view-section hidden">
           <div class="section-header">
@@ -187,9 +276,9 @@
             </div>
             <div class="question-body-card">
               <div id="runnerQuestionMeta" class="q-meta">Question 1 of 1</div>
-              <div id="runnerQuestionText" class="runner-question-text">Loading Question Data Structure...</div>
+              <div id="runnerQuestionText" class="runner-question-text" style="font-family: 'Noto Sans', sans-serif;">Loading Question Data Structure...</div>
               <div id="runnerImageContainer" class="runner-image-box hidden"></div>
-              <div id="runnerOptionsGrid" class="options-grid-layout"></div>
+              <div id="runnerOptionsGrid" class="options-grid-layout" style="font-family: 'Noto Sans', sans-serif;"></div>
             </div>
             <div class="runner-controls">
               <button id="runnerPrevBtn" class="btn-secondary"><i class="ri-arrow-left-s-line"></i> Back</button>
@@ -460,7 +549,7 @@
           </div>
         </section>
 
-        <!-- NEW: USER MANAGEMENT SECTION -->
+        <!-- USER MANAGEMENT SECTION -->
         <section id="usersSection" class="view-section hidden">
           <div class="section-header">
             <h2>User Management Matrix</h2>
@@ -526,7 +615,7 @@
           </div>
         </section>
 
-        <!-- ADMIN (DATABASE DEBUGGER INCLUDED) -->
+        <!-- ADMIN -->
         <section id="adminSection" class="view-section hidden">
           <div class="section-header">
             <h2>System Administration & Control Matrix</h2>
@@ -578,7 +667,7 @@
     </main>
   </div>
 
-  <!-- RICH TEXT EDITOR MODAL FOR WORKSPACE -->
+  <!-- RICH TEXT EDITOR MODAL -->
   <div id="richTextEditorModal" class="modal-overlay hidden">
       <div class="modal-content">
           <div class="modal-header">
@@ -657,7 +746,7 @@
       </div>
   </div>
 
-  <!-- NEW: EDIT USER MODAL -->
+  <!-- EDIT USER MODAL -->
   <div id="editUserModal" class="modal-overlay hidden">
       <div class="modal-content" style="max-width: 450px;">
           <div class="modal-header">
@@ -693,6 +782,9 @@
           </div>
       </div>
   </div>
+
+  <!-- PRO DISTRIBUTOR HIDDEN STAGING RENDERING CONTAINERS (For exact A4 canvas preservation) -->
+  <div id="proStagingWrapper" style="position: absolute; top: -9999px; left: -9999px; width: 0; height: 0; overflow: hidden;"></div>
 
   <script src="script.js" type="module"></script>
 </body>

@@ -19,12 +19,12 @@ try {
     console.error("Firebase Init Offline Bypass.");
 }
 
-// --- CORE ENTERPRISE STATE (Unified v37 Model) ---
+// --- CORE ENTERPRISE STATE (Unified v37 Model + Pro Expansion) ---
 const enterpriseState = {
   quizzes: [],
   examGroups: [],
   logs: [],
-  users: [], // NEW: Manage registered users
+  users: [], 
   rawCloudData: { quizzes: [], examGroups: [] }, 
   activeQuiz: null,
   activeQuestions: [],
@@ -37,7 +37,9 @@ const enterpriseState = {
   redoStack: [],
   workspaceLayout: 'grid',
   activeGuide: 'quickstart',
-  currentUser: { uid: 'GUEST', role: 'guest', name: 'Guest User' }
+  currentUser: { uid: 'GUEST', role: 'guest', name: 'Guest User' },
+  // Quiz Pro Selection Array Pointer Space
+  selectedProQuestions: []
 };
 
 const guidesDatabase = {
@@ -56,7 +58,9 @@ let currentlyEditingNodeIndex = null;
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     registerGlobalSystemEvents();
+    registerQuizProSystemEvents();
     await initializeAuthGates();
+    processIncomingUrlSearchParameters();
     triggerLogTrail("[INIT] Enterprise System Core Framework Initialized Successfully v37.4.");
   } catch (err) {
     console.error("Boot Error:", err);
@@ -155,7 +159,7 @@ async function grantAccess(role, profile) {
     
     if (role === 'admin') {
         document.getElementById('sidebarAdminLink').classList.remove('hidden');
-        document.getElementById('sidebarUsersLink').classList.remove('hidden'); // Show User Manager
+        document.getElementById('sidebarUsersLink').classList.remove('hidden'); 
     }
 
     displayNotificationToast(`Welcome, ${profile.name}`, "success");
@@ -225,9 +229,10 @@ async function loadAndMigrateApplicationState() {
                     description: data.description || "",
                     metaClass: data.metaClass || "",
                     metaSubject: data.metaSubject || "",
-                    metaTopic: data.metaTopic || "",
+                    metaTopic: data.metaTopic || "General",
                     questions: sanitizedQuestions,
-                    shuffle: data.shuffle || false
+                    shuffle: data.shuffle || false,
+                    totalMinutes: data.totalMinutes || 0
                 };
                 if(existingIndex === -1) enterpriseState.quizzes.push(quizObj);
                 else enterpriseState.quizzes[existingIndex] = quizObj;
@@ -241,7 +246,11 @@ async function loadAndMigrateApplicationState() {
                 const groupObj = {
                     id: doc.id,
                     name: data.name || data.groupName || "Legacy Group",
-                    quizReferences: data.quizReferences || data.quizIds || []
+                    quizReferences: data.quizReferences || data.quizIds || [],
+                    totalMinutes: data.totalMinutes || 0,
+                    class: data.class || '',
+                    subject: data.subject || '',
+                    topics: data.topics || ''
                 };
                 if(existingIndex === -1) enterpriseState.examGroups.push(groupObj);
                 else enterpriseState.examGroups[existingIndex] = groupObj;
@@ -253,7 +262,6 @@ async function loadAndMigrateApplicationState() {
         console.warn("Offline DB Read bypass.", e);
     }
     
-    // NEW: Load Users for Admin
     if(enterpriseState.currentUser.role === 'admin') {
         try {
             if(db) {
@@ -271,6 +279,7 @@ async function loadAndMigrateApplicationState() {
     persistApplicationStateToStorage();
     renderCentralAssetLibrary(); 
     renderRealtimeAnalyticsDashboard();
+    populateProQuestionChecklistInventory();
 }
 
 function persistApplicationStateToStorage() {
@@ -308,11 +317,9 @@ function registerGlobalSystemEvents() {
 
     document.getElementById('globalSearchInput').addEventListener('input', (e) => processGlobalAutocompleteQuery(e.target.value.trim()));
 
-    // Creator to Workspace bridge logic
     document.getElementById('creatorAppendQuestionBtn').addEventListener('click', handleCreatorQuestionAppend);
     document.getElementById('creatorToWorkspaceBtn').addEventListener('click', transferCreatorToWorkspace);
     
-    // Excel Engine logic
     const excelDropZone = document.getElementById('excelDropZone');
     excelDropZone.addEventListener('dragover', (e) => { e.preventDefault(); excelDropZone.classList.add('dragover'); });
     excelDropZone.addEventListener('dragleave', () => excelDropZone.classList.remove('dragover'));
@@ -320,7 +327,6 @@ function registerGlobalSystemEvents() {
     document.getElementById('excelFileInput').addEventListener('change', handleExcelSelect);
     document.getElementById('commitExcelImportBtn').addEventListener('click', commitExcelToArray);
 
-    // Workspace logic
     document.getElementById('wsToggleViewBtn').addEventListener('click', () => {
         enterpriseState.workspaceLayout = enterpriseState.workspaceLayout === 'grid' ? 'list' : 'grid';
         renderVisualWorkspaceBoard();
@@ -329,13 +335,11 @@ function registerGlobalSystemEvents() {
     document.getElementById('wsUndoBtn').addEventListener('click', executeWorkspaceUndoAction);
     document.getElementById('wsRedoBtn').addEventListener('click', executeWorkspaceRedoAction);
 
-    // Group Builder
     document.getElementById('groupShuffleBtn').addEventListener('click', () => { activeDraftCompositeIds.sort(()=>Math.random()-0.5); renderCompositeTargetZone(); });
     document.getElementById('groupDeduplicateBtn').addEventListener('click', () => { activeDraftCompositeIds = [...new Set(activeDraftCompositeIds)]; renderCompositeTargetZone(); });
     document.getElementById('groupCommitBtn').addEventListener('click', saveCombinedExamGroupToState);
     document.getElementById('groupInventorySearch').addEventListener('input', (e) => renderGroupInventorySelector(e.target.value.trim()));
 
-    // Runner
     document.getElementById('runnerPrevBtn').addEventListener('click', stepBackRunnerQuestion);
     document.getElementById('runnerNextBtn').addEventListener('click', stepForwardRunnerQuestion);
     document.getElementById('runnerQuitBtn').addEventListener('click', () => {
@@ -345,12 +349,11 @@ function registerGlobalSystemEvents() {
     document.getElementById('runnerFinishBtn').addEventListener('click', finalizeQuizEvaluationSession);
     document.getElementById('reviewCloseBtn').addEventListener('click', () => switchViewportContext('homeSection'));
 
-    // Admin & Users & PDF
     document.getElementById('adminResetDataBtn').addEventListener('click', () => { localStorage.removeItem('QMP_ENTERPRISE_CACHED_STATE'); window.location.reload(); });
     document.getElementById('adminForceSyncBtn').addEventListener('click', loadAndMigrateApplicationState);
     
     document.getElementById('adminDownloadDumpBtn').addEventListener('click', generateDatabaseJSONDump);
-    document.getElementById('adminDownloadUsersBtn').addEventListener('click', downloadUsersData); // New Users dump
+    document.getElementById('adminDownloadUsersBtn').addEventListener('click', downloadUsersData); 
     
     document.getElementById('pdfGenerateDownloadBtn').addEventListener('click', () => triggerHighFidelityPDFExport(false));
     document.getElementById('pdfGenerateKeyBtn').addEventListener('click', () => triggerHighFidelityPDFExport(true));
@@ -360,7 +363,6 @@ function registerGlobalSystemEvents() {
         displayNotificationToast("Profile updated", "success");
     });
 
-    // Guides
     document.querySelectorAll('.guide-tree-link').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.guide-tree-link').forEach(b => b.classList.remove('active'));
@@ -430,6 +432,7 @@ function switchViewportContext(targetId) {
     if (targetId === 'workspaceSection') renderVisualWorkspaceBoard();
     if (targetId === 'groupsSection') { renderGroupInventorySelector(''); renderCompositeTargetZone(); }
     if (targetId === 'pdfSection') synchronizePDFSourceAssetSelector();
+    if (targetId === 'quizProSection') populateProQuestionChecklistInventory();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -449,7 +452,7 @@ function processGlobalAutocompleteQuery(term) {
     container.classList.remove('hidden');
 }
 
-// --- LIBRARY (WITH ADMIN DELETE & COLOR CARDS) ---
+// --- LIBRARY (WITH SHARE BUTTON INTEGRATION) ---
 function renderCentralAssetLibrary() {
     const wrapper = document.getElementById('libraryContainer');
     wrapper.innerHTML = '';
@@ -472,9 +475,10 @@ function renderCentralAssetLibrary() {
                     <p style="font-size: 0.85rem; color:var(--text-light);">${asset.description || ""}</p>
                     <div style="font-size:0.8rem; font-weight:700; color:var(--text-main); margin-top:10px;">Contains: ${count} Nodes</div>
                 </div>
-                <div class="asset-action-row" style="flex-wrap:wrap;">
+                <div class="asset-action-row" style="flex-wrap:wrap; gap:6px;">
                     <button class="btn-primary" onclick="window.appEngineAPI.launchAsset('${asset.id}', ${isGroup})"><i class="ri-play-fill"></i> Launch</button>
                     ${!isGroup && enterpriseState.currentUser.role !== 'guest' ? `<button class="btn-secondary" onclick="window.appEngineAPI.stageWorkspace('${asset.id}')"><i class="ri-layout-grid-line"></i> Edit Canvas</button>` : ''}
+                    <button class="btn-success" onclick="window.appEngineAPI.triggerLibraryAssetShare('${asset.id}', ${isGroup})" title="Instant Response & Certificate Share"><i class="ri-share-forward-fill"></i> Share</button>
                     ${enterpriseState.currentUser.role === 'admin' ? `<button class="btn-danger" style="margin-left:auto;" onclick="window.appEngineAPI.deleteAsset('${asset.id}', ${isGroup})"><i class="ri-delete-bin-line"></i> Delete</button>` : ''}
                 </div>
             </div>`;
@@ -593,6 +597,7 @@ function commitExcelToArray() {
     document.getElementById('excelPreviewContainer').classList.add('hidden');
     displayNotificationToast(`${pendingExcelArray.length} parsed items injected. Ready to Transfer to Workspace.`, "success");
     pendingExcelArray = [];
+    populateProQuestionChecklistInventory();
 }
 
 // --- CREATOR STUDIO MANUAL ---
@@ -608,6 +613,7 @@ function handleCreatorQuestionAppend() {
     document.getElementById('pendingQuestionsCount').textContent = localCreatorQuestionArray.length;
     ['qFormText','qFormOptA','qFormOptB','qFormOptC','qFormOptD'].forEach(id => document.getElementById(id).value = '');
     displayNotificationToast("Node appended to volatile array.", "success");
+    populateProQuestionChecklistInventory();
 }
 
 // --- CREATOR TO WORKSPACE BRIDGE ---
@@ -618,7 +624,7 @@ function transferCreatorToWorkspace() {
     const desc = document.getElementById('creatorQuizDescription').value;
     const mClass = document.getElementById('creatorClass').value.trim();
     const mSubject = document.getElementById('creatorSubject').value.trim();
-    const mTopic = document.getElementById('creatorTopic').value.trim();
+    const mTopic = document.getElementById('creatorTopic').value.trim() || "General";
     
     activeWorkspaceQuizReference = {
         id: "quiz_" + Date.now(),
@@ -692,7 +698,6 @@ function executeWorkspaceRedoAction() {
     renderVisualWorkspaceBoard();
 }
 
-// Publish from Workspace to actual DB
 async function publishWorkspaceState() {
     if(!activeWorkspaceQuizReference) return displayNotificationToast("No active workspace asset to publish", "error");
     if(!activeWorkspaceQuizReference.questions.length) return displayNotificationToast("Cannot save empty quiz.", "error");
@@ -745,7 +750,8 @@ async function saveCombinedExamGroupToState() {
         id: "group_" + Date.now(), 
         name, 
         quizReferences: [...activeDraftCompositeIds],
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        totalMinutes: 60
     };
     enterpriseState.examGroups.push(payload);
     persistApplicationStateToStorage();
@@ -761,8 +767,11 @@ async function saveCombinedExamGroupToState() {
 // --- SECURE QUIZ RUNNER UI ---
 function initializeLiveQuizAttemptRunner(id, isGroup = false) {
     let targetQuizzes = [];
+    let allocatedMinutes = 0;
+    
     if(isGroup) {
         const group = enterpriseState.examGroups.find(g => g.id === id);
+        allocatedMinutes = group.totalMinutes || 45;
         group.quizReferences.forEach(ref => {
             const qz = enterpriseState.quizzes.find(q => q.id === ref);
             if(qz && qz.questions) targetQuizzes.push(...qz.questions);
@@ -770,6 +779,7 @@ function initializeLiveQuizAttemptRunner(id, isGroup = false) {
         enterpriseState.activeQuiz = { title: group.name, questions: targetQuizzes };
     } else {
         const qz = enterpriseState.quizzes.find(q => q.id === id);
+        allocatedMinutes = qz.totalMinutes || 30;
         enterpriseState.activeQuiz = qz;
         targetQuizzes = [...qz.questions];
         if(qz.shuffle) targetQuizzes.sort(() => Math.random() - 0.5);
@@ -788,6 +798,11 @@ function initializeLiveQuizAttemptRunner(id, isGroup = false) {
         enterpriseState.elapsedSeconds++;
         const pad = v => String(v).padStart(2,'0');
         document.getElementById('runnerTimer').textContent = `${pad(Math.floor(enterpriseState.elapsedSeconds/60))}:${pad(enterpriseState.elapsedSeconds%60)}`;
+        
+        if (allocatedMinutes > 0 && enterpriseState.elapsedSeconds >= (allocatedMinutes * 60)) {
+            displayNotificationToast("Exam duration time limit reached. Auto evaluating...", "error");
+            finalizeQuizEvaluationSession();
+        }
     }, 1000);
     renderRunnerActiveQuestionIndex();
 }
@@ -835,6 +850,21 @@ async function finalizeQuizEvaluationSession() {
     
     switchViewportContext('reviewSection');
 
+    // Automatically trigger alternative response pdf + certificate download flow for the student
+    setTimeout(async () => {
+        displayNotificationToast("Compiling evaluation verification documents...", "success");
+        await window.appEngineAPI.generateQuizProDistributionPayloads({
+            studentName: enterpriseState.currentUser.name || "Student Candidate",
+            examTitle: enterpriseState.activeQuiz.title,
+            score: scorePct,
+            totalQuestions: max,
+            correctAnswers: correct,
+            date: new Date().toLocaleDateString(),
+            questions: enterpriseState.activeQuestions,
+            userAnswers: enterpriseState.userAnswers
+        }, true, true, 'native');
+    }, 1500);
+
     if(enterpriseState.currentUser.role !== 'guest') {
         const payload = { 
             uid: enterpriseState.currentUser.uid,
@@ -849,7 +879,7 @@ async function finalizeQuizEvaluationSession() {
     }
 }
 
-// --- ANALYTICS & PDF MATRIX (HIGH FIDELITY WYSIWYG) ---
+// --- ANALYTICS & PDF MATRIX ---
 function renderRealtimeAnalyticsDashboard() {
     document.getElementById('anaTotalAttempts').textContent = enterpriseState.logs.length;
     const avg = enterpriseState.logs.length ? enterpriseState.logs.reduce((a,b)=>a+b.score,0)/enterpriseState.logs.length : 0;
@@ -893,7 +923,7 @@ function synchronizePDFSourceAssetSelector() {
                 document.getElementById('pdfClass').value = g.class || '';
                 document.getElementById('pdfSubject').value = g.subject || '';
                 document.getElementById('pdfTopic').value = g.topics || '';
-                document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${assetName}</div><div class="sim-body">Evaluation Sequence Length: ${g.questionCount || 'Combined'} Items</div>`;
+                document.getElementById('pdfDocumentSimulator').innerHTML = `<div class="sim-header">${assetName}</div><div class="sim-body">Evaluation Sequence Length: Combined Items</div>`;
             }
         } else {
             const q = enterpriseState.quizzes.find(x => x.id === e.target.value);
@@ -909,10 +939,8 @@ function synchronizePDFSourceAssetSelector() {
     };
 }
 
-// Generates a robust hidden DOM to perfectly capture exact styling to Canvas and PDF format
-// MODIFIED: Aggressive padding/margin removal to fit exactly 12 questions per A4 page natively
 async function triggerHighFidelityPDFExport(isKey = false) {
-    if(!window.jspdf || !window.html2canvas || !window.QRCode) return displayNotificationToast("PDF rendering engines initializing. Please try again.", "error");
+    if(!window.jspdf || !window.html2canvas || !window.QRCode) return displayNotificationToast("PDF rendering engines initializing.", "error");
     
     const sel = document.getElementById('pdfSourceAssetSelect');
     const selectedOpt = sel.options[sel.selectedIndex];
@@ -939,48 +967,31 @@ async function triggerHighFidelityPDFExport(isKey = false) {
     const tMarks = document.getElementById('pdfMarksInput').value || '___';
     const tTime = document.getElementById('pdfTimeInput').value || '___';
 
-    displayNotificationToast("Compiling Dense Layout Document Geometry... Please wait.", "success");
+    displayNotificationToast("Compiling Layout Document Geometry...", "success");
 
-    const qrDiv = document.createElement('div');
-    new QRCode(qrDiv, { text: "https://www.youtube.com/@KALVIKADAL", width: 60, height: 60 });
-    const qrCanvas = qrDiv.querySelector('canvas');
-    const qrDataUrl = qrCanvas ? qrCanvas.toDataURL('image/jpeg', 0.8) : null;
-
-    // Constructed with a wider base width (800px) but tighter paddings to simulate more space
-    const printDiv = document.createElement('div');
-    printDiv.className = 'pdf-print-container';
-    printDiv.style.width = '800px'; 
-    printDiv.style.padding = '30px 40px'; 
-    printDiv.style.fontFamily = "'Inter', 'Arial', sans-serif";
-    printDiv.style.color = '#000000';
-    printDiv.style.background = '#ffffff';
-    printDiv.style.position = 'absolute';
-    printDiv.style.top = '0'; 
-    printDiv.style.left = '0';
-    printDiv.style.zIndex = '-9999';
+    const staging = document.getElementById('proStagingWrapper');
+    staging.innerHTML = '';
     
-    // Header with minimized margin
+    const printDiv = document.createElement('div');
+    printDiv.className = 'pro-pdf-document-canvas';
+    
     let htmlContent = `
-        <div style="margin-bottom: 12px;">
-            <table style="width: 100%; font-size: 13px; font-weight: bold; margin-bottom: 2px; border-collapse: collapse; color: #000;">
+        <div style="margin-bottom: 12px; font-family: 'Noto Sans', sans-serif;">
+            <table class="pro-pdf-meta-header">
                 <tr>
-                    <td style="text-align: left; width: 50%; padding-bottom: 4px;">CLASS: <span style="font-weight:normal;">${eClass}</span></td>
-                    <td style="text-align: right; width: 50%; padding-bottom: 4px; text-transform: uppercase;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</td>
+                    <td style="text-align: left; width: 50%;">CLASS: ${eClass}</td>
+                    <td style="text-align: right; width: 50%; text-transform: uppercase;">${eName} ${isKey ? '(ANSWER KEY)' : ''}</td>
                 </tr>
                 <tr>
-                    <td style="text-align: left; width: 50%; padding-bottom: 4px;">SUBJECT: <span style="font-weight:normal;">${eSubject}</span></td>
-                    <td style="text-align: right; width: 50%; padding-bottom: 4px;">NAME / REGISTER NO: _______________________</td>
+                    <td style="text-align: left; width: 50%;">SUBJECT: ${eSubject}</td>
+                    <td style="text-align: right; width: 50%;">NAME: _______________________</td>
                 </tr>
                 <tr>
-                    <td style="text-align: left; width: 50%; padding-bottom: 4px;">TOPIC: <span style="font-weight:normal;">${eTopic}</span></td>
-                    <td style="text-align: right; width: 50%; padding-bottom: 4px;">DATE: _______________________</td>
-                </tr>
-                <tr>
-                    <td style="text-align: left; width: 50%;">MARKS: <span style="font-weight:normal;">${tMarks}</span></td>
-                    <td style="text-align: right; width: 50%;">TIME: <span style="font-weight:normal;">${tTime} Mins</span></td>
+                    <td style="text-align: left; width: 50%;">TOPIC: ${eTopic}</td>
+                    <td style="text-align: right; width: 50%;">MARKS: ${tMarks} | TIME: ${tTime} Mins</td>
                 </tr>
             </table>
-            <hr style="border: none; border-bottom: 2px solid #000; margin-bottom: 8px;" />
+            <div class="pro-pdf-divider-line"></div>
         </div>
     `;
 
@@ -988,112 +999,296 @@ async function triggerHighFidelityPDFExport(isKey = false) {
         if(isKey) {
             let ansLetter = q.answer ? q.answer.toUpperCase() : 'A';
             let ansText = window.extractOption(q, ansLetter, 0) || '______';
-            // Reduced margins for keys too
-            htmlContent += `<div style="margin-bottom:10px; font-size: 13px; color: #000; page-break-inside: avoid; font-weight: bold;">`;
-            htmlContent += `${i+1}. ${ansLetter}. ${ansText}`;
-            htmlContent += `</div>`;
+            htmlContent += `<div class="pro-pdf-question-block"><b>${i+1}. ${ansLetter}</b> - ${ansText}</div>`;
         } else {
-            let optA = window.extractOption(q, 'a', 0);
-            let optB = window.extractOption(q, 'b', 1);
-            let optC = window.extractOption(q, 'c', 2);
-            let optD = window.extractOption(q, 'd', 3);
-            
-            optA = (optA && optA.trim() !== '') ? optA : '_____';
-            optB = (optB && optB.trim() !== '') ? optB : '_____';
-            optC = (optC && optC.trim() !== '') ? optC : '_____';
-            optD = (optD && optD.trim() !== '') ? optD : '_____';
-            
-            let qText = (q.text && q.text.trim() !== '') ? q.text : 'Missing Target Question...';
-            
-            // Reduced to 11px font and 10px margin bottom to easily fit 12 questions
-            htmlContent += `<div style="margin-bottom:10px; font-size: 11px; page-break-inside: avoid; color: #000;">`;
-            
-            htmlContent += `<table style="width: 100%; border-collapse: collapse; color: #000; margin-bottom: 4px;">`;
-            htmlContent += `<tr>`;
-            htmlContent += `<td style="vertical-align: top; width: 25px;"><strong>${i+1}.</strong></td>`;
-            htmlContent += `<td style="vertical-align: top;">${qText}</td>`;
-            htmlContent += `</tr>`;
-            htmlContent += `</table>`;
-            
-            // Tightened padding on options. Removed the transparent line block logic completely.
-            htmlContent += `<table style="margin-left: 25px; width: 95%; table-layout: fixed; border-collapse: collapse; color: #000;">`;
-            htmlContent += `<tr>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 4px;"><strong>A.</strong> ${optA}</td>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 4px;"><strong>B.</strong> ${optB}</td>`;
-            htmlContent += `</tr>`;
-            htmlContent += `<tr>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 0px;"><strong>C.</strong> ${optC}</td>`;
-            htmlContent += `<td style="vertical-align: top; width: 50%; padding-bottom: 0px;"><strong>D.</strong> ${optD}</td>`;
-            htmlContent += `</tr>`;
-            htmlContent += `</table>`;
-            
-            htmlContent += `</div>`;
+            htmlContent += `
+                <div class="pro-pdf-question-block">
+                    <strong>${i+1}.</strong> ${q.text}
+                    <table class="pro-pdf-options-table">
+                        <tr>
+                            <td><b>A.</b> ${window.extractOption(q, 'a', 0) || '___'}</td>
+                            <td><b>B.</b> ${window.extractOption(q, 'b', 1) || '___'}</td>
+                        </tr>
+                        <tr>
+                            <td><b>C.</b> ${window.extractOption(q, 'c', 2) || '___'}</td>
+                            <td><b>D.</b> ${window.extractOption(q, 'd', 3) || '___'}</td>
+                        </tr>
+                    </table>
+                </div>`;
         }
     });
 
     printDiv.innerHTML = htmlContent;
-    document.body.appendChild(printDiv);
+    staging.appendChild(printDiv);
 
     try {
-        const canvas = await html2canvas(printDiv, { scale: 1.5, useCORS: true, logging: false });
-        const imgData = canvas.toDataURL('image/jpeg', 0.75); 
-        
+        const canvas = await html2canvas(printDiv, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'pt', 'a4', true); 
+        const pdf = new jsPDF('p', 'pt', 'a4');
         
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         const imgHeight = (canvas.height * pdfWidth) / canvas.width;
         
         let heightLeft = imgHeight;
         let position = 0;
-        
-        const addQRCodetoPage = () => {
-            if(qrDataUrl) {
-                pdf.addImage(qrDataUrl, 'JPEG', pdfWidth - 65, pageHeight - 65, 45, 45, undefined, 'FAST');
-                pdf.setFontSize(9);
-                pdf.setTextColor(0, 0, 0);
-                pdf.setFont("helvetica", "bold");
-                pdf.text("YouTube: KALVIKADAL", pdfWidth - 190, pageHeight - 35);
+
+        // Dynamic Kalvi Kadal QR Stamp embedder routing context
+        const qrEl = document.createElement('div');
+        new QRCode(qrEl, { text: "https://www.youtube.com/@KALVIKADAL", width: 80, height: 80 });
+        await new Promise(r => setTimeout(r, 200));
+        const qrCanvas = qrEl.querySelector('canvas');
+        const qrDataUrl = qrCanvas ? qrCanvas.toDataURL('image/jpeg') : null;
+
+        const stampQR = () => {
+            if (qrDataUrl) {
+                pdf.addImage(qrDataUrl, 'JPEG', pdfWidth - 75, pdfHeight - 75, 55, 55);
+                pdf.setFontSize(8);
+                pdf.text("YouTube: KALVIKADAL", pdfWidth - 150, pdfHeight - 30);
             }
         };
 
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
-        addQRCodetoPage();
-        heightLeft -= pageHeight;
-        
+        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+        stampQR();
+        heightLeft -= pdfHeight;
+
         while (heightLeft > 0) {
-            position -= pageHeight; 
+            position -= pdfHeight;
             pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
-            addQRCodetoPage();
-            heightLeft -= pageHeight;
+            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+            stampQR();
+            heightLeft -= pdfHeight;
         }
 
-        pdf.save(`${eName.replace(/\s+/g, '_')}_${isKey ? 'Key' : 'Exam'}.pdf`);
+        pdf.save(`${eName.replace(/\s+/g, '_')}.pdf`);
+        displayNotificationToast("Document compiled successfully.", "success");
     } catch(err) {
-        console.error("PDF engine failure:", err);
-        displayNotificationToast("PDF Generation Failed.", "error");
+        console.error(err);
+        displayNotificationToast("Compilation failure.", "error");
     } finally {
-        document.body.removeChild(printDiv);
+        staging.innerHTML = '';
     }
 }
 
-function renderActiveGuideView(id) { document.getElementById('guideContentBody').innerHTML = `<h3>${guidesDatabase[id].title}</h3><p>${guidesDatabase[id].body}</p>`; }
-function triggerLogTrail(msg) { document.getElementById('adminTerminalLogs').innerHTML += `<br/>[${new Date().toLocaleTimeString()}] ${msg}`; }
-function displayNotificationToast(msg, type='success') {
-    const t = document.createElement('div'); t.className = 'toast-message';
-    t.style.borderLeftColor = type==='error' ? 'var(--danger)' : 'var(--primary)';
-    t.textContent = msg;
-    document.getElementById('toastContainer').appendChild(t);
-    setTimeout(() => { t.style.animation = 'slideIn 0.2s reverse forwards'; setTimeout(()=>t.remove(),200); }, 3000);
+// --- NEW: QUIZ PRO CORE BUSINESS ENGINE ROUTINES ---
+function registerQuizProSystemEvents() {
+    document.getElementById('proInventoryFilter').addEventListener('input', (e) => {
+        populateProQuestionChecklistInventory(e.target.value.trim());
+    });
+    document.getElementById('btnProSaveExam').addEventListener('click', executeProExamCompilationSave);
+    document.getElementById('btnProGenerateLink').addEventListener('click', generateQuizProPlayLinkToken);
+    document.getElementById('btnProCopyLink').addEventListener('click', () => {
+        const input = document.getElementById('proGeneratedLinkInput');
+        input.select();
+        document.execCommand('copy');
+        displayNotificationToast("Distribution URL Link Copied to clipboard.", "success");
+    });
+    document.getElementById('btnProTriggerDistributionShare').addEventListener('click', triggerProAlternativeDistributionInterface);
 }
 
-// --- GLOBAL EXPORTS API & RICH TEXT CONTROLS ---
+function processIncomingUrlSearchParameters() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('proMode') && params.has('token')) {
+        try {
+            const rawDecoded = LZString.decompressFromEncodedURIComponent(params.get('token'));
+            if (rawDecoded) {
+                const configObject = JSON.parse(rawDecoded);
+                enterpriseState.activeQuestions = configObject.questions;
+                enterpriseState.activeQuiz = { title: configObject.title };
+                enterpriseState.userAnswers = {};
+                enterpriseState.currentQuestionIndex = 0;
+                enterpriseState.elapsedSeconds = 0;
+                
+                setTimeout(() => {
+                    switchViewportContext('quizSection');
+                    document.getElementById('runnerQuizTitle').textContent = configObject.title;
+                    
+                    let timeLimit = parseInt(configObject.timer) || 30;
+                    clearInterval(enterpriseState.timerInterval);
+                    enterpriseState.timerInterval = setInterval(() => {
+                        enterpriseState.elapsedSeconds++;
+                        const pad = v => String(v).padStart(2,'0');
+                        document.getElementById('runnerTimer').textContent = `${pad(Math.floor(enterpriseState.elapsedSeconds/60))}:${pad(enterpriseState.elapsedSeconds%60)}`;
+                        if (enterpriseState.elapsedSeconds >= (timeLimit * 60)) {
+                            finalizeQuizEvaluationSession();
+                        }
+                    }, 1000);
+                    renderRunnerActiveQuestionIndex();
+                }, 1000);
+            }
+        } catch(e) {
+            console.error("Token translation error.", e);
+        }
+    }
+}
+
+function populateProQuestionChecklistInventory(filterText = '') {
+    const wrapper = document.getElementById('proChecklistWrapper');
+    if (!wrapper) return;
+    wrapper.innerHTML = '';
+
+    // Extract all individual questions and group them dynamically by context topic structural layers
+    const categorizedTopics = {};
+    enterpriseState.quizzes.forEach(quiz => {
+        const topic = quiz.metaTopic || "General Topic Pool";
+        if (!categorizedTopics[topic]) categorizedTopics[topic] = [];
+        
+        (quiz.questions || []).forEach(q => {
+            // Apply quick parameter token text search mapping criteria
+            if (filterText) {
+                const searchStr = `${q.text} ${topic} ${q.a} ${q.b}`.toLowerCase();
+                if (!searchStr.includes(filterText.toLowerCase())) return;
+            }
+            // Avoid duplicate text nodes inside the compilation panel
+            if (!categorizedTopics[topic].some(existing => existing.text === q.text)) {
+                categorizedTopics[topic].push(q);
+            }
+        });
+    });
+
+    let keys = Object.keys(categorizedTopics);
+    if (keys.length === 0 || (keys.length === 1 && categorizedTopics[keys[0]].length === 0)) {
+        wrapper.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-light);">No matching topic modules or active questions detected.</div>`;
+        return;
+    }
+
+    keys.forEach(topicName => {
+        const questionsList = categorizedTopics[topicName];
+        if (questionsList.length === 0) return;
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'pro-topic-group-container';
+        
+        groupDiv.innerHTML = `
+            <div class="pro-topic-group-header">
+                <span>${topicName}</span>
+                <span style="font-size:0.75rem; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:10px;">Count: ${questionsList.length}</span>
+            </div>
+        `;
+
+        questionsList.forEach((q, idx) => {
+            const isChecked = enterpriseState.selectedProQuestions.some(x => x.text === q.text);
+            const node = document.createElement('div');
+            node.className = 'pro-question-item-node';
+            
+            const uniqueId = `pro_chk_${encodeURIComponent(topicName)}_${idx}`;
+            
+            node.innerHTML = `
+                <input type="checkbox" class="pro-question-checkbox-input" id="${uniqueId}" ${isChecked ? 'checked' : ''} />
+                <div class="pro-node-text-layout">
+                    <label for="${uniqueId}" style="cursor:pointer; display:block; font-family:'Noto Sans', sans-serif;">${q.text}</label>
+                    <div class="pro-node-options-row">
+                        <div><b>A:</b> ${q.a}</div>
+                        <div><b>B:</b> ${q.b}</div>
+                        ${q.c ? `<div><b>C:</b> ${q.c}</div>` : ''}
+                        ${q.d ? `<div><b>D:</b> ${q.d}</div>` : ''}
+                    </div>
+                </div>
+            `;
+
+            node.querySelector('input').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    if(!enterpriseState.selectedProQuestions.some(x => x.text === q.text)) {
+                        enterpriseState.selectedProQuestions.push(q);
+                    }
+                } else {
+                    enterpriseState.selectedProQuestions = enterpriseState.selectedProQuestions.filter(x => x.text !== q.text);
+                }
+                document.getElementById('proSelectedCounterText').textContent = enterpriseState.selectedProQuestions.length;
+            });
+
+            groupDiv.appendChild(node);
+        });
+
+        wrapper.appendChild(groupDiv);
+    });
+
+    document.getElementById('proSelectedCounterText').textContent = enterpriseState.selectedProQuestions.length;
+}
+
+async function executeProExamCompilationSave() {
+    const title = document.getElementById('proExamTitle').value.trim();
+    const timer = document.getElementById('proExamTimer').value || 30;
+    const eClass = document.getElementById('proExamClass').value.trim() || 'General';
+    const eSubj = document.getElementById('proExamSubject').value.trim() || 'General';
+
+    if (!title) return displayNotificationToast("Please declare a Custom Exam Title parameter.", "error");
+    if (enterpriseState.selectedProQuestions.length === 0) return displayNotificationToast("Select at least one question from the matrix inventory checklist.", "error");
+
+    const newQuizBlock = {
+        id: "quiz_pro_" + Date.now(),
+        title: title,
+        description: `Quiz Pro Custom Compiled Composite Layer Block Strategy.`,
+        metaClass: eClass,
+        metaSubject: eSubj,
+        metaTopic: "Pro Composite",
+        questions: [...enterpriseState.selectedProQuestions],
+        shuffle: false,
+        totalMinutes: parseInt(timer),
+        createdAt: new Date().toISOString()
+    };
+
+    enterpriseState.quizzes.push(newQuizBlock);
+    persistApplicationStateToStorage();
+
+    if(db) {
+        try { await setDoc(doc(db, "quizzes", newQuizBlock.id), newQuizBlock); } catch(e){}
+    }
+
+    displayNotificationToast("Quiz Pro Customized composite matrix block committed inside Cloud Store.", "success");
+    switchViewportContext('librarySection');
+}
+
+function generateQuizProPlayLinkToken() {
+    const title = document.getElementById('proExamTitle').value.trim() || "Quiz Pro Shared Test Block";
+    const timer = document.getElementById('proExamTimer').value || 30;
+
+    if (enterpriseState.selectedProQuestions.length === 0) {
+        return displayNotificationToast("Select target items to formulate transmission token link maps.", "error");
+    }
+
+    const simpleConfig = {
+        title: title,
+        timer: timer,
+        questions: enterpriseState.selectedProQuestions
+    };
+
+    const compressedToken = LZString.compressToEncodedURIComponent(JSON.stringify(simpleConfig));
+    const activeLocationHref = window.location.origin + window.location.pathname;
+    const fullPlayUrl = `${activeLocationHref}?proMode=true&token=${compressedToken}`;
+
+    const shareBox = document.getElementById('proLinkShareContainer');
+    shareBox.classList.remove('hidden');
+    document.getElementById('proGeneratedLinkInput').value = fullPlayUrl;
+    displayNotificationToast("Live Play link matrix token generated successfully.", "success");
+}
+
+async function triggerProAlternativeDistributionInterface() {
+    const channel = document.getElementById('proShareChannelSelect').value;
+    const incResponses = document.getElementById('chkProIncludeResponses').checked;
+    const incCert = document.getElementById('chkProIncludeCertificate').checked;
+
+    if (!incResponses && !incCert) return displayNotificationToast("Enable at least one document distribution checkbox flag.", "error");
+
+    const mockDataPacket = {
+        studentName: enterpriseState.currentUser.name || "Candidate Scholar",
+        examTitle: document.getElementById('proExamTitle').value.trim() || "Pro Evaluation Matrix Asset Run",
+        score: 95, 
+        totalQuestions: enterpriseState.selectedProQuestions.length || 10,
+        correctAnswers: enterpriseState.selectedProQuestions.length ? Math.floor(enterpriseState.selectedProQuestions.length * 0.95) : 9,
+        date: new Date().toLocaleDateString(),
+        questions: enterpriseState.selectedProQuestions.length ? enterpriseState.selectedProQuestions : (enterpriseState.quizzes[0]?.questions || []),
+        userAnswers: { 0: 'A', 1: 'B', 2: 'A' }
+    };
+
+    await window.appEngineAPI.generateQuizProDistributionPayloads(mockDataPacket, incResponses, incCert, channel);
+}
+
+// --- GLOBAL EXPORTS API & ACTIONS PANEL ROUTER LAYER ---
 window.appEngineAPI = {
     launchAsset: (id, isGroup) => initializeLiveQuizAttemptRunner(id, isGroup),
     
-    // ADMIN ONLY PERMANENT DELETE ROUTINE
     deleteAsset: async (id, isGroup) => {
         if(!confirm("Warning: Are you sure you want to permanently delete this asset from the Cloud?")) return;
         
@@ -1108,6 +1303,7 @@ window.appEngineAPI = {
         persistApplicationStateToStorage();
         renderCentralAssetLibrary();
         displayNotificationToast("Asset Deleted Successfully", "success");
+        populateProQuestionChecklistInventory();
     },
     
     stageWorkspace: (id) => { 
@@ -1212,5 +1408,220 @@ window.appEngineAPI = {
         }
         renderUsersTable();
         displayNotificationToast("User deleted.", "success");
+    },
+
+    // LIBRARY QUICK SHARE BUTTON IMPLEMENTATION BRIDGE
+    triggerLibraryAssetShare: async (id, isGroup) => {
+        let targetQuestions = [];
+        let title = '';
+        if (isGroup) {
+            const match = enterpriseState.examGroups.find(x => x.id === id);
+            title = match?.name || "Group Exam Collection";
+            (match?.quizReferences || []).forEach(ref => {
+                const qz = enterpriseState.quizzes.find(x => x.id === ref);
+                if(qz) targetQuestions.push(...(qz.questions || []));
+            });
+        } else {
+            const match = enterpriseState.quizzes.find(x => x.id === id);
+            title = match?.title || "Quiz Block";
+            targetQuestions = match?.questions || [];
+        }
+
+        if(targetQuestions.length === 0) return displayNotificationToast("No available questions inside asset container.", "error");
+
+        const simulationPayload = {
+            studentName: "Verified Scholar Candidate",
+            examTitle: title,
+            score: 100,
+            totalQuestions: targetQuestions.length,
+            correctAnswers: targetQuestions.length,
+            date: new Date().toLocaleDateString(),
+            questions: targetQuestions,
+            userAnswers: {}
+        };
+
+        displayNotificationToast("Compiling Library assets files...", "success");
+        await window.appEngineAPI.generateQuizProDistributionPayloads(simulationPayload, true, true, 'native');
+    },
+
+    // HIGH FIDELITY PAYLOAD DISTRIBUTOR ENGINE (PDF RESPONSE SHIELDS & DECORATIVE ARCHITECTURE CERTIFICATES)
+    generateQuizProDistributionPayloads: async (data, includeResponse, includeCert, transportChannel) => {
+        if (!window.jspdf || !window.html2canvas || !window.QRCode) {
+            return displayNotificationToast("Rendering extensions missing from framework.", "error");
+        }
+
+        const staging = document.getElementById('proStagingWrapper');
+        staging.innerHTML = '';
+        
+        const padText = v => String(v).padStart(2,'0');
+        const generatedFilesMap = [];
+
+        // Dynamic QR code base generation targeting Kalvi Kadal YouTube channel destination maps
+        const qrNode = document.createElement('div');
+        new QRCode(qrNode, { text: "https://www.youtube.com/@KALVIKADAL", width: 90, height: 90 });
+        await new Promise(res => setTimeout(res, 250));
+        const qrCanvas = qrNode.querySelector('canvas');
+        const qrDataBaseUrl = qrCanvas ? qrCanvas.toDataURL('image/jpeg') : null;
+
+        // 1. Structuralize Student Response Form Data Sheet
+        if (includeResponse) {
+            const responseCanvasNode = document.createElement('div');
+            responseCanvasNode.className = 'pro-pdf-document-canvas';
+            
+            let html = `
+                <div style="font-family:'Noto Sans', sans-serif;">
+                    <h2 style="color:#0d9488; text-align:center; font-size:18px; margin-bottom:4px;">KALVI KADAL EVALUATION METRICS SHIELD</h2>
+                    <p style="text-align:center; font-size:10px; color:#475569; margin-bottom:15px;">Automated Response System Verification Sheet Pointer</p>
+                    <table class="pro-pdf-meta-header">
+                        <tr><td>CANDIDATE: ${data.studentName}</td><td style="text-align:right;">EVALUATION BLOCK: ${data.examTitle}</td></tr>
+                        <tr><td>DATE INDEX: ${data.date}</td><td style="text-align:right;">SCORE PERCENTAGE: ${data.score}% (${data.correctAnswers}/${data.totalQuestions})</td></tr>
+                    </table>
+                    <div class="pro-pdf-divider-line"></div>
+                </div>
+            `;
+
+            data.questions.forEach((q, idx) => {
+                const candidateChoice = data.userAnswers[idx] || 'SKIPPED';
+                const correctChoice = (q.answer || 'A').toUpperCase();
+                html += `
+                    <div class="pro-pdf-question-block" style="font-family:'Noto Sans', sans-serif;">
+                        <b>Q${idx+1}: ${q.text}</b><br/>
+                        <span style="font-size:11px; margin-left:15px; display:inline-block; color:${candidateChoice === correctChoice ? '#10b981' : '#ef4444'}">
+                            Candidate Choice Parameter: [${candidateChoice}] &bull; Verified Evaluation Key Target: [${correctChoice}]
+                        </span>
+                    </div>`;
+            });
+
+            responseCanvasNode.innerHTML = html;
+            staging.appendChild(responseCanvasNode);
+
+            const resCanvas = await html2canvas(responseCanvasNode, { scale: 2, useCORS: true });
+            const { jsPDF } = window.jspdf;
+            const resPdf = new jsPDF('p', 'pt', 'a4');
+            const w = resPdf.internal.pageSize.getWidth();
+            const h = resPdf.internal.pageSize.getHeight();
+            const calculatedHeight = (resCanvas.height * w) / resCanvas.width;
+            
+            resPdf.addImage(resCanvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, w, calculatedHeight);
+            
+            if (qrDataBaseUrl) {
+                resPdf.addImage(qrDataBaseUrl, 'JPEG', w - 75, h - 75, 55, 55);
+                resPdf.setFontSize(8);
+                resPdf.text("KALVIKADAL QR SHIELD", w - 145, h - 30);
+            }
+
+            generatedFilesMap.push({ name: `${data.studentName.replace(/\s+/g,'_')}_Response.pdf`, blob: resPdf.output('blob') });
+            staging.innerHTML = '';
+        }
+
+        // 2. Structuralize High-Fidelity Custom Decorative Achievement Certificate (Matching Model Architecture)
+        if (includeCert) {
+            const certCanvasNode = document.createElement('div');
+            certCanvasNode.className = 'pro-cert-stage-wrapper';
+            
+            certCanvasNode.innerHTML = `
+                <div class="pro-cert-inner-border">
+                    <div class="pro-cert-corner-ornament pro-cert-top-left"></div>
+                    <div class="pro-cert-corner-ornament pro-cert-top-right"></div>
+                    <div class="pro-cert-corner-ornament pro-cert-bottom-left"></div>
+                    <div class="pro-cert-corner-ornament pro-cert-bottom-right"></div>
+                    
+                    <div style="text-align:center; margin-top:10px; font-family:'Inter', sans-serif;">
+                        <h1 class="pro-cert-header-title">KALVI KADAL</h1>
+                        <div class="pro-cert-subtitle">Quiz Master Pro Evaluation Systems</div>
+                    </div>
+
+                    <div class="pro-cert-main-declaration">Certificate of Achievement</div>
+                    
+                    <div class="pro-cert-recipient-name" style="font-family:'Noto Sans', sans-serif;">${data.studentName}</div>
+                    
+                    <div class="pro-cert-text-body" style="font-family:'Noto Sans', sans-serif;">
+                        This document serves to record that the aforementioned candidate has successfully completed and demonstrated outstanding performance excellence inside the evaluation course vector designated as <strong>${data.examTitle}</strong>.
+                    </div>
+
+                    <div class="pro-cert-metrics-row">
+                        <div class="pro-cert-metric-pill">Final Score Vector: ${data.score}%</div>
+                        <div class="pro-cert-metric-pill">Completion Timestamp: ${data.date}</div>
+                        <div class="pro-cert-metric-pill">Status: DISTINCTION CLEARANCE</div>
+                    </div>
+
+                    <div class="pro-cert-footer-signatures">
+                        <div class="pro-cert-sig-block">
+                            <div class="pro-cert-sig-line"></div>
+                            <div class="pro-cert-sig-title">Quiz Coordinator</div>
+                        </div>
+                        
+                        <div class="pro-cert-qr-footprint" id="certInternalQrSlot"></div>
+
+                        <div class="pro-cert-sig-block">
+                            <div class="pro-cert-sig-line"></div>
+                            <div class="pro-cert-sig-title">Headmaster / Principal</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (qrDataBaseUrl) {
+                const img = document.createElement('img');
+                img.src = qrDataBaseUrl;
+                img.style.width = '80px';
+                img.style.height = '80px';
+                certCanvasNode.querySelector('#certInternalQrSlot').appendChild(img);
+            }
+
+            staging.appendChild(certCanvasNode);
+
+            const certCanvas = await html2canvas(certCanvasNode, { scale: 2, useCORS: true });
+            const { jsPDF } = window.jspdf;
+            const certPdf = new jsPDF('l', 'pt', [1100, 770]);
+            
+            certPdf.addImage(certCanvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 1100, 770);
+            
+            generatedFilesMap.push({ name: `${data.studentName.replace(/\s+/g,'_')}_Certificate.pdf`, blob: certPdf.output('blob') });
+            staging.innerHTML = '';
+        }
+
+        // 3. Social Media Share Transport Channels Router Matrix Execution
+        if (generatedFilesMap.length === 0) return;
+
+        displayNotificationToast(`Distributing files via ${transportChannel.toUpperCase()} Matrix Layer...`, "success");
+
+        generatedFilesMap.forEach(fileObj => {
+            if (transportChannel === 'native' && navigator.canShare) {
+                const file = new File([fileObj.blob], fileObj.name, { type: "application/pdf" });
+                navigator.share({ files: [file], title: fileObj.name, text: `Quiz Master Pro Distribution Payload for student evaluation runs.` })
+                    .catch(e => {
+                        // Alternative direct client local device background download fallback
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(fileObj.blob);
+                        link.download = fileObj.name;
+                        link.click();
+                    });
+            } else if (transportChannel === 'whatsapp') {
+                const message = encodeURIComponent(`*QUIZ MASTER PRO ENTERPRISE COMPONENT NOTIFICATION*\nCandidate: ${data.studentName}\nExam Block: ${data.examTitle}\nPerformance Score Vector: ${data.score}%\nPayload files compiled. Please cross check localized local downloads.`);
+                window.open(`https://api.whatsapp.com/send?text=${message}`, '_blank');
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(fileObj.blob);
+                link.download = fileObj.name;
+                link.click();
+            } else if (transportChannel === 'gmail') {
+                const subject = encodeURIComponent(`Quiz Master Pro Enterprise Verification Sheet: ${data.studentName}`);
+                const body = encodeURIComponent(`Dear Administrator / Teacher,\n\nThe system has generated high fidelity document packages mapping to candidate evaluation results parameters.\n\nScore: ${data.score}%\nDate: ${data.date}\n\nPayload files generated for manual attachment storage options.`);
+                window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(fileObj.blob);
+                link.download = fileObj.name;
+                link.click();
+            } else {
+                // Background download strategy fallback pointer space
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(fileObj.blob);
+                link.download = fileObj.name;
+                link.click();
+            }
+        });
+        displayNotificationToast("Document packages pushed out safely.", "success");
     }
 };

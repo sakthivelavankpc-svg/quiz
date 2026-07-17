@@ -32,7 +32,7 @@ body.dark-mode {
 }
 
 /* --- Core Normalization Layout Engine --- */
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Roboto', sans-serif; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Roboto', 'Noto Sans', sans-serif; }
 body { background-color: var(--bg-body); color: var(--text-main); overflow-x: hidden; transition: background-color 0.3s ease, color 0.3s ease; }
 
 /* --- AUTH GATE SYSTEM --- */
@@ -103,13 +103,14 @@ body { background-color: var(--bg-body); color: var(--text-main); overflow-x: hi
 .form-control { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); background-color: var(--surface); color: var(--text-main); font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
 .form-control:focus { border-color: var(--primary); }
 textarea.form-control { min-height: 100px; resize: vertical; }
+.form-control:disabled, .form-control[readonly] { background-color: var(--secondary); opacity: 0.8; cursor: not-allowed; }
 .form-group { margin-bottom: 18px; width: 100%; }
 .form-group-row { display: flex; gap: 16px; width: 100%; margin-bottom: 18px; }
 .form-group-row .form-group { margin-bottom: 0; flex: 1; }
 .form-group label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
 .form-divider { border: 0; height: 1px; background-color: var(--border); margin: 24px 0; }
 
-.btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-accent { padding: 12px 24px; border-radius: var(--radius); font-weight: 600; font-size: 0.92rem; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; }
+.btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-accent { padding: 12px 24px; border-radius: var(--radius); font-weight: 600; font-size: 0.92rem; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; text-decoration: none; }
 .btn-primary { background-color: var(--primary); color: white; }
 .btn-primary:hover { background-color: var(--primary-dark); }
 .btn-secondary { background-color: var(--secondary); color: var(--text-main); border: 1px solid var(--border); }
@@ -118,7 +119,10 @@ textarea.form-control { min-height: 100px; resize: vertical; }
 .btn-success { background-color: var(--success); color: white; }
 .btn-danger { background-color: var(--danger); color: white; }
 .btn-danger:hover { background-color: #dc2626; }
+.btn-accent { background-color: var(--accent); color: white; }
+.btn-accent:hover { opacity: 0.9; }
 .btn-full { width: 100%; }
+.btn-vertical-stack { display: flex; flex-direction: column; gap: 8px; }
 
 /* --- EXCEL DRAG & DROP ZONE --- */
 .excel-drop-zone { border: 2px dashed var(--primary); border-radius: var(--radius); padding: 40px; text-align: center; background: var(--secondary); cursor: pointer; transition: background 0.3s; }
@@ -206,6 +210,49 @@ td { padding: 14px 18px; border-bottom: 1px solid var(--border); color: var(--te
 .asset-action-row { display: flex; gap: 10px; margin-top:15px; }
 .meta-pill { background-color: var(--secondary); color: var(--text-main); font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; margin-right: 6px; font-weight: 600; border: 1px solid var(--border); display:inline-block; margin-bottom:4px; }
 
+/* --- Quiz Pro Specific Adaptive Core Styles --- */
+.pro-workspace-split { display: grid; grid-template-columns: 1.4fr 0.9fr; gap: 24px; margin-top: 20px; }
+.pro-counter-badge { background-color: var(--primary); color: white; padding: 6px 14px; border-radius: 30px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; }
+.pro-checklist-scrollbox { max-height: 550px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; background-color: var(--canvas-bg); display: flex; flex-direction: column; gap: 16px; }
+.pro-topic-group-header { font-size: 0.95rem; font-weight: 700; color: var(--primary-dark); border-bottom: 2px solid var(--primary); padding-bottom: 4px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px; }
+.pro-question-item-node { background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; display: flex; gap: 12px; align-items: flex-start; transition: border-color 0.2s; }
+.pro-question-item-node:hover { border-color: var(--primary); }
+.pro-question-checkbox-input { width: 18px; height: 18px; margin-top: 3px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0; }
+.pro-node-text-layout { flex: 1; font-size: 0.9rem; font-weight: 500; }
+.pro-node-options-row { font-size: 0.78rem; color: var(--text-light); margin-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-family: 'Noto Sans', sans-serif; }
+.share-box-display { background-color: var(--secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-top: 10px; }
+
+/* --- HIGH-FIDELITY DYNAMIC PRINT CONTAINERS --- */
+.pro-pdf-document-canvas { width: 800px; padding: 40px; font-family: 'Inter', 'Noto Sans', sans-serif; color: #1e293b; background-color: #ffffff; border: 1px solid #e2e8f0; box-sizing: border-box; }
+.pro-pdf-meta-header { width: 100%; border-collapse: collapse; font-size: 13px; font-weight: 700; margin-bottom: 10px; color: #000; }
+.pro-pdf-meta-header td { padding: 4px 0; border: none; color: #000; }
+.pro-pdf-divider-line { border: none; border-bottom: 2px solid #000; margin-bottom: 15px; }
+.pro-pdf-question-block { font-size: 12px; line-height: 1.5; margin-bottom: 14px; page-break-inside: avoid; color: #000; }
+.pro-pdf-options-table { width: 100%; margin-left: 20px; border-collapse: collapse; margin-top: 4px; table-layout: fixed; }
+.pro-pdf-options-table td { padding: 3px 0; font-size: 11px; border: none; color: #000; }
+
+/* --- HIGH FIDELITY ORNAMENTAL CERTIFICATE COMPONENT LAYOUT --- */
+.pro-cert-stage-wrapper { width: 1100px; height: 770px; background-color: #ffffff; background-image: radial-gradient(#fffdf5 70%, #f7f3e3 100%); padding: 30px; border: 4px solid #b45309; box-sizing: border-box; position: relative; font-family: 'Inter', 'Noto Sans', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: space-between; overflow: hidden; }
+.pro-cert-inner-border { width: 100%; height: 100%; border: 2px solid #0d9488; padding: 30px; box-sizing: border-box; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 4px; }
+.pro-cert-corner-ornament { position: absolute; width: 45px; height: 45px; border: 3px solid #b45309; }
+.pro-cert-top-left { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+.pro-cert-top-right { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+.pro-cert-bottom-left { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+.pro-cert-bottom-right { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+.pro-cert-header-title { font-size: 42px; font-weight: 800; color: #b45309; letter-spacing: 2px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); margin-bottom: 4px; text-align: center; }
+.pro-cert-subtitle { font-size: 16px; font-weight: 700; color: #0d9488; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 25px; }
+.pro-cert-main-declaration { font-size: 26px; font-weight: 300; font-style: italic; color: #475569; margin-bottom: 10px; }
+.pro-cert-recipient-name { font-size: 38px; font-weight: 700; color: #1e1b4b; border-bottom: 2px solid #b45309; padding-bottom: 6px; min-width: 450px; text-align: center; margin-bottom: 25px; }
+.pro-cert-text-body { font-size: 15px; color: #334155; text-align: center; max-width: 750px; line-height: 1.6; margin-bottom: 30px; }
+.pro-cert-text-body strong { color: #0f172a; font-weight: 700; }
+.pro-cert-metrics-row { display: flex; gap: 40px; justify-content: center; align-items: center; width: 100%; margin-bottom: 40px; }
+.pro-cert-metric-pill { background-color: #f0fdfa; border: 1px dashed #0d9488; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; color: #0f766e; }
+.pro-cert-footer-signatures { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; padding: 0 40px; box-sizing: border-box; }
+.pro-cert-sig-block { display: flex; flex-direction: column; align-items: center; width: 220px; }
+.pro-cert-sig-line { width: 100%; border-top: 1px solid #64748b; margin-bottom: 8px; }
+.pro-cert-sig-title { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; text-align: center; }
+.pro-cert-qr-footprint { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; background: white; padding: 4px; border: 1px solid #cbd5e1; }
+
 /* --- PDF PRINT OVERRIDES --- */
 .pdf-print-container * {
     print-color-adjust: exact;
@@ -240,10 +287,20 @@ td { padding: 14px 18px; border-bottom: 1px solid var(--border); color: var(--te
 .review-eval-card.correct { border-left: 5px solid var(--success); }
 .review-eval-card.incorrect { border-left: 5px solid var(--danger); }
 
+/* --- Mobile Responsiveness Layer --- */
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar.mobile-open { transform: translateX(0); }
   .main-content { margin-left: 0 !important; }
-  .pdf-center-grid, .group-builder-layout, .admin-grid-layout, .guides-container-layout { grid-template-columns: 1fr; }
+  .pdf-center-grid, .group-builder-layout, .admin-grid-layout, .guides-container-layout, .pro-workspace-split { grid-template-columns: 1fr; }
   .form-group-row { flex-direction: column; gap: 0; }
+  .global-search-container { width: 200px; }
+}
+
+@media (max-width: 480px) {
+  .top-header { padding: 0 12px; }
+  .global-search-container { display: none; }
+  .view-container { padding: 16px; }
+  .welcome-hero { padding: 20px; }
+  .btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-accent { padding: 10px 16px; font-size: 0.85rem; }
 }

@@ -1,172 +1,898 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="emerald">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Quiz Master Pro v37 Enterprise (Unified)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;700&family=Roboto&family=Noto+Sans:wght@400;700&family=Courier+New&display=swap" rel="stylesheet">
+  <title>Quiz Master Pro V38 Enterprise School Edition</title>
+  
+  <!-- Fonts: Inter, Lexend, Noto Sans, Noto Sans Tamil (TN School Certified), Courier Code -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- Remix Icons (Enterprise Asset Kit) -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   
-  <!-- Core Libraries -->
+  <!-- Core Compression, Spreadsheet & Offline Storage Drivers -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   
-  <!-- High Fidelity PDF & Canvas & QR Rendering Libraries -->
+  <!-- High Fidelity PDF Generation, Canvas Rasterizers & Vector QR Engines -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
-  <div id="toastContainer" class="toast-container"></div>
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <!-- AUTH GATE -->
-  <main class="container" id="welcomeGate">
-      <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: var(--primary); font-size: 2.5rem; margin-bottom: 10px;"><i class="ri-braces-line"></i> Quiz Master Pro</h1>
-          <p style="color: var(--text-light);">Enterprise System Edition &bull; Authentication Required</p>
+  <!-- AUTHENTICATION GATE -->
+  <main class="auth-wrapper" id="welcomeGate">
+    <div class="auth-header">
+      <div class="brand-badge"><i class="ri-shield-check-fill"></i> TN School Certified Platform</div>
+      <h1 class="auth-title">Quiz Master Pro <span class="edition-tag">V38 Enterprise</span></h1>
+      <p class="auth-subtitle">Institutional Examination & Live Classroom Evaluation System</p>
+      
+      <!-- Language Switcher -->
+      <div class="lang-toggle-bar">
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="ta">தமிழ் (Tamil)</button>
       </div>
-      <div class="gate-grid">
-          <div class="gate-card glass-effect bounce-in" id="cardGuest">
-              <div class="gate-icon">🧑‍💻</div>
-              <h3>Enter as Guest</h3>
-              <ul class="gate-features">
-                  <li><i class="ri-check-line" style="color:var(--success);"></i> Play Every Quiz & Group</li>
-                  <li><i class="ri-check-line" style="color:var(--success);"></i> View Leaderboards</li>
-                  <li><i class="ri-close-line" style="color:var(--danger);"></i> No Progress Saved</li>
-              </ul>
-              <button id="btnEnterGuest" class="btn-secondary btn-full">Continue as Guest</button>
+    </div>
+
+    <div class="gate-grid">
+      <!-- Guest Access -->
+      <div class="gate-card glass-panel" id="cardGuest">
+        <div class="gate-avatar bg-emerald"><i class="ri-user-smile-line"></i></div>
+        <h3 data-i18n="guest_title">Student / Guest Entry</h3>
+        <p class="gate-desc" data-i18n="guest_desc">Take exams, access live classroom rooms, and view instant score sheets without credentials.</p>
+        <div class="form-group" style="margin-top: 15px;">
+          <input type="text" id="guestStudentName" placeholder="Enter Full Name (e.g. S. Murugan)" class="form-control" />
+        </div>
+        <div class="form-group">
+          <input type="text" id="guestRollNo" placeholder="Roll Number / Register No. (Optional)" class="form-control" />
+        </div>
+        <button id="btnEnterGuest" class="btn-primary btn-full"><i class="ri-play-circle-line"></i> <span data-i18n="enter_portal">Enter Portal</span></button>
+        
+        <div class="live-pin-quickbox">
+          <span data-i18n="have_pin">Have a Live Exam PIN?</span>
+          <div class="pin-input-group">
+            <input type="text" id="quickPinInput" placeholder="6-Digit PIN" maxlength="8" class="form-control" />
+            <button id="btnQuickJoinLive" class="btn-secondary"><i class="ri-login-box-line"></i></button>
           </div>
-          <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.1s;">
-              <div class="gate-icon">🔐</div>
-              <h3>Secure Login</h3>
-              <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Auto-detects Student, Teacher, or Admin role.</p>
-              <div class="form-group">
-                  <input type="text" id="loginUserId" placeholder="User ID or Email" class="form-control" />
-              </div>
-              <div class="form-group">
-                  <input type="password" id="loginPassword" placeholder="Password" class="form-control" />
-              </div>
-              <button id="btnLogin" class="btn-primary btn-full">Login to Dashboard</button>
-          </div>
-          <div class="gate-card glass-effect bounce-in" style="animation-delay: 0.2s;">
-              <div class="gate-icon">📝</div>
-              <h3>Register Account</h3>
-              <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:15px;">Join the enterprise network.</p>
-              <div class="form-group">
-                  <select id="regRole" class="form-control">
-                      <option value="student">I am a Student</option>
-                      <option value="teacher">I am a Teacher</option>
-                      <option value="admin">I am an Admin</option>
-                  </select>
-              </div>
-              <div class="form-group"><input type="text" id="regName" placeholder="Full Name" class="form-control" /></div>
-              <div class="form-group"><input type="email" id="regEmail" placeholder="Email Address" class="form-control" /></div>
-              <div class="form-group"><input type="password" id="regPassword" placeholder="Create Password" class="form-control" /></div>
-              <button id="btnRegister" class="btn-accent btn-full" style="background:var(--accent); color:white;">Register Account</button>
-          </div>
+        </div>
       </div>
+
+      <!-- Secure Login -->
+      <div class="gate-card glass-panel" id="cardLogin">
+        <div class="gate-avatar bg-blue"><i class="ri-lock-2-line"></i></div>
+        <h3 data-i18n="login_title">Staff / Admin Login</h3>
+        <p class="gate-desc" data-i18n="login_desc">Access Question Bank, Exam Blueprint Studio, Live Monitors, and School Marksheets.</p>
+        <div class="form-group">
+          <input type="text" id="loginUserId" placeholder="Staff Email or User ID" class="form-control" autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <input type="password" id="loginPassword" placeholder="Access Key / Password" class="form-control" autocomplete="current-password" />
+        </div>
+        <button id="btnLogin" class="btn-blue btn-full"><i class="ri-shield-keyhole-line"></i> <span data-i18n="btn_login">Login to Dashboard</span></button>
+      </div>
+
+      <!-- Register -->
+      <div class="gate-card glass-panel" id="cardRegister">
+        <div class="gate-avatar bg-purple"><i class="ri-user-add-line"></i></div>
+        <h3 data-i18n="reg_title">School Registration</h3>
+        <p class="gate-desc" data-i18n="reg_desc">Enroll new teacher, exam invigilator, or institutional department nodes.</p>
+        <div class="form-group">
+          <select id="regRole" class="form-control">
+            <option value="student">Student / Candidate</option>
+            <option value="teacher" selected>Teacher / Invigilator</option>
+            <option value="admin">School Principal / Admin</option>
+          </select>
+        </div>
+        <div class="form-group"><input type="text" id="regName" placeholder="Full Name / Designation" class="form-control" /></div>
+        <div class="form-group"><input type="email" id="regEmail" placeholder="Official Institutional Email" class="form-control" /></div>
+        <div class="form-group"><input type="password" id="regPassword" placeholder="New Password" class="form-control" /></div>
+        <button id="btnRegister" class="btn-purple btn-full"><i class="ri-user-shared-line"></i> <span data-i18n="btn_register">Enroll Account</span></button>
+      </div>
+    </div>
   </main>
 
-  <button id="globalStickyHomeBtn" class="sticky-home-btn hidden" title="Return to Dashboard Home">
-    <i class="ri-home-4-fill"></i>
+  <!-- Sticky Home Shortcut -->
+  <button id="globalStickyHomeBtn" class="sticky-home-btn hidden" title="Back to Main Hub">
+    <i class="ri-dashboard-2-fill"></i>
   </button>
 
+  <!-- MAIN APPLICATION SHELL -->
   <div class="app-shell hidden" id="appShell">
     
+    <!-- Enterprise Sidebar -->
     <aside class="sidebar" id="appSidebar">
       <div class="sidebar-header">
-        <i class="ri-braces-line logo-icon"></i>
-        <h2>QUIZ MASTER PRO</h2>
+        <div class="logo-cluster">
+          <div class="app-brand-icon"><i class="ri-award-fill"></i></div>
+          <div class="app-brand-meta">
+            <h2>QUIZ MASTER PRO</h2>
+            <span class="version-label">v38 Enterprise School</span>
+          </div>
+        </div>
       </div>
+
       <nav class="sidebar-menu">
-        <a href="#" class="nav-link active" data-target="homeSection"><i class="ri-dashboard-line"></i> <span>Dashboard</span></a>
-        <a href="#" class="nav-link auth-required" data-target="quizProSection" id="sidebarQuizProLink"><i class="ri-vip-crown-line"></i> <span>Quiz Pro</span></a>
-        <a href="#" class="nav-link" data-target="librarySection"><i class="ri-book-open-line"></i> <span>Library</span></a>
-        <a href="#" class="nav-link auth-required" data-target="creatorSection"><i class="ri-magic-line"></i> <span>Creator</span></a>
-        <a href="#" class="nav-link auth-required" data-target="workspaceSection"><i class="ri-layout-grid-line"></i> <span>Workspace</span></a>
-        <a href="#" class="nav-link auth-required" data-target="groupsSection"><i class="ri-node-tree"></i> <span>Combined Exams</span></a>
-        <a href="#" class="nav-link" data-target="analyticsSection"><i class="ri-bar-chart-box-line"></i> <span>Analytics</span></a>
-        <a href="#" class="nav-link" data-target="leaderboardSection"><i class="ri-trophy-line"></i> <span>Leaderboard</span></a>
-        <a href="#" class="nav-link auth-required" data-target="pdfSection"><i class="ri-file-pdf-line"></i> <span>PDF Center</span></a>
-        <a href="#" class="nav-link" data-target="guidesSection"><i class="ri-compass-3-line"></i> <span>Enterprise Guides</span></a>
-        <a href="#" class="nav-link auth-required" data-target="profileSection"><i class="ri-user-settings-line"></i> <span>Profile</span></a>
-        <a href="#" class="nav-link hidden" data-target="adminSection" id="sidebarAdminLink"><i class="ri-shield-user-line"></i> <span>Admin Control</span></a>
-        <a href="#" class="nav-link hidden" data-target="usersSection" id="sidebarUsersLink"><i class="ri-group-line"></i> <span>User Management</span></a>
+        <div class="menu-group-label">Core Operations</div>
+        <a href="#" class="nav-link active" data-target="homeSection"><i class="ri-dashboard-3-line"></i> <span>Dashboard Hub</span></a>
+        <a href="#" class="nav-link auth-required" data-target="liveQuizSection" id="sidebarLiveQuizLink"><i class="ri-broadcast-fill pulse-icon"></i> <span>Live Classroom Room</span></a>
+        <a href="#" class="nav-link" data-target="librarySection"><i class="ri-book-read-line"></i> <span>Assessment Library</span></a>
+        
+        <div class="menu-group-label auth-required">Authoring & Exam Studio</div>
+        <a href="#" class="nav-link auth-required" data-target="questionBankSection"><i class="ri-database-2-line"></i> <span>Question Bank Studio</span></a>
+        <a href="#" class="nav-link auth-required" data-target="creatorSection"><i class="ri-file-add-line"></i> <span>Quiz Creator Studio</span></a>
+        <a href="#" class="nav-link auth-required" data-target="blueprintSection"><i class="ri-compasses-2-line"></i> <span>Blueprint Builder</span></a>
+        <a href="#" class="nav-link auth-required" data-target="groupsSection"><i class="ri-stack-line"></i> <span>Combined Exams</span></a>
+        <a href="#" class="nav-link auth-required" data-target="quizProSection"><i class="ri-vip-crown-2-line"></i> <span>Quiz Pro Matrix</span></a>
+        <a href="#" class="nav-link auth-required" data-target="workspaceSection"><i class="ri-layout-masonry-line"></i> <span>Canvas Workspace</span></a>
+        
+        <div class="menu-group-label">Documentation & Printing</div>
+        <a href="#" class="nav-link auth-required" data-target="pdfSection"><i class="ri-printer-line"></i> <span>A4 Paper & OMR Center</span></a>
+        <a href="#" class="nav-link auth-required" data-target="marksheetSection"><i class="ri-table-line"></i> <span>Consolidated Marksheet</span></a>
+        <a href="#" class="nav-link auth-required" data-target="certificateManagerSection"><i class="ri-medal-line"></i> <span>Certificates Studio</span></a>
+        
+        <div class="menu-group-label">Telemetry & Admin</div>
+        <a href="#" class="nav-link" data-target="analyticsSection"><i class="ri-pie-chart-2-line"></i> <span>Analytics & Heatmaps</span></a>
+        <a href="#" class="nav-link" data-target="leaderboardSection"><i class="ri-trophy-line"></i> <span>Leaderboard Matrix</span></a>
+        <a href="#" class="nav-link auth-required" data-target="profileSection"><i class="ri-user-settings-line"></i> <span>Identity Profile</span></a>
+        <a href="#" class="nav-link hidden" data-target="adminSection" id="sidebarAdminLink"><i class="ri-shield-star-line"></i> <span>System Governance</span></a>
+        <a href="#" class="nav-link hidden" data-target="usersSection" id="sidebarUsersLink"><i class="ri-team-line"></i> <span>User Roster</span></a>
       </nav>
+
       <div class="sidebar-footer">
-        <button id="logoutBtn" class="btn-logout"><i class="ri-logout-box-r-line"></i> <span>Log Out</span></button>
+        <div class="theme-palette-picker">
+          <span class="theme-dot dot-emerald active" data-theme="emerald" title="Emerald Green"></span>
+          <span class="theme-dot dot-blue" data-theme="blue" title="Tamil Nadu Blue"></span>
+          <span class="theme-dot dot-purple" data-theme="purple" title="Royal Purple"></span>
+          <span class="theme-dot dot-orange" data-theme="orange" title="Vibrant Orange"></span>
+        </div>
+        <button id="logoutBtn" class="btn-logout"><i class="ri-logout-circle-r-line"></i> <span>Disconnect Session</span></button>
       </div>
     </aside>
 
+    <!-- Main Content Container -->
     <main class="main-content">
       
-      <header class="top-header">
+      <!-- Top Navigation Header -->
+      <header class="top-header glass-header">
         <div class="header-left">
-          <button id="sidebarToggle" class="btn-icon-toggle"><i class="ri-menu-2-line"></i></button>
+          <button id="sidebarToggle" class="btn-icon-round" aria-label="Toggle Sidebar"><i class="ri-menu-fold-line"></i></button>
           <div class="breadcrumb">
-            <span id="breadcrumbParent">Enterprise</span> / <span id="breadcrumbCurrent" class="active">Dashboard</span>
+            <span id="breadcrumbParent">School Enterprise</span> / <span id="breadcrumbCurrent" class="breadcrumb-active">Dashboard</span>
           </div>
         </div>
+
         <div class="header-right">
+          <!-- Universal Instant Search -->
           <div class="global-search-container">
-            <i class="ri-search-2-line search-icon"></i>
-            <input type="text" id="globalSearchInput" placeholder="Search entire project (quizzes, groups, metrics)..." />
+            <i class="ri-search-line search-icon"></i>
+            <input type="text" id="globalSearchInput" placeholder="Search questions, quizzes, exams, classes, roll numbers..." />
             <div id="searchSuggestions" class="search-suggestions-box hidden"></div>
           </div>
-          <button id="themeToggleBtn" class="btn-icon-header"><i class="ri-moon-line"></i></button>
-          <div class="user-badge" id="headerUserBadge">Guest User</div>
+
+          <!-- Language Switcher in Header -->
+          <button id="langToggleBtn" class="btn-icon-pill" title="Toggle Tamil / English"><i class="ri-translate-2"></i> <span id="currentLangLabel">EN</span></button>
+          <!-- Theme Dark/Light Mode Toggle -->
+          <button id="themeToggleBtn" class="btn-icon-round" title="Dark / Light Mode"><i class="ri-moon-clear-line"></i></button>
+
+          <!-- User Role Pill -->
+          <div class="user-profile-badge" id="headerUserBadge">
+            <div class="avatar-mini"><i class="ri-account-circle-line"></i></div>
+            <div class="user-meta-col">
+              <span class="badge-name" id="headerUserName">Guest Scholar</span>
+              <span class="badge-role" id="headerUserRole">STUDENT</span>
+            </div>
+          </div>
         </div>
       </header>
 
+      <!-- Viewports Body -->
       <div class="view-container">
 
-        <!-- DASHBOARD -->
+        <!-- 1. DASHBOARD HUB SECTION -->
         <section id="homeSection" class="view-section">
-          <div class="welcome-hero">
-            <h1>Welcome Back, <span id="welcomeUserName">Professional</span></h1>
-            <p>Access and control your comprehensive educational metrics, custom workspace flows, and high-fidelity testing assets from a single consolidated interface.</p>
+          <!-- Hero Banner -->
+          <div class="dashboard-hero glass-panel">
+            <div class="hero-content">
+              <span class="hero-tag"><i class="ri-school-line"></i> Tamil Nadu School Education Enterprise Edition</span>
+              <h1>Welcome Back, <span id="welcomeUserName">Distinguished Educator</span></h1>
+              <p>Manage curriculum question banks, organize multi-class live exams, print standardized TN-Board question papers with OMR answer sheets, and review automated marksheets in real time.</p>
+              
+              <div class="hero-action-buttons">
+                <button class="btn-hero-primary" onclick="window.appEngineAPI.switchViewport('liveQuizSection')"><i class="ri-broadcast-line"></i> Launch Live Exam</button>
+                <button class="btn-hero-secondary" onclick="window.appEngineAPI.switchViewport('blueprintSection')"><i class="ri-compasses-2-line"></i> Exam Blueprint Builder</button>
+                <button class="btn-hero-secondary" onclick="window.appEngineAPI.switchViewport('pdfSection')"><i class="ri-file-pdf-line"></i> Generate A4 Paper</button>
+              </div>
+            </div>
+            <div class="hero-widget-clock">
+              <div class="clock-time" id="dashLiveClock">00:00:00</div>
+              <div class="clock-date" id="dashLiveDate">September 12, 2026</div>
+              <div class="clock-sync-badge"><i class="ri-checkbox-circle-fill text-success"></i> Cloud Datastore Synchronized</div>
+            </div>
           </div>
-          <div class="dashboard-grid">
-            <div class="metric-card">
-              <div class="card-icon blue"><i class="ri-file-list-3-line"></i></div>
-              <div class="card-info">
-                <h3 id="statTotalQuizzes">0</h3>
-                <p>Managed Quizzes</p>
+
+          <!-- Enterprise Key Metric Counters -->
+          <div class="kpi-grid">
+            <div class="kpi-card glass-panel">
+              <div class="kpi-icon-wrapper bg-blue"><i class="ri-book-open-line"></i></div>
+              <div class="kpi-meta">
+                <span class="kpi-label">Managed Quizzes</span>
+                <h3 class="kpi-value" id="statTotalQuizzes">0</h3>
+                <span class="kpi-trend text-success"><i class="ri-arrow-up-line"></i> Complete Units</span>
               </div>
             </div>
-            <div class="metric-card">
-              <div class="card-icon green"><i class="ri-organization-chart"></i></div>
-              <div class="card-info">
-                <h3 id="statTotalGroups">0</h3>
-                <p>Combined Exam Groups</p>
+
+            <div class="kpi-card glass-panel">
+              <div class="kpi-icon-wrapper bg-emerald"><i class="ri-questionnaire-line"></i></div>
+              <div class="kpi-meta">
+                <span class="kpi-label">Question Bank Nodes</span>
+                <h3 class="kpi-value" id="statTotalQuestions">0</h3>
+                <span class="kpi-trend text-success"><i class="ri-check-line"></i> Bloom's Classified</span>
               </div>
             </div>
-            <div class="metric-card">
-              <div class="card-icon orange"><i class="ri-team-line"></i></div>
-              <div class="card-info">
-                <h3 id="statTotalUsers">0</h3>
-                <p>Registered Questions</p>
+
+            <div class="kpi-card glass-panel">
+              <div class="kpi-icon-wrapper bg-purple"><i class="ri-stack-line"></i></div>
+              <div class="kpi-meta">
+                <span class="kpi-label">Combined Exam Groups</span>
+                <h3 class="kpi-value" id="statTotalGroups">0</h3>
+                <span class="kpi-trend text-primary"><i class="ri-layout-grid-line"></i> Multi-Unit Blocks</span>
+              </div>
+            </div>
+
+            <div class="kpi-card glass-panel">
+              <div class="kpi-icon-wrapper bg-orange"><i class="ri-group-line"></i></div>
+              <div class="kpi-meta">
+                <span class="kpi-label">Candidate Attempts</span>
+                <h3 class="kpi-value" id="statTotalStudents">0</h3>
+                <span class="kpi-trend text-warning"><i class="ri-user-follow-line"></i> Submissions</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analytical Telemetry Charts & Quick Action Matrix -->
+          <div class="dashboard-split-grid">
+            <div class="dash-card glass-panel">
+              <div class="dash-card-header">
+                <h3><i class="ri-line-chart-line"></i> Weekly Participation & Score Frequency</h3>
+                <span class="sub-label">Aggregated institutional evaluations</span>
+              </div>
+              <div class="chart-canvas-container" id="dashChartContainer">
+                <div class="mock-css-chart" id="dashPerformanceChart">
+                  <!-- Generated dynamically via JS -->
+                </div>
+              </div>
+            </div>
+
+            <div class="dash-card glass-panel">
+              <div class="dash-card-header">
+                <h3><i class="ri-calendar-event-line"></i> Upcoming Scheduled Examinations</h3>
+                <button class="btn-sm btn-secondary" onclick="window.appEngineAPI.switchViewport('creatorSection')">+ Schedule</button>
+              </div>
+              <div class="schedule-list" id="dashScheduleList">
+                <div class="schedule-item">
+                  <div class="schedule-date"><span class="day">15</span><span class="month">SEP</span></div>
+                  <div class="schedule-info">
+                    <h4>10th Standard Science — Quarterly Revision Set A</h4>
+                    <p>Physics & Chemistry Units 1-4 &bull; 45 Mins &bull; 50 Marks</p>
+                  </div>
+                  <button class="btn-sm btn-primary" onclick="window.appEngineAPI.switchViewport('liveQuizSection')">Room</button>
+                </div>
+                <div class="schedule-item">
+                  <div class="schedule-date"><span class="day">18</span><span class="month">SEP</span></div>
+                  <div class="schedule-info">
+                    <h4>12th Standard Tamil Language Special Matrix</h4>
+                    <p>செய்யுள் & உரைநடை பகுப்பாய்வு &bull; 60 Mins &bull; 100 Marks</p>
+                  </div>
+                  <button class="btn-sm btn-primary" onclick="window.appEngineAPI.switchViewport('pdfSection')">Paper</button>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- QUIZ PRO SECTION -->
-        <section id="quizProSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>Quiz Pro Master Matrix</h2>
-            <p>Instantly search, select, compile individual or combined question structures across topics and broadcast shareable practice targets to student channels.</p>
+        <!-- 2. LIVE CLASSROOM QUIZ SYSTEM -->
+        <section id="liveQuizSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-broadcast-fill text-danger pulse-dot"></i> Live Classroom Examination Room</h2>
+              <p>Host synchronous live classroom exams without student logins. Students connect via URL or 6-digit PIN while teachers monitor realtime responses, progress percentages, and an animated leaderboard.</p>
+            </div>
+            <div class="live-status-pill" id="liveRoomBadge">ROOM OFFLINE</div>
           </div>
+
+          <div class="live-workspace-grid">
+            <!-- Left: Room Setup & Controller -->
+            <div class="live-controller-col glass-panel">
+              <h3>1. Room Creation & Configuration</h3>
+              <div class="form-group">
+                <label>Select Examination Asset</label>
+                <select id="liveQuizAssetSelect" class="form-control">
+                  <option value="">Select Quiz or Combined Exam...</option>
+                </select>
+              </div>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Duration Limit (Minutes)</label>
+                  <input type="number" id="liveDurationInput" class="form-control" value="45" min="1" />
+                </div>
+                <div class="form-group">
+                  <label>Question Timer (Seconds per Q, 0=None)</label>
+                  <input type="number" id="livePerQuestionTimer" class="form-control" value="0" min="0" />
+                </div>
+              </div>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label><input type="checkbox" id="liveShuffleToggle" checked /> Randomize Questions</label>
+                </div>
+                <div class="form-group">
+                  <label><input type="checkbox" id="liveInstantKeyToggle" checked /> Show Instant Review at End</label>
+                </div>
+              </div>
+
+              <div class="live-action-strip">
+                <button id="btnCreateLiveSession" class="btn-primary btn-full"><i class="ri-play-circle-fill"></i> Initialize Live Room</button>
+              </div>
+
+              <!-- Active Broadcast Box (Revealed when room created) -->
+              <div id="liveActiveRoomCard" class="active-room-card hidden">
+                <div class="room-pin-display">
+                  <span class="pin-title">STUDENT ACCESS PIN</span>
+                  <h1 class="pin-code" id="liveActivePin">------</h1>
+                </div>
+                
+                <div class="room-qr-block" id="liveRoomQrCanvas"></div>
+                
+                <div class="form-group" style="margin-top: 15px;">
+                  <label>Direct Join URL (Share on Smartboard / WhatsApp)</label>
+                  <div class="copy-input-cluster">
+                    <input type="text" id="liveDirectUrlInput" class="form-control" readonly />
+                    <button class="btn-secondary" id="btnCopyLiveUrl" title="Copy URL"><i class="ri-file-copy-line"></i></button>
+                  </div>
+                </div>
+
+                <div class="room-controls-grid">
+                  <button id="btnPauseLiveQuiz" class="btn-warning"><i class="ri-pause-line"></i> Pause</button>
+                  <button id="btnExtendLiveTimer" class="btn-secondary"><i class="ri-time-line"></i> +5 Mins</button>
+                  <button id="btnEndLiveQuiz" class="btn-danger"><i class="ri-stop-circle-line"></i> Terminate Room</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Real-Time Live Participation Board & Live Leaderboard -->
+            <div class="live-monitor-col glass-panel">
+              <div class="monitor-header-row">
+                <div class="monitor-stats">
+                  <span>Connected Students: <strong id="liveConnectedCount">0</strong></span>
+                  <span>Submitted: <strong id="liveSubmittedCount">0</strong></span>
+                  <span>Time Remaining: <strong id="liveTeacherTimer">--:--</strong></span>
+                </div>
+                <div class="monitor-tabs">
+                  <button class="btn-tab active" id="tabLiveRoster">Real-Time Board</button>
+                  <button class="btn-tab" id="tabLiveLeaderboard">Live Rankings</button>
+                </div>
+              </div>
+
+              <!-- Realtime Table View -->
+              <div id="liveRosterContainer" class="live-roster-table-wrapper">
+                <table class="enterprise-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Candidate Name</th>
+                      <th>Roll Number</th>
+                      <th>Current Question</th>
+                      <th>Progress</th>
+                      <th>Score</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="liveParticipantsTableBody">
+                    <tr>
+                      <td colspan="7" class="text-center text-muted" style="padding: 40px;">No active participants yet. Broadcast the PIN or URL to start testing.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Animated Live Leaderboard View -->
+              <div id="liveLeaderboardContainer" class="live-leaderboard-wrapper hidden">
+                <div class="podium-display" id="livePodiumSlot">
+                  <!-- Dynamic Top 3 Podium Cards -->
+                </div>
+                <div class="leaderboard-scrollable-list" id="liveLeaderboardList"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. QUESTION BANK MANAGEMENT STUDIO -->
+        <section id="questionBankSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-database-2-line text-primary"></i> Enterprise Question Bank Studio</h2>
+              <p>Store, categorize, search, filter, and audit institutional question nodes classified by Class, Subject, Chapter, Bloom's Taxonomy, and Difficulty. Full support for Tamil Unicode text and formulas.</p>
+            </div>
+            <div class="btn-horizontal-group">
+              <button class="btn-secondary" id="btnExportBankExcel"><i class="ri-file-excel-line"></i> Export Bank</button>
+              <button class="btn-primary" onclick="window.appEngineAPI.openNewQuestionBankModal()"><i class="ri-add-line"></i> Create Question Node</button>
+            </div>
+          </div>
+
+          <div class="bank-filters-panel glass-panel">
+            <div class="filter-row">
+              <div class="form-group">
+                <input type="text" id="bankSearchInput" placeholder="🔍 Search question prompt, topic, keyword, or Tamil text..." class="form-control" />
+              </div>
+              <div class="form-group">
+                <select id="bankFilterClass" class="form-control">
+                  <option value="">All Classes</option>
+                  <option value="6th Standard">6th Standard</option>
+                  <option value="7th Standard">7th Standard</option>
+                  <option value="8th Standard">8th Standard</option>
+                  <option value="9th Standard">9th Standard</option>
+                  <option value="10th Standard">10th Standard</option>
+                  <option value="11th Standard">11th Standard</option>
+                  <option value="12th Standard">12th Standard</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <select id="bankFilterSubject" class="form-control">
+                  <option value="">All Subjects</option>
+                  <option value="Tamil">Tamil (தமிழ்)</option>
+                  <option value="English">English</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Science">Science</option>
+                  <option value="Social Science">Social Science</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                  <option value="Biology">Biology</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <select id="bankFilterBloom" class="form-control">
+                  <option value="">All Bloom Taxonomy</option>
+                  <option value="Remembering">Remembering</option>
+                  <option value="Understanding">Understanding</option>
+                  <option value="Applying">Applying</option>
+                  <option value="Analyzing">Analyzing</option>
+                  <option value="Evaluating">Evaluating</option>
+                  <option value="Creating">Creating</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <select id="bankFilterDifficulty" class="form-control">
+                  <option value="">All Difficulties</option>
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="bank-batch-action-bar">
+              <span id="bankSelectedCounter">Selected: 0 Questions</span>
+              <div class="btn-group-sm">
+                <button class="btn-sm btn-secondary" id="btnBankDeduplicate"><i class="ri-find-replace-line"></i> Detect Duplicates</button>
+                <button class="btn-sm btn-primary" id="btnBankCompileToQuiz"><i class="ri-stack-fill"></i> Compile to New Quiz</button>
+                <button class="btn-sm btn-danger" id="btnBankDeleteSelected"><i class="ri-delete-bin-line"></i> Bulk Delete</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bank-items-grid" id="bankCardsContainer">
+            <!-- Populated via Script -->
+          </div>
+        </section>
+
+        <!-- 4. EXAM BLUEPRINT BUILDER -->
+        <section id="blueprintSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-compasses-2-line text-purple"></i> Blueprint-Based Examination Matrix Builder</h2>
+              <p>Design multi-chapter test structures using strict syllabus blueprints. Specify mark distributions per unit, Bloom's level quotas, and auto-compile multi-set randomized exam papers (Set A, B, C, D).</p>
+            </div>
+          </div>
+
+          <div class="blueprint-grid">
+            <div class="bp-setup-panel glass-panel">
+              <h3>1. Blueprint Configuration</h3>
+              <div class="form-group">
+                <label>Examination Title</label>
+                <input type="text" id="bpExamTitle" class="form-control" placeholder="e.g. 10th Standard Science Half-Yearly Model" />
+              </div>
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Class / Grade</label>
+                  <input type="text" id="bpClass" class="form-control" placeholder="e.g. 10th Standard" />
+                </div>
+                <div class="form-group">
+                  <label>Subject</label>
+                  <input type="text" id="bpSubject" class="form-control" placeholder="e.g. Science" />
+                </div>
+              </div>
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Total Questions Required</label>
+                  <input type="number" id="bpTotalQuestions" class="form-control" value="50" min="5" />
+                </div>
+                <div class="form-group">
+                  <label>Duration Limit (Mins)</label>
+                  <input type="number" id="bpDuration" class="form-control" value="90" min="15" />
+                </div>
+              </div>
+
+              <hr class="form-divider" />
+              
+              <h3>2. Blueprint Weightage Rows</h3>
+              <div id="bpRowsContainer">
+                <!-- Dynamic Rule Rows -->
+              </div>
+              <button class="btn-sm btn-secondary" id="btnAddBpRuleRow" style="margin-top: 10px;"><i class="ri-add-line"></i> Add Unit Weightage Rule</button>
+
+              <div class="bp-action-stack" style="margin-top: 25px;">
+                <button id="btnCompileBlueprintExam" class="btn-primary btn-full"><i class="ri-cpu-line"></i> Auto-Generate Exam from Question Bank</button>
+              </div>
+            </div>
+
+            <div class="bp-preview-panel glass-panel">
+              <h3>Generated Blueprint Assessment Preview</h3>
+              <div class="blueprint-summary-bar">
+                <span>Target Marks: <strong id="bpSummaryMarks">0</strong></span>
+                <span>Calculated Questions: <strong id="bpSummaryQuestions">0</strong></span>
+                <span>Set Versions: <strong>Set A, B, C, D</strong></span>
+              </div>
+              <div id="bpCompiledList" class="blueprint-compiled-scrollbox">
+                <div class="empty-notice text-center text-muted" style="padding: 60px;">
+                  <i class="ri-survey-line" style="font-size: 3rem; display: block; margin-bottom: 10px;"></i>
+                  Define weightage parameters on the left and click "Auto-Generate Exam" to harvest verified questions from the Question Bank.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. CENTRAL ASSET LIBRARY -->
+        <section id="librarySection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-book-read-line text-emerald"></i> Central Examination Asset Library</h2>
+              <p>Browse, manage, run, share, and export standalone quizzes and combined exam groups stored locally and in remote cloud datastores.</p>
+            </div>
+            <div class="btn-horizontal-group">
+              <button class="btn-secondary" onclick="window.appEngineAPI.switchViewport('creatorSection')"><i class="ri-add-line"></i> New Quiz</button>
+              <button class="btn-primary" onclick="window.appEngineAPI.switchViewport('groupsSection')"><i class="ri-node-tree"></i> New Combined Exam</button>
+            </div>
+          </div>
+
+          <div class="library-toolbar glass-panel">
+            <div class="form-group" style="flex: 2;">
+              <input type="text" id="libraryFilterInput" placeholder="Filter assessments by title, class, subject..." class="form-control" />
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <select id="libraryTypeSelect" class="form-control">
+                <option value="all">All Types (Quizzes & Groups)</option>
+                <option value="quiz">Single Quizzes Only</option>
+                <option value="group">Combined Exam Groups</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <select id="librarySortSelect" class="form-control">
+                <option value="newest">Newest First</option>
+                <option value="name">Alphabetical (A-Z)</option>
+                <option value="questions">Question Count</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="libraryContainer" class="library-grid-layout">
+            <!-- Cards rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- 6. QUIZ RUNNER (STUDENT EXAM EXPERIENCE) -->
+        <section id="quizSection" class="view-section hidden">
+          <div class="quiz-runner-box glass-panel">
+            <div class="runner-header">
+              <div class="runner-title-meta">
+                <span class="runner-badge" id="runnerSubjectBadge">General Science</span>
+                <h2 id="runnerQuizTitle">Active Institutional Assessment Instance</h2>
+              </div>
+              <div class="runner-timer-cluster">
+                <div class="timer-circle"><i class="ri-time-line"></i></div>
+                <div id="runnerTimer" class="timer-badge">00:00</div>
+              </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="runner-progress-track">
+              <div id="runnerProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="question-body-card">
+              <div class="q-meta-strip">
+                <span id="runnerQuestionMeta">Question 1 of 1</span>
+                <span id="runnerBloomBadge" class="bloom-tag">Understanding</span>
+                <span id="runnerMarksBadge" class="marks-tag">+1 Mark</span>
+              </div>
+              <div id="runnerQuestionText" class="runner-question-text">Loading Question Content...</div>
+              <div id="runnerImageContainer" class="runner-image-box hidden"></div>
+              
+              <!-- 4 Options Grid -->
+              <div id="runnerOptionsGrid" class="options-grid-layout">
+                <!-- Generated by JS -->
+              </div>
+            </div>
+
+            <!-- Navigation Controls -->
+            <div class="runner-controls-bar">
+              <button id="runnerPrevBtn" class="btn-secondary"><i class="ri-arrow-left-s-line"></i> Previous</button>
+              <div class="runner-center-actions">
+                <button id="runnerClearAnswerBtn" class="btn-secondary btn-sm"><i class="ri-eraser-line"></i> Clear Selection</button>
+                <button id="runnerQuitBtn" class="btn-danger-outline btn-sm"><i class="ri-logout-box-line"></i> Leave Exam</button>
+              </div>
+              <button id="runnerNextBtn" class="btn-primary">Next <i class="ri-arrow-right-s-line"></i></button>
+              <button id="runnerFinishBtn" class="btn-success hidden"><i class="ri-check-double-line"></i> Submit Final Answers</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. QUIZ CREATOR STUDIO & EXCEL SMART INGESTION -->
+        <section id="creatorSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-file-add-line text-blue"></i> Quiz Creator Studio</h2>
+              <p>Construct customized assessment matrices manually or use the Smart Excel Auto-Detector with full Tamil Unicode parsing and duplicate checking.</p>
+            </div>
+          </div>
+
+          <div class="creator-card glass-panel">
+            <div class="form-group">
+              <label for="creatorQuizTitle">Quiz Structural Title</label>
+              <input type="text" id="creatorQuizTitle" class="form-control" placeholder="e.g. 10th Science Unit 3 Light & Optics Test" />
+            </div>
+            
+            <div class="form-group-row">
+              <div class="form-group">
+                <label>Class / Grade</label>
+                <input type="text" id="creatorClass" class="form-control" placeholder="e.g. 10th Standard" />
+              </div>
+              <div class="form-group">
+                <label>Subject</label>
+                <input type="text" id="creatorSubject" class="form-control" placeholder="e.g. Science" />
+              </div>
+              <div class="form-group">
+                <label>Topic / Chapter</label>
+                <input type="text" id="creatorTopic" class="form-control" placeholder="e.g. Optics" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="creatorQuizDescription">Assessment Instructions / Overview</label>
+              <textarea id="creatorQuizDescription" class="form-control" placeholder="Enter student guidance, pass requirements, or guidelines..."></textarea>
+            </div>
+
+            <div class="form-group-row">
+              <div class="form-group">
+                <label>Duration Allowed (Minutes)</label>
+                <input type="number" id="creatorDuration" class="form-control" value="30" min="1" />
+              </div>
+              <div class="form-group" style="display: flex; align-items: center; margin-top: 25px;">
+                <label><input type="checkbox" id="creatorShuffle" /> Randomize Question Order for Every Student</label>
+              </div>
+            </div>
+
+            <hr class="form-divider" />
+            
+            <!-- Entry Mode Switcher -->
+            <div class="tab-switcher-strip">
+              <button class="btn-tab active" id="tabManualEntry" onclick="window.appEngineAPI.toggleCreatorTab('manual')"><i class="ri-keyboard-line"></i> Manual Question Builder</button>
+              <button class="btn-tab" id="tabExcelEntry" onclick="window.appEngineAPI.toggleCreatorTab('excel')"><i class="ri-file-excel-2-line"></i> Smart Excel Ingestion Engine</button>
+            </div>
+
+            <!-- Manual Form -->
+            <div id="creatorQuestionForm">
+              <h3>Append Question Node to Working Array</h3>
+              <div class="form-group">
+                <label>Question Prompt String (Supports Tamil Unicode & Math)</label>
+                <input type="text" id="qFormText" class="form-control" placeholder="Enter question text here..." />
+              </div>
+              
+              <div class="options-build-grid">
+                <div class="form-group"><label>Option A</label><input type="text" id="qFormOptA" class="form-control" /></div>
+                <div class="form-group"><label>Option B</label><input type="text" id="qFormOptB" class="form-control" /></div>
+                <div class="form-group"><label>Option C</label><input type="text" id="qFormOptC" class="form-control" /></div>
+                <div class="form-group"><label>Option D</label><input type="text" id="qFormOptD" class="form-control" /></div>
+              </div>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label for="qFormAnswer">Correct Key Choice</label>
+                  <select id="qFormAnswer" class="form-control">
+                    <option value="A">Option A</option>
+                    <option value="B">Option B</option>
+                    <option value="C">Option C</option>
+                    <option value="D">Option D</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Bloom's Taxonomy</label>
+                  <select id="qFormBloom" class="form-control">
+                    <option value="Remembering">Remembering</option>
+                    <option value="Understanding" selected>Understanding</option>
+                    <option value="Applying">Applying</option>
+                    <option value="Analyzing">Analyzing</option>
+                    <option value="Evaluating">Evaluating</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Difficulty</label>
+                  <select id="qFormDifficulty" class="form-control">
+                    <option value="Easy">Easy</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Educational Explanation / Solution Step</label>
+                <input type="text" id="qFormExplanation" class="form-control" placeholder="Provide reason or reference page in textbook..." />
+              </div>
+
+              <button id="creatorAppendQuestionBtn" class="btn-secondary"><i class="ri-add-circle-line"></i> Add Question to Staging Memory</button>
+            </div>
+
+            <!-- Smart Excel Drop Zone -->
+            <div id="creatorExcelForm" class="hidden">
+              <div class="excel-drop-zone" id="excelDropZone">
+                <i class="ri-file-excel-2-fill" style="font-size:3.5rem; color:var(--success);"></i>
+                <h3>Smart Excel Ingestion Matrix</h3>
+                <p>Drag and drop <code>.xlsx</code> or <code>.xls</code> spreadsheets. System automatically detects columns, handles Tamil fonts, validates keys, and identifies duplicates.</p>
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls" hidden />
+                <div class="btn-horizontal-group" style="margin-top: 15px;">
+                  <button class="btn-primary" onclick="document.getElementById('excelFileInput').click()"><i class="ri-folder-upload-line"></i> Browse Spreadsheet</button>
+                  <button class="btn-secondary" id="btnDownloadExcelTemplate"><i class="ri-download-2-line"></i> Download Official Template</button>
+                </div>
+              </div>
+
+              <div id="excelPreviewContainer" class="hidden" style="margin-top: 25px;">
+                <div class="preview-header-bar">
+                  <h4>Ingestion Preview: <span id="excelParsedCount">0</span> Verified Nodes Detected</h4>
+                  <span id="excelWarningBadge" class="badge-warning">0 Syntax Errors</span>
+                </div>
+                <div class="table-wrapper" style="max-height: 280px;">
+                  <table id="excelPreviewTable" class="enterprise-table">
+                    <thead>
+                      <tr><th>Q#</th><th>Question Text</th><th>Opt A</th><th>Opt B</th><th>Opt C</th><th>Opt D</th><th>Answer</th><th>Bloom</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+                <button id="commitExcelImportBtn" class="btn-success btn-full" style="margin-top:15px;"><i class="ri-check-double-line"></i> Confirm & Inject All into Quiz Memory</button>
+              </div>
+            </div>
+
+            <!-- Staging Actions -->
+            <div class="workspace-action-row" style="margin-top:30px; border-top: 1px solid var(--border); padding-top: 20px;">
+              <div class="staging-counter">Staged Questions in Memory: <strong id="pendingQuestionsCount">0</strong></div>
+              <div class="btn-horizontal-group">
+                <button id="creatorSaveDirectBtn" class="btn-success"><i class="ri-cloud-upload-line"></i> Save Direct to Cloud Library</button>
+                <button id="creatorToWorkspaceBtn" class="btn-primary"><i class="ri-layout-masonry-line"></i> Fine-tune in Visual Canvas</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. COMBINED EXAM BUILDER -->
+        <section id="groupsSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-stack-line text-orange"></i> Combined Exam Processing Matrix</h2>
+              <p>Pool individual unit quizzes into comprehensive mid-term, quarterly, or annual examinations with de-duplication and custom time limits.</p>
+            </div>
+          </div>
+
+          <div class="group-builder-layout">
+            <div class="group-builder-sidebar glass-panel">
+              <h3>Available Quiz Repositories</h3>
+              <div class="form-group">
+                <input type="text" id="groupInventorySearch" placeholder="Filter quizzes..." class="form-control" />
+              </div>
+              <div id="groupInventoryContainer" class="inventory-scroll-box"></div>
+            </div>
+
+            <div class="group-builder-main-panel glass-panel">
+              <h3>Target Composite Configuration</h3>
+              <div class="form-group">
+                <label>Composite Exam Name</label>
+                <input type="text" id="groupNameInput" class="form-control" placeholder="e.g. 10th Standard Science All Units Quarterly Exam" />
+              </div>
+              
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Class / Grade</label>
+                  <input type="text" id="groupClassInput" class="form-control" placeholder="e.g. 10th Standard" />
+                </div>
+                <div class="form-group">
+                  <label>Subject</label>
+                  <input type="text" id="groupSubjectInput" class="form-control" placeholder="e.g. Science" />
+                </div>
+                <div class="form-group">
+                  <label>Total Duration (Minutes)</label>
+                  <input type="number" id="groupDurationInput" class="form-control" value="60" min="5" />
+                </div>
+              </div>
+
+              <div class="operation-control-strip">
+                <button id="groupShuffleBtn" class="btn-secondary"><i class="ri-shuffle-line"></i> Shuffle Nodes</button>
+                <button id="groupDeduplicateBtn" class="btn-secondary"><i class="ri-equalizer-line"></i> Deduplicate Questions</button>
+                <button id="groupCommitBtn" class="btn-primary"><i class="ri-save-3-line"></i> Save Combined Exam Block</button>
+              </div>
+
+              <div class="composite-metrics-banner">
+                <span>Selected Sub-Quizzes: <strong id="groupMetricCount">0</strong></span>
+                <span>Cumulative Questions: <strong id="groupTotalQCount">0</strong></span>
+              </div>
+
+              <div id="groupCompositeTargetContainer" class="composite-drop-zone">
+                <div class="empty-zone-notice">Check quizzes from the left inventory panel to pool them into your combined evaluation block.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9. CANVAS WORKSPACE (VISUAL DRAG & DROP EDITOR) -->
+        <section id="workspaceSection" class="view-section hidden">
+          <div class="workspace-header-panel glass-panel">
+            <div>
+              <h2><i class="ri-layout-masonry-line text-primary"></i> Visual Assessment Canvas Workspace</h2>
+              <p>Reorder, audit, duplicate, edit formulas, and fine-tune assessment nodes dynamically with instant undo/redo support.</p>
+            </div>
+            <div class="workspace-controls-cluster">
+              <button id="wsUndoBtn" class="btn-icon-action" title="Undo"><i class="ri-arrow-go-back-line"></i></button>
+              <button id="wsRedoBtn" class="btn-icon-action" title="Redo"><i class="ri-arrow-go-forward-line"></i></button>
+              <button id="wsPublishBtn" class="btn-success"><i class="ri-cloud-upload-line"></i> Save Canvas to Cloud</button>
+            </div>
+          </div>
+
+          <div class="workspace-statistics-bar">
+            <div class="stat-node">Active Exam: <strong id="wsActiveQuizName">None Loaded</strong></div>
+            <div class="stat-node">Question Count: <strong id="wsTotalNodes">0</strong></div>
+          </div>
+
+          <div class="workspace-interactive-wrapper">
+            <div id="visualCanvasContainer" class="visual-canvas-grid"></div>
+          </div>
+        </section>
+
+        <!-- 10. QUIZ PRO MASTER MATRIX (PRESERVED FEATURE) -->
+        <section id="quizProSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-vip-crown-2-line text-warning"></i> Quiz Pro Master Matrix</h2>
+              <p>Granular question checklist selector. Compile arbitrary subsets across all topics and distribute compressed play links via social and school channels.</p>
+            </div>
+          </div>
+
           <div class="quiz-pro-container">
-            <div class="creator-card">
+            <div class="creator-card glass-panel">
               <h3>1. Configuration Blueprint</h3>
               <div class="form-group-row">
                 <div class="form-group">
-                  <label>Exam/Custom Title</label>
-                  <input type="text" id="proExamTitle" class="form-control" placeholder="E.g., Special Tamil & English Mixed Evaluation" />
+                  <label>Custom Exam Title</label>
+                  <input type="text" id="proExamTitle" class="form-control" placeholder="e.g. Special Tamil & Science Mixed Evaluation" />
                 </div>
                 <div class="form-group">
                   <label>Duration Limit (Minutes)</label>
@@ -175,653 +901,466 @@
               </div>
               <div class="form-group-row">
                 <div class="form-group">
-                  <label>Class/Grade</label>
-                  <input type="text" id="proExamClass" class="form-control" placeholder="E.g., 10th Standard" />
+                  <label>Class / Grade</label>
+                  <input type="text" id="proExamClass" class="form-control" placeholder="e.g. 10th Standard" />
                 </div>
                 <div class="form-group">
-                  <label>Subject Layer</label>
-                  <input type="text" id="proExamSubject" class="form-control" placeholder="E.g., Language Matrix" />
+                  <label>Subject</label>
+                  <input type="text" id="proExamSubject" class="form-control" placeholder="e.g. General Knowledge" />
                 </div>
               </div>
             </div>
 
             <div class="pro-workspace-split">
-              <!-- Selection Checklist Column -->
-              <div class="creator-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                  <h3>2. Granular Question Checklist Inventory</h3>
-                  <div class="pro-counter-badge"><i class="ri-checkbox-circle-line"></i> Selected Node Count: <span id="proSelectedCounterText">0</span></div>
+              <!-- Checklist -->
+              <div class="creator-card glass-panel">
+                <div class="pro-inventory-header">
+                  <h3>2. Granular Question Checklist</h3>
+                  <div class="pro-counter-badge"><i class="ri-checkbox-circle-line"></i> Selected: <span id="proSelectedCounterText">0</span></div>
                 </div>
                 <div class="form-group">
-                  <input type="text" id="proInventoryFilter" class="form-control" placeholder="🔍 Instant dynamic text or topic search parameter filtering..." />
+                  <input type="text" id="proInventoryFilter" class="form-control" placeholder="🔍 Instant search across all questions..." />
                 </div>
-                <div id="proChecklistWrapper" class="pro-checklist-scrollbox">
-                  <!-- Generated via Script -->
-                </div>
+                <div id="proChecklistWrapper" class="pro-checklist-scrollbox"></div>
               </div>
 
-              <!-- Save and Share Distribution Column -->
-              <div class="creator-card" style="height: fit-content;">
-                <h3>3. Production Deployment & Action Control</h3>
-                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 15px;">Compile selections to local/remote cloud spaces, broadcast tokens, or export assets.</p>
+              <!-- Distribution Controls -->
+              <div class="creator-card glass-panel" style="height: fit-content;">
+                <h3>3. Multi-Channel Distribution</h3>
+                <p class="text-muted" style="font-size:0.85rem; margin-bottom:15px;">Compile to cloud datastore, generate tokenized short links, or push to WhatsApp.</p>
                 
-                <div class="btn-vertical-stack" style="gap: 12px; margin-bottom: 20px;">
-                  <button id="btnProSaveExam" class="btn-primary btn-full"><i class="ri-cloud-upload-line"></i> Compile & Save Combined Exam Block</button>
+                <div class="btn-vertical-stack">
+                  <button id="btnProSaveExam" class="btn-primary btn-full"><i class="ri-cloud-upload-line"></i> Compile & Save Exam Block</button>
                   <button id="btnProGenerateLink" class="btn-success btn-full"><i class="ri-share-forward-line"></i> Generate Live Play URL Link</button>
                 </div>
 
-                <div id="proLinkShareContainer" class="share-box-display hidden">
-                  <label>Active Distribution Play URL Token:</label>
-                  <div style="display: flex; gap: 8px; margin-top: 5px; margin-bottom: 15px;">
-                    <input type="text" id="proGeneratedLinkInput" class="form-control" readonly style="font-size:0.8rem;" />
-                    <button class="btn-secondary" id="btnProCopyLink" title="Copy URL Link"><i class="ri-file-copy-2-line"></i></button>
+                <div id="proLinkShareContainer" class="share-box-display hidden" style="margin-top: 15px;">
+                  <label>Direct Play URL Token:</label>
+                  <div class="copy-input-cluster">
+                    <input type="text" id="proGeneratedLinkInput" class="form-control" readonly />
+                    <button class="btn-secondary" id="btnProCopyLink"><i class="ri-file-copy-line"></i></button>
                   </div>
                 </div>
 
                 <hr class="form-divider" />
                 
-                <h3>4. Alternative Multi-Channel Distribution Matrix</h3>
-                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 12px;">Simultaneously download high-fidelity payloads or deploy across social networks.</p>
-                
                 <div class="form-group">
-                  <label><input type="checkbox" id="chkProIncludeResponses" checked /> Include High-Fidelity Student Response PDF Data Sheet</label>
+                  <label><input type="checkbox" id="chkProIncludeResponses" checked /> Include High-Fidelity Student Response PDF</label>
                   <label style="margin-top: 8px; display: block;"><input type="checkbox" id="chkProIncludeCertificate" checked /> Include Automated Achievement Certificate</label>
                 </div>
 
                 <div class="form-group">
                   <label>Target Channel</label>
                   <select id="proShareChannelSelect" class="form-control">
-                    <option value="whatsapp">WhatsApp Business API</option>
-                    <option value="gmail">Google Gmail Engine</option>
-                    <option value="native">Native Platform Web Share Intent</option>
+                    <option value="whatsapp">WhatsApp Web / API</option>
+                    <option value="gmail">Gmail</option>
+                    <option value="native">Native Device Share</option>
                   </select>
                 </div>
 
-                <button id="btnProTriggerDistributionShare" class="btn-accent btn-full"><i class="ri-send-plane-fill"></i> Execute Selected Component Share</button>
+                <button id="btnProTriggerDistributionShare" class="btn-warning btn-full"><i class="ri-send-plane-fill"></i> Execute Component Share</button>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- LIBRARY -->
-        <section id="librarySection" class="view-section hidden">
-          <div class="section-header">
-            <h2>Central Asset Library</h2>
-            <p>Browse, manage, and deploy existing quiz assets and combined exam groups stored inside your remote Firestore repository.</p>
-          </div>
-          <div class="library-toolbar">
-            <input type="text" id="libraryFilterInput" placeholder="Filter library assets..." class="form-control" />
-            <select id="librarySortSelect" class="form-control">
-              <option value="newest">Newest First</option>
-              <option value="name">Alphabetical</option>
-            </select>
-          </div>
-          <div id="libraryContainer" class="library-grid-layout"></div>
-        </section>
-
-        <!-- QUIZ RUNNER -->
-        <section id="quizSection" class="view-section hidden">
-          <div class="quiz-runner-box">
-            <div class="runner-header">
-              <div style="display: flex; align-items: center; gap: 15px;">
-                  <h2 id="runnerQuizTitle" style="margin:0;">Active Quiz Instance</h2>
-                  <a href="https://www.youtube.com/@KALVIKADAL" target="_blank" title="KALVIKADAL YouTube Channel" style="color: #ef4444; font-size: 1.8rem; text-decoration: none; display: flex; align-items: center; justify-content: center;">
-                      <i class="ri-youtube-fill"></i>
-                  </a>
-              </div>
-              <div id="runnerTimer" class="timer-badge">00:00</div>
-            </div>
-            <div class="progress-container">
-              <div id="runnerProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
-            </div>
-            <div class="question-body-card">
-              <div id="runnerQuestionMeta" class="q-meta">Question 1 of 1</div>
-              <div id="runnerQuestionText" class="runner-question-text" style="font-family: 'Noto Sans', sans-serif;">Loading Question Data Structure...</div>
-              <div id="runnerImageContainer" class="runner-image-box hidden"></div>
-              <div id="runnerOptionsGrid" class="options-grid-layout" style="font-family: 'Noto Sans', sans-serif;"></div>
-            </div>
-            <div class="runner-controls">
-              <button id="runnerPrevBtn" class="btn-secondary"><i class="ri-arrow-left-s-line"></i> Back</button>
-              <button id="runnerQuitBtn" class="btn-danger"><i class="ri-close-circle-line"></i> Quit Attempt</button>
-              <button id="runnerNextBtn" class="btn-primary">Next <i class="ri-arrow-right-s-line"></i></button>
-              <button id="runnerFinishBtn" class="btn-success hidden"><i class="ri-check-double-line"></i> Finish Attempt</button>
+        <!-- 11. PDF QUESTION PAPER & OMR CENTER -->
+        <section id="pdfSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-printer-line text-danger"></i> High-Fidelity Document & OMR Center</h2>
+              <p>Generate standardized A4 examination question papers adhering to the Tamil Nadu Government School Board format (Portrait/Landscape, 2-Column layout, Section Headers, Watermark, Answer Keys, and OMR Bubble Sheets).</p>
             </div>
           </div>
-        </section>
 
-        <!-- CREATOR STUDIO -->
-        <section id="creatorSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>Quiz Creator Studio</h2>
-            <p>Generate, structuralize, and push individual question assets or comprehensive testing matrices into production tables.</p>
-          </div>
-          
-          <div class="creator-card">
-            <div class="form-group">
-              <label for="creatorQuizTitle">Quiz Structural Title</label>
-              <input type="text" id="creatorQuizTitle" class="form-control" placeholder="Enter quiz title..." />
-            </div>
-            <div class="form-group-row">
-                <div class="form-group">
-                    <label>Class / Grade</label>
-                    <input type="text" id="creatorClass" class="form-control" placeholder="e.g., 10th Grade" />
-                </div>
-                <div class="form-group">
-                    <label>Subject</label>
-                    <input type="text" id="creatorSubject" class="form-control" placeholder="e.g., Science" />
-                </div>
-                <div class="form-group">
-                    <label>Topic</label>
-                    <input type="text" id="creatorTopic" class="form-control" placeholder="e.g., Physics" />
-                </div>
-            </div>
-            <div class="form-group">
-              <label for="creatorQuizDescription">Structural Description</label>
-              <textarea id="creatorQuizDescription" class="form-control" placeholder="Provide context or instructions for this evaluation matrix..."></textarea>
-            </div>
-            <div class="form-group">
-              <label><input type="checkbox" id="creatorShuffle" /> Enable Random Question Shuffle</label>
-            </div>
-
-            <hr class="form-divider" />
-            
-            <div class="admin-tabs" style="display:flex; gap:10px; margin-bottom: 20px;">
-              <button class="btn-secondary active" id="tabManual" onclick="window.appEngineAPI.toggleCreatorTab('manual')">Manual Entry</button>
-              <button class="btn-secondary" id="tabExcel" onclick="window.appEngineAPI.toggleCreatorTab('excel')">Direct Excel Import</button>
-            </div>
-
-            <div id="creatorQuestionForm">
-              <h3>Append Raw Question Data Block</h3>
+          <div class="pdf-center-grid">
+            <div class="pdf-config-panel glass-panel">
+              <h3>1. Paper Structural Settings</h3>
               <div class="form-group">
-                <label>Question Prompt String</label>
-                <input type="text" id="qFormText" class="form-control" placeholder="What is the computational complexity of..." />
-              </div>
-              <div class="options-build-grid">
-                <div class="form-group"><label>Option A</label><input type="text" id="qFormOptA" class="form-control" /></div>
-                <div class="form-group"><label>Option B</label><input type="text" id="qFormOptB" class="form-control" /></div>
-                <div class="form-group"><label>Option C</label><input type="text" id="qFormOptC" class="form-control" /></div>
-                <div class="form-group"><label>Option D</label><input type="text" id="qFormOptD" class="form-control" /></div>
-              </div>
-              <div class="form-group">
-                <label for="qFormAnswer">Target Key Choice</label>
-                <select id="qFormAnswer" class="form-control">
-                  <option value="A">Option A</option>
-                  <option value="B">Option B</option>
-                  <option value="C">Option C</option>
-                  <option value="D">Option D</option>
+                <label>Select Target Examination</label>
+                <select id="pdfSourceAssetSelect" class="form-control">
+                  <option value="">Select Quiz or Combined Exam...</option>
                 </select>
               </div>
-              <button id="creatorAppendQuestionBtn" class="btn-secondary"><i class="ri-add-line"></i> Add Question to Array</button>
-            </div>
 
-            <div id="creatorExcelForm" class="hidden">
-              <div class="excel-drop-zone" id="excelDropZone">
-                <i class="ri-file-excel-2-line" style="font-size:3rem; color:var(--success);"></i>
-                <h3>Drag & Drop Excel File Here</h3>
-                <p>Supports .xlsx, .xls with Text Styling Natively</p>
-                <input type="file" id="excelFileInput" accept=".xlsx, .xls" hidden />
-                <button class="btn-primary" onclick="document.getElementById('excelFileInput').click()" style="margin-top:10px;">Browse Files</button>
-              </div>
-              <div id="excelPreviewContainer" class="hidden" style="margin-top: 20px;">
-                  <h4>Import Preview (<span id="excelParsedCount">0</span> items)</h4>
-                  <div class="table-wrapper" style="max-height: 250px;">
-                      <table id="excelPreviewTable">
-                          <thead><tr><th>Question</th><th>Opt A</th><th>Opt B</th><th>Answer</th></tr></thead>
-                          <tbody></tbody>
-                      </table>
-                  </div>
-                  <button id="commitExcelImportBtn" class="btn-success btn-full" style="margin-top:10px;"><i class="ri-check-line"></i> Confirm & Inject into Array</button>
-              </div>
-            </div>
-
-            <div class="workspace-action-row" style="margin-top:20px; border-top: 1px solid var(--border); padding-top: 20px;">
-              <div style="margin-bottom: 15px;">Pending Nodes in Memory Array: <strong id="pendingQuestionsCount">0</strong></div>
-              <button id="creatorToWorkspaceBtn" class="btn-primary btn-full"><i class="ri-brush-line"></i> Generate Canvas & Edit in Workspace</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- WORKSPACE -->
-        <section id="workspaceSection" class="view-section hidden">
-          <div class="workspace-header-panel">
-            <div>
-              <h2>Interactive Visual Canvas Workspace</h2>
-              <p>Drag, duplicate, audit, structuralize, and reorder core testing nodes dynamically with realtime data state calculations.</p>
-            </div>
-            <div class="workspace-controls-cluster">
-              <button id="wsToggleViewBtn" class="btn-secondary"><i class="ri-grid-fill"></i> Toggle View</button>
-              <button id="wsUndoBtn" class="btn-icon-action" title="Undo"><i class="ri-arrow-go-back-line"></i></button>
-              <button id="wsRedoBtn" class="btn-icon-action" title="Redo"><i class="ri-arrow-go-forward-line"></i></button>
-              <button id="wsPublishBtn" class="btn-success"><i class="ri-cloud-upload-line"></i> Save State To Cloud</button>
-            </div>
-          </div>
-          <div class="workspace-statistics-bar">
-            <div class="stat-node">Selected Nodes: <strong id="wsStatSelected">0</strong></div>
-            <div class="stat-node">Target Asset: <strong id="wsActiveQuizName" style="color:var(--primary);">None Loaded</strong></div>
-          </div>
-          <div class="workspace-interactive-wrapper">
-            <div id="visualCanvasContainer" class="visual-canvas-grid"></div>
-          </div>
-        </section>
-
-        <!-- COMBINED GROUPS -->
-        <section id="groupsSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>Combined Exam Processing Matrix</h2>
-            <p>Pool independent quiz assets into consolidated institutional testing groups.</p>
-          </div>
-          <div class="group-builder-layout">
-            <div class="group-builder-sidebar">
-              <h3>Available Inventory</h3>
-              <div class="inventory-search-row">
-                <input type="text" id="groupInventorySearch" placeholder="Filter available quizzes..." class="form-control" />
-              </div>
-              <div id="groupInventoryContainer" class="inventory-scroll-box"></div>
-            </div>
-            <div class="group-builder-main-panel">
-              <h3>Target Composite Configuration</h3>
               <div class="form-group">
-                <label>Composite Group Name</label>
-                <input type="text" id="groupNameInput" class="form-control" placeholder="E.g., Terminal Secondary Evaluation Block" />
+                <label>Institution / School Header Name</label>
+                <input type="text" id="pdfSchoolName" class="form-control" value="GOVERNMENT HIGHER SECONDARY SCHOOL, TAMIL NADU" />
               </div>
-              <div class="operation-control-strip">
-                <button id="groupShuffleBtn" class="btn-secondary"><i class="ri-shuffle-line"></i> Shuffle Elements</button>
-                <button id="groupDeduplicateBtn" class="btn-secondary"><i class="ri-equalizer-line"></i> Clear Duplicates</button>
-                <button id="groupCommitBtn" class="btn-primary"><i class="ri-cloud-upload-line"></i> Save and Initialize Group</button>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Class / Grade</label>
+                  <input type="text" id="pdfClass" class="form-control" value="10th Standard" />
+                </div>
+                <div class="form-group">
+                  <label>Subject</label>
+                  <input type="text" id="pdfSubject" class="form-control" value="Science / அறிவியல்" />
+                </div>
               </div>
-              <div class="composite-metrics-banner">
-                <span>Total Accumulated Pools: <strong id="groupMetricCount">0</strong></span>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Total Marks</label>
+                  <input type="number" id="pdfMarksInput" class="form-control" value="50" />
+                </div>
+                <div class="form-group">
+                  <label>Time Allowed (Mins)</label>
+                  <input type="text" id="pdfTimeInput" class="form-control" value="90 Minutes" />
+                </div>
               </div>
-              <div id="groupCompositeTargetContainer" class="composite-drop-zone">
-                <div class="empty-zone-notice">Select asset checkboxes from the left inventory configuration panel to compile your unified structural evaluation block.</div>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Page Layout</label>
+                  <select id="pdfLayoutSelect" class="form-control">
+                    <option value="portrait_2col" selected>A4 Portrait — 2 Columns (TN Board Style)</option>
+                    <option value="portrait_1col">A4 Portrait — Standard 1 Column</option>
+                    <option value="landscape_2col">A4 Landscape — 2 Columns</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Set Version</label>
+                  <select id="pdfSetSelect" class="form-control">
+                    <option value="A">Set A (Original Order)</option>
+                    <option value="B">Set B (Randomized)</option>
+                    <option value="C">Set C (Randomized)</option>
+                    <option value="D">Set D (Randomized)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label><input type="checkbox" id="pdfWatermarkToggle" checked /> Include Institutional Watermark</label>
+                <label style="margin-top:6px; display:block;"><input type="checkbox" id="pdfQrVerifyToggle" checked /> Include Anti-Tamper Verification QR Code</label>
+              </div>
+
+              <div class="pdf-action-block">
+                <button id="pdfGenerateDownloadBtn" class="btn-primary btn-full"><i class="ri-file-pdf-fill"></i> Download A4 Question Paper (PDF)</button>
+                <button id="pdfGenerateKeyBtn" class="btn-secondary btn-full" style="margin-top:10px;"><i class="ri-key-line"></i> Download Master Answer Key (PDF)</button>
+                <button id="pdfGenerateOMRBtn" class="btn-warning btn-full" style="margin-top:10px;"><i class="ri-checkbox-circle-fill"></i> Download Printable OMR Bubble Sheet (PDF)</button>
+              </div>
+            </div>
+
+            <!-- Interactive Live Simulation Sheet -->
+            <div class="pdf-preview-panel glass-panel">
+              <h3>Standardized Examination Paper Preview</h3>
+              <div class="simulated-sheet tn-paper-format" id="pdfDocumentSimulator">
+                <div class="sheet-school-header" id="simSchoolHeader">GOVERNMENT HIGHER SECONDARY SCHOOL, TAMIL NADU</div>
+                <div class="sheet-exam-title" id="simExamTitle">QUARTERLY EXAMINATION — 2026</div>
+                <div class="sheet-meta-row">
+                  <span>CLASS: <b id="simClass">10th Std</b></span>
+                  <span>SUBJECT: <b id="simSubject">Science</b></span>
+                  <span>MARKS: <b id="simMarks">50</b></span>
+                  <span>TIME: <b id="simTime">90 Mins</b></span>
+                </div>
+                <div class="sheet-instructions">Instructions: 1. Check question paper for completeness. 2. Shade chosen option in OMR sheet using blue/black ballpoint pen.</div>
+                <hr style="border: 0; border-top: 2px solid #000; margin: 10px 0;" />
+                
+                <div class="sheet-questions-container" id="simQuestionsBody">
+                  <p class="text-muted text-center" style="padding: 40px;">Select an assessment from the left panel to preview formatted A4 question paper.</p>
+                </div>
+                <div class="sheet-footer">Page 1 of 2 &bull; Quiz Master Pro Enterprise School Edition</div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ANALYTICS -->
-        <section id="analyticsSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>Enterprise Statistical Dashboard</h2>
-            <p>Realtime programmatic visualization tracking system telemetry data and scoring profiles.</p>
+        <!-- 12. CONSOLIDATED MARKSHEET SYSTEM -->
+        <section id="marksheetSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-table-line text-success"></i> Consolidated Marksheet & Tabulation Center</h2>
+              <p>Generate, filter, and export consolidated marks reports class-wise and subject-wise into PDF and Excel with Rank calculations, Pass/Fail status, and grading.</p>
+            </div>
+            <div class="btn-horizontal-group">
+              <button class="btn-secondary" id="btnExportMarksheetExcel"><i class="ri-file-excel-line"></i> Export to Excel</button>
+              <button class="btn-primary" id="btnExportMarksheetPDF"><i class="ri-file-pdf-line"></i> Print Official Marksheet</button>
+            </div>
           </div>
-          <div class="analytics-matrix-grid">
-            <div class="analytics-two-column-layout">
-              <div class="analytics-card">
-                <h3>Global Scoring Distribution Profile</h3>
-                <div class="distribution-summary-row">
-                  <div class="dist-pill pass">Total Attempts: <span id="anaTotalAttempts">0</span></div>
-                  <div class="dist-pill pass">Avg Score: <span id="anaAvgScore">0%</span></div>
-                </div>
+
+          <div class="marksheet-filters glass-panel">
+            <div class="form-group-row">
+              <div class="form-group">
+                <label>Filter by Assessment</label>
+                <select id="marksheetExamSelect" class="form-control">
+                  <option value="">All Examinations</option>
+                </select>
               </div>
-              <div class="analytics-card">
-                <h3>Recent Operations</h3>
-                <div class="table-wrapper" style="max-height: 250px;">
-                  <table>
-                    <thead>
-                      <tr><th>Candidate</th><th>Evaluation Node</th><th>Score</th></tr>
-                    </thead>
-                    <tbody id="analyticsRecentTableBody"></tbody>
-                  </table>
-                </div>
+              <div class="form-group">
+                <label>Class Filter</label>
+                <input type="text" id="marksheetClassFilter" placeholder="e.g. 10-A" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label>Minimum Score %</label>
+                <input type="number" id="marksheetMinScore" value="0" min="0" max="100" class="form-control" />
               </div>
             </div>
           </div>
-        </section>
 
-        <!-- LEADERBOARD -->
-        <section id="leaderboardSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>Global Institutional Standings</h2>
-            <p>Monitored ranking metrics identifying candidate milestones across active performance profiles.</p>
-          </div>
-          <div class="table-wrapper">
-            <table>
+          <div class="table-wrapper glass-panel">
+            <table class="enterprise-table" id="consolidatedMarksheetTable">
               <thead>
-                <tr><th>Rank Vector</th><th>Candidate Name</th><th>Assigned Evaluation Block</th><th>Score Percentage</th><th>Date</th></tr>
+                <tr>
+                  <th>Rank</th>
+                  <th>Candidate Name</th>
+                  <th>Roll / Reg No.</th>
+                  <th>Examination Block</th>
+                  <th>Correct</th>
+                  <th>Wrong</th>
+                  <th>Marks</th>
+                  <th>Percentage</th>
+                  <th>Grade</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="marksheetTableBody">
+                <tr><td colspan="11" class="text-center text-muted" style="padding: 30px;">Loading candidate records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 13. CERTIFICATE DESIGNER & STUDIO -->
+        <section id="certificateManagerSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-medal-line text-warning"></i> Institutional Certificate Studio</h2>
+              <p>Generate certificates with embedded QR codes, Headmaster & Teacher signatures, and bilingual Tamil/English titles.</p>
+            </div>
+          </div>
+
+          <div class="certificate-studio-grid">
+            <div class="cert-controls-panel glass-panel">
+              <h3>Certificate Template Configuration</h3>
+              <div class="form-group">
+                <label>Template Theme</label>
+                <select id="certTemplateTheme" class="form-control">
+                  <option value="gold" selected>Gold Sovereign (Excellence)</option>
+                  <option value="blue">Tamil Nadu Blue (Department of Education)</option>
+                  <option value="silver">Silver Scholar</option>
+                  <option value="tamil">தமிழ்நாட்டுக் கல்வித் துறை (Tamil Traditional)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Candidate Name</label>
+                <input type="text" id="certCandidateName" class="form-control" value="S. Murugan" />
+              </div>
+
+              <div class="form-group">
+                <label>Assessment Title</label>
+                <input type="text" id="certExamName" class="form-control" value="State Level Science Talent Search Examination" />
+              </div>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Score Achieved (%)</label>
+                  <input type="text" id="certScoreInput" class="form-control" value="98%" />
+                </div>
+                <div class="form-group">
+                  <label>Rank Position</label>
+                  <input type="text" id="certRankInput" class="form-control" value="Rank 1" />
+                </div>
+              </div>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label>Teacher / Invigilator Name</label>
+                  <input type="text" id="certTeacherName" class="form-control" value="K. Sakthivelavan, B.Sc., B.Ed." />
+                </div>
+                <div class="form-group">
+                  <label>Headmaster / Principal</label>
+                  <input type="text" id="certHMName" class="form-control" value="Dr. M. Rangarajan, Ph.D." />
+                </div>
+              </div>
+
+              <div class="btn-horizontal-group" style="margin-top: 20px;">
+                <button id="btnDownloadCertPDF" class="btn-primary btn-full"><i class="ri-file-pdf-line"></i> Download Certificate (PDF)</button>
+                <button id="btnDownloadCertPNG" class="btn-secondary btn-full"><i class="ri-image-line"></i> Download High-Res (PNG)</button>
+              </div>
+            </div>
+
+            <div class="cert-preview-panel glass-panel">
+              <h3>Certificate Live Render Simulation</h3>
+              <div id="certStageCanvas" class="cert-render-box">
+                <!-- Dynamically rendered vector certificate canvas -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 14. ANALYTICS CENTER V2 -->
+        <section id="analyticsSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-pie-chart-2-line text-blue"></i> Enterprise Telemetry & Analytics V2</h2>
+              <p>Topic mastery heatmaps, item difficulty discriminators, and question skip rates.</p>
+            </div>
+          </div>
+
+          <div class="analytics-matrix-grid">
+            <div class="dash-card glass-panel">
+              <h3>Scoring Profile Distribution</h3>
+              <div class="distribution-summary-row">
+                <div class="dist-pill pass">Attempts: <span id="anaTotalAttempts">0</span></div>
+                <div class="dist-pill pass">Institutional Average: <span id="anaAvgScore">0%</span></div>
+              </div>
+              <div id="anaScoreHistogram" class="histogram-box"></div>
+            </div>
+
+            <div class="dash-card glass-panel">
+              <h3>Challenging Questions (Lowest Accuracy)</h3>
+              <div id="anaHardestQuestionsList" class="compact-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 15. LEADERBOARD SYSTEM -->
+        <section id="leaderboardSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-trophy-line text-warning"></i> Global Institutional Standings</h2>
+              <p>Verified ranking metrics identifying candidate milestones across active performance profiles.</p>
+            </div>
+          </div>
+          <div class="table-wrapper glass-panel">
+            <table class="enterprise-table">
+              <thead>
+                <tr><th>Rank</th><th>Candidate</th><th>Assigned Evaluation Block</th><th>Score Percentage</th><th>Date</th></tr>
               </thead>
               <tbody id="leaderboardTableBody"></tbody>
             </table>
           </div>
         </section>
 
-        <!-- PDF CENTER -->
-        <section id="pdfSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>High-Fidelity Document Generation Center</h2>
-            <p>Compile production ready PDF files retaining full original rich text, colors, symbols, and mathematical geometry.</p>
-          </div>
-          <div class="pdf-center-grid">
-            <div class="pdf-config-panel">
-              <h3>Layout Structuralization Blueprint</h3>
-              <div class="form-group">
-                <label>Target Source File</label>
-                <select id="pdfSourceAssetSelect" class="form-control">
-                    <option value="">Select Target Evaluation Node...</option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                  <label>Override Exam Name (Optional)</label>
-                  <input type="text" id="pdfExamName" class="form-control" placeholder="Defaults to Asset Title" />
-              </div>
-
-              <div class="form-group-row">
-                  <div class="form-group">
-                      <label>Class / Grade</label>
-                      <input type="text" id="pdfClass" class="form-control" placeholder="Class" />
-                  </div>
-                  <div class="form-group">
-                      <label>Subject</label>
-                      <input type="text" id="pdfSubject" class="form-control" placeholder="Subject" />
-                  </div>
-              </div>
-
-              <div class="form-group-row">
-                  <div class="form-group">
-                      <label>Topic</label>
-                      <input type="text" id="pdfTopic" class="form-control" placeholder="Topic" />
-                  </div>
-                  <div class="form-group">
-                      <label>Total Marks</label>
-                      <input type="number" id="pdfMarksInput" class="form-control" placeholder="e.g. 100" />
-                  </div>
-              </div>
-
-              <div class="form-group">
-                  <label>Time Allowed (Minutes)</label>
-                  <input type="text" id="pdfTimeInput" class="form-control" placeholder="e.g. 90" />
-              </div>
-
-              <div class="pdf-action-block" style="margin-top:20px;">
-                <button id="pdfGenerateDownloadBtn" class="btn-primary btn-full"><i class="ri-file-download-line"></i> Generate Document</button>
-                <button id="pdfGenerateKeyBtn" class="btn-secondary btn-full" style="margin-top:10px;"><i class="ri-key-line"></i> Generate Answer Key PDF</button>
-              </div>
-            </div>
-            <div class="pdf-preview-panel">
-              <h3>Live Layout Document Simulation</h3>
-              <div class="simulated-sheet" id="pdfDocumentSimulator">
-                <div class="sim-header">QUIZ MASTER PRO ENTERPRISE DOC SIMULATION</div>
-                <div class="sim-body">Select a source target data node inside the configuration dashboard to preview compilation layouts.</div>
-                <div class="sim-footer">Page 1 of 1</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- USER MANAGEMENT SECTION -->
-        <section id="usersSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>User Management Matrix</h2>
-            <p>Modify, remove, or export registered candidate and staff profiles.</p>
-          </div>
-          <div class="creator-card">
-             <button id="adminDownloadUsersBtn" class="btn-success" style="margin-bottom: 15px;"><i class="ri-download-2-line"></i> Download User Database Dump (JSON)</button>
-             <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>User ID / Email</th>
-                            <th>Name</th>
-                            <th>Role</th>
-                            <th>Password</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody"></tbody>
-                </table>
-             </div>
-          </div>
-        </section>
-
-        <!-- GUIDES -->
-        <section id="guidesSection" class="view-section hidden">
-          <div class="guides-container-layout">
-            <div class="guides-navigation-tree">
-              <h3>Knowledge Base Index</h3>
-              <div class="guide-nav-cluster">
-                <button class="guide-tree-link active" data-guide="quickstart">System Overview Quickstart</button>
-                <button class="guide-tree-link" data-guide="creator">Quiz Creator & Excel Framework</button>
-                <button class="guide-tree-link" data-guide="teacher">Pedagogical Execution Guide</button>
-                <button class="guide-tree-link" data-guide="admin">Systems Governance Guide</button>
-              </div>
-            </div>
-            <div class="guides-content-viewport">
-              <div id="guideContentBody" class="markdown-rendered-view"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- PROFILE -->
-        <section id="profileSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>Identity Profile Configuration</h2>
-            <p>Review system security permissions and update personal parameters.</p>
-          </div>
-          <div class="creator-card">
-            <div class="form-group">
-              <label>Unique Account Identifier Pointer (UID)</label>
-              <input type="text" id="profUid" class="form-control" readonly />
-            </div>
-            <div class="form-group">
-              <label>Assigned Authorization Clearance Tier</label>
-              <input type="text" id="profRole" class="form-control" readonly />
-            </div>
-            <div class="form-group">
-              <label>User Descriptive Label</label>
-              <input type="text" id="profNameInput" class="form-control" />
-            </div>
-            <button id="profileSaveBtn" class="btn-primary"><i class="ri-refresh-line"></i> Synchronize Account Profile Metadata</button>
-          </div>
-        </section>
-
-        <!-- ADMIN -->
-        <section id="adminSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>System Administration & Control Matrix</h2>
-            <p>Perform broad operations, clear remote cloud datastores, update system states, and inspect execution logs.</p>
-          </div>
-          <div class="admin-grid-layout">
-            <div class="admin-action-card">
-              <h3>System Database Actions</h3>
-              <p>Purge local records or migrate legacy datasets manually.</p>
-              <div class="btn-vertical-stack">
-                <button id="adminResetDataBtn" class="btn-danger"><i class="ri-delete-bin-5-line"></i> Wipe Local Cache & Re-Initialize Workspace</button>
-                <button id="adminForceSyncBtn" class="btn-success"><i class="ri-database-2-line"></i> Force Cloud Sync & Legacy Migration</button>
-              </div>
-            </div>
-            
-            <div class="admin-action-card">
-              <h3>Database Schema Debugger</h3>
-              <p>Export the exact raw Firestore JSON structure to identify missing or incorrectly named keys in your offline arrays.</p>
-              <div class="btn-vertical-stack">
-                <button id="adminDownloadDumpBtn" class="btn-primary" style="background-color: var(--accent);"><i class="ri-download-cloud-2-line"></i> Download Quiz Data Dump (JSON)</button>
-              </div>
-            </div>
-            
-            <div class="admin-action-card" style="grid-column: 1 / -1;">
-              <h3>System Security & Audit Trail Logs</h3>
-              <div class="log-terminal-output" id="adminTerminalLogs">
-                [SYSTEM LOG ENVIRONMENT INITIATED v37.4]<br/>
-                [TELEMETRY] Listening to active visual DOM mutation matrices...
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- REVIEW -->
+        <!-- 16. EVALUATION REVIEW PAGE -->
         <section id="reviewSection" class="view-section hidden">
-          <div class="section-header">
-            <h2>Evaluation Attempt Analysis</h2>
-            <p>Examine response telemetry data, parameter errors, and verified correction metrics.</p>
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-checkbox-circle-line text-success"></i> Evaluation Attempt Analysis</h2>
+              <p>Item-by-item analysis showing student answers, verified answer keys, and explanations.</p>
+            </div>
           </div>
-          <div class="score-summary-banner">
-            <h3>Final Score Index: <span id="reviewScoreText">0/0</span></h3>
-            <div id="passFailText" style="font-weight:bold; font-size:1.2rem; margin-top:10px;">--</div>
+          <div class="score-summary-banner glass-panel">
+            <h3>Final Score: <span id="reviewScoreText">0/0</span></h3>
+            <div id="passFailText" style="font-weight:bold; font-size:1.4rem; margin-top:6px;">--</div>
           </div>
           
           <div id="reviewAnalysisContainer" class="review-cards-stack"></div>
           
-          <div class="review-share-block">
-              <h3 style="margin-bottom: 12px;"><i class="ri-share-line"></i> Distribution Actions</h3>
-              <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 15px;">Send verified PDFs detailing student response logs and high-fidelity certificates directly to Teachers or personal timelines.</p>
-              <div class="btn-vertical-stack" style="gap: 12px;">
-                  <button id="btnShareResponseTeacher" class="btn-secondary btn-full"><i class="ri-file-text-line"></i> Share Response Payload PDF to Teacher</button>
-                  <button id="btnShareCertificate" class="btn-success btn-full"><i class="ri-award-line"></i> Generate & Share Award Certificate</button>
-              </div>
+          <div class="review-share-block glass-panel">
+            <h3>Distribution & Student Revision</h3>
+            <div class="btn-horizontal-group" style="margin-top: 15px;">
+              <button id="btnDownloadResponsePDF" class="btn-secondary"><i class="ri-file-text-line"></i> Download Response PDF</button>
+              <button id="btnDownloadRevisionPDF" class="btn-warning"><i class="ri-error-warning-line"></i> Download Revision PDF (Wrong Questions Only)</button>
+              <button id="btnShareCertificate" class="btn-success"><i class="ri-award-line"></i> Download Certificate</button>
+            </div>
           </div>
 
-          <button id="reviewCloseBtn" class="btn-primary btn-full" style="margin-top:20px;"><i class="ri-home-wifi-line"></i> Terminate Review Run and Return Home</button>
+          <button id="reviewCloseBtn" class="btn-primary btn-full" style="margin-top:20px;"><i class="ri-home-4-line"></i> Return to Dashboard</button>
+        </section>
+
+        <!-- 17. SYSTEM GOVERNANCE & ADMIN SECTION (PRESERVED) -->
+        <section id="adminSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <div>
+              <h2><i class="ri-shield-star-line text-danger"></i> System Administration & Governance</h2>
+              <p>Database backups, Firestore cache resets, schema verification, and audit logs.</p>
+            </div>
+          </div>
+          <div class="admin-grid-layout">
+            <div class="admin-action-card glass-panel">
+              <h3>System Actions</h3>
+              <p>Purge local records or migrate legacy datasets.</p>
+              <div class="btn-vertical-stack">
+                <button id="adminResetDataBtn" class="btn-danger"><i class="ri-delete-bin-5-line"></i> Wipe Local Cache</button>
+                <button id="adminForceSyncBtn" class="btn-success"><i class="ri-database-2-line"></i> Force Cloud Sync</button>
+                <button id="adminDownloadDumpBtn" class="btn-primary"><i class="ri-download-cloud-2-line"></i> Export Database Dump (JSON)</button>
+              </div>
+            </div>
+            
+            <div class="admin-action-card glass-panel" style="grid-column: 1 / -1;">
+              <h3>System Security & Audit Trail Logs</h3>
+              <div class="log-terminal-output" id="adminTerminalLogs">
+                [SYSTEM INITIATED v38.0 ENTERPRISE SCHOOL EDITION]<br/>
+                [TELEMETRY] Listening to Firestore real-time snapshot streams...
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 18. USER ROSTER & PROFILE SECTIONS (PRESERVED) -->
+        <section id="usersSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <h2>User Management Matrix</h2>
+          </div>
+          <div class="table-wrapper glass-panel">
+            <table class="enterprise-table">
+              <thead>
+                <tr><th>User ID / Email</th><th>Name</th><th>Role</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="profileSection" class="view-section hidden">
+          <div class="section-header-banner">
+            <h2>Identity Profile Configuration</h2>
+          </div>
+          <div class="creator-card glass-panel">
+            <div class="form-group">
+              <label>Unique Identifier (UID)</label>
+              <input type="text" id="profUid" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+              <label>Clearance Tier</label>
+              <input type="text" id="profRole" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="profNameInput" class="form-control" />
+            </div>
+            <button id="profileSaveBtn" class="btn-primary"><i class="ri-refresh-line"></i> Save Profile Metadata</button>
+          </div>
         </section>
 
       </div>
     </main>
   </div>
 
-  <!-- RICH TEXT EDITOR MODAL -->
-  <div id="richTextEditorModal" class="modal-overlay hidden">
-      <div class="modal-content">
-          <div class="modal-header">
-              <h3>Edit Assessment Node</h3>
-              <button class="btn-icon-toggle" onclick="window.appEngineAPI.closeEditModal()"><i class="ri-close-line"></i></button>
-          </div>
-          <div class="wysiwyg-toolbar">
-              <button class="wysiwyg-btn" title="Bold" onclick="document.execCommand('bold', false, null)"><i class="ri-bold"></i></button>
-              <button class="wysiwyg-btn" title="Italic" onclick="document.execCommand('italic', false, null)"><i class="ri-italic"></i></button>
-              <button class="wysiwyg-btn" title="Underline" onclick="document.execCommand('underline', false, null)"><i class="ri-underline"></i></button>
-              <div class="toolbar-divider"></div>
-              <button class="wysiwyg-btn" title="Subscript" onclick="document.execCommand('subscript', false, null)">X<sub>2</sub></button>
-              <button class="wysiwyg-btn" title="Superscript" onclick="document.execCommand('superscript', false, null)">X<sup>2</sup></button>
-              <button class="wysiwyg-btn" title="Toggle Uppercase/Lowercase" onclick="window.appEngineAPI.toggleTextCase()">Aa</button>
-              <div class="toolbar-divider"></div>
-              <input type="color" class="color-picker" title="Text Color" onchange="document.execCommand('foreColor', false, this.value)">
-              <div class="toolbar-divider"></div>
-              <select class="symbol-dropdown" onchange="if(this.value){ document.execCommand('insertText', false, this.value); this.value=''; }">
-                  <option value="">+ Symbols</option>
-                  <option value="√">√ (Root)</option>
-                  <option value="π">π (Pi)</option>
-                  <option value="θ">θ (Theta)</option>
-                  <option value="Δ">Δ (Delta)</option>
-                  <option value="∑</option>
-                  <option value="∞">∞ (Infinity)</option>
-                  <option value="±">± (Plus-Minus)</option>
-                  <option value="÷">÷ (Divide)</option>
-                  <option value="×">× (Multiply)</option>
-                  <option value="°">° (Degree)</option>
-                  <option value="α">α (Alpha)</option>
-                  <option value="β">β (Beta)</option>
-                  <option value="Ω">Ω (Omega)</option>
-              </select>
-          </div>
-          <div class="modal-body">
-              <div class="form-group">
-                  <label>Question Text</label>
-                  <div id="rtEditQuestion" class="rich-text-area" contenteditable="true"></div>
-              </div>
-              <div class="form-group-row">
-                  <div class="form-group">
-                      <label>Option A</label>
-                      <div id="rtEditOptA" class="rich-text-area" contenteditable="true"></div>
-                  </div>
-                  <div class="form-group">
-                      <label>Option B</label>
-                      <div id="rtEditOptB" class="rich-text-area" contenteditable="true"></div>
-                  </div>
-              </div>
-              <div class="form-group-row">
-                  <div class="form-group">
-                      <label>Option C</label>
-                      <div id="rtEditOptC" class="rich-text-area" contenteditable="true"></div>
-                  </div>
-                  <div class="form-group">
-                      <label>Option D</label>
-                      <div id="rtEditOptD" class="rich-text-area" contenteditable="true"></div>
-                  </div>
-              </div>
-              <div class="form-group">
-                  <label>Correct Answer Target (A, B, C, or D)</label>
-                  <select id="rtEditAnswer" class="form-control">
-                      <option value="A">Option A</option>
-                      <option value="B">Option B</option>
-                      <option value="C">Option C</option>
-                      <option value="D">Option D</option>
-                  </select>
-              </div>
-          </div>
-          <div class="modal-footer">
-              <button class="btn-secondary" onclick="window.appEngineAPI.closeEditModal()">Cancel</button>
-              <button class="btn-primary" onclick="window.appEngineAPI.saveEditModal()">Save Node Modifications</button>
-          </div>
-      </div>
-  </div>
-
-  <!-- EDIT USER MODAL -->
-  <div id="editUserModal" class="modal-overlay hidden">
-      <div class="modal-content" style="max-width: 450px;">
-          <div class="modal-header">
-              <h3>Edit Registered User</h3>
-              <button class="btn-icon-toggle" onclick="window.appEngineAPI.closeUserModal()"><i class="ri-close-line"></i></button>
-          </div>
-          <div class="modal-body">
-              <input type="hidden" id="editUserId" />
-              <div class="form-group">
-                  <label>Full Name</label>
-                  <input type="text" id="editUserName" class="form-control" />
-              </div>
-              <div class="form-group">
-                  <label>Email / User ID</label>
-                  <input type="text" id="editUserEmail" class="form-control" />
-              </div>
-              <div class="form-group">
-                  <label>Role</label>
-                  <select id="editUserRole" class="form-control">
-                      <option value="student">Student</option>
-                      <option value="teacher">Teacher</option>
-                      <option value="admin">Admin</option>
-                  </select>
-              </div>
-              <div class="form-group">
-                  <label>Password</label>
-                  <input type="text" id="editUserPassword" class="form-control" />
-              </div>
-          </div>
-          <div class="modal-footer">
-              <button class="btn-secondary" onclick="window.appEngineAPI.closeUserModal()">Cancel</button>
-              <button class="btn-primary" onclick="window.appEngineAPI.saveUserModal()">Save Changes</button>
-          </div>
-      </div>
-  </div>
-
-  <!-- GLOBAL SOCIAL SHARE MODAL -->
+  <!-- MODALS -->
+  <!-- Social Share Modal -->
   <div id="socialShareModal" class="modal-overlay hidden">
-      <div class="modal-content" style="max-width: 420px; text-align: center;">
-          <div class="modal-header">
-              <h3>Share Access Link</h3>
-              <button class="btn-icon-toggle" onclick="document.getElementById('socialShareModal').classList.add('hidden')"><i class="ri-close-line"></i></button>
-          </div>
-          <div class="modal-body">
-              <p style="margin-bottom: 18px; color: var(--text-light); font-size: 0.9rem;">Distribute this live play link to candidates via any platform:</p>
-              <div class="social-share-grid">
-                  <button class="btn-secondary btn-full" id="shareWA"><i class="ri-whatsapp-fill" style="color: #25D366;"></i> WhatsApp</button>
-                  <button class="btn-secondary btn-full" id="shareFB"><i class="ri-facebook-circle-fill" style="color: #1877F2;"></i> Facebook</button>
-                  <button class="btn-secondary btn-full" id="shareTW"><i class="ri-twitter-x-line"></i> Twitter (X)</button>
-                  <button class="btn-secondary btn-full" id="shareGM"><i class="ri-mail-fill" style="color: #EA4335;"></i> Gmail</button>
-                  <button class="btn-secondary btn-full" id="shareNative" style="grid-column: 1 / -1; background: var(--primary); color: white; border: none;"><i class="ri-share-forward-fill"></i> Native App Share</button>
-              </div>
-              <div style="margin-top: 20px; text-align: left;">
-                  <label style="font-size: 0.8rem; font-weight: 600;">Manual URL Token:</label>
-                  <div style="display: flex; gap: 8px; margin-top: 5px;">
-                      <input type="text" id="shareLinkInput" class="form-control" readonly style="font-size: 0.8rem;" />
-                      <button class="btn-secondary" onclick="window.appEngineAPI.copyShareLink()" title="Copy Link"><i class="ri-file-copy-2-line"></i></button>
-                  </div>
-              </div>
-          </div>
+    <div class="modal-content glass-panel" style="max-width: 450px; text-align: center;">
+      <div class="modal-header">
+        <h3>Share Assessment Token</h3>
+        <button class="btn-icon-round" onclick="document.getElementById('socialShareModal').classList.add('hidden')"><i class="ri-close-line"></i></button>
       </div>
+      <div class="modal-body">
+        <p class="text-muted" style="margin-bottom: 18px;">Distribute this live play link to students via any channel:</p>
+        <div class="social-share-grid">
+          <button class="btn-secondary btn-full" id="shareWA"><i class="ri-whatsapp-fill text-success"></i> WhatsApp</button>
+          <button class="btn-secondary btn-full" id="shareGM"><i class="ri-mail-fill text-danger"></i> Gmail</button>
+          <button class="btn-secondary btn-full" id="shareTW"><i class="ri-twitter-x-line"></i> Twitter / X</button>
+          <button class="btn-secondary btn-full" id="shareNative"><i class="ri-share-forward-fill"></i> Native App</button>
+        </div>
+        <div style="margin-top: 20px; text-align: left;">
+          <label style="font-size: 0.85rem; font-weight: 600;">Play URL Token:</label>
+          <div class="copy-input-cluster">
+            <input type="text" id="shareLinkInput" class="form-control" readonly />
+            <button class="btn-secondary" onclick="window.appEngineAPI.copyShareLink()"><i class="ri-file-copy-line"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- PRO DISTRIBUTOR HIDDEN STAGING RENDERING CONTAINERS (For exact A4 canvas preservation) -->
-  <div id="proStagingWrapper" style="position: absolute; top: -9999px; left: -9999px; width: 0; height: 0; overflow: hidden;"></div>
+  <!-- Off-Screen Render Staging Container for High-DPI Vector PDFs and Certificates -->
+  <div id="proStagingWrapper" style="position: absolute; top: -9999px; left: -9999px; width: 1100px; overflow: hidden;"></div>
 
-  <script src="script.js" type="module"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>

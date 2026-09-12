@@ -410,8 +410,7 @@ function registerCreatorEvents() {
             c: q.c,
             d: q.d,
             answer: q.answer
-        })), 
-        createdAt: Date.now() 
+        }))
     };
     
     state.quizzes.push(newQuiz);
@@ -450,7 +449,6 @@ function registerGroupEvents() {
 
   document.getElementById('groupCommitBtn').onclick = () => {
     const title = document.getElementById('groupNameInput').value.trim();
-    const duration = document.getElementById('groupDurationInput').value;
     const metaClass = document.getElementById('groupClassInput').value.trim();
     const subject = document.getElementById('groupSubjectInput').value.trim();
     
@@ -472,11 +470,9 @@ function registerGroupEvents() {
         title, 
         metaClass,
         subject,
-        durationMinutes: duration,
         isGroup: true, 
         sourceRefs: selectedRefs,
-        questions: combinedQuestions,
-        createdAt: Date.now()
+        questions: combinedQuestions
     };
     
     state.quizzes.push(combinedExam);
@@ -563,13 +559,12 @@ document.getElementById('runnerSubmitBtn').onclick = () => {
       renderProctoringTable();
   }
 
-  // Save to global submissions for marksheet
+  // Save to global submissions for marksheet strictly aligned with schema
   state.submissions.push({
       examId: state.activeQuiz.id,
       studentName: state.studentMeta.name,
       rollNo: state.studentMeta.rollNo || '-',
-      correct, wrong, total, perc, time: timeStr,
-      date: Date.now()
+      correct, wrong, total, perc, time: timeStr
   });
   saveLocalState();
   
@@ -712,7 +707,7 @@ function renderDashboardData() {
         <div class="agenda-date">${new Date(s.date).toLocaleDateString('en-GB',{month:'short',day:'numeric'})}</div>
         <div class="agenda-body" style="flex:1;">
             <strong style="display:block; margin-bottom:4px;">${s.title}</strong>
-            <p style="font-size:0.8rem; color:var(--text-light); margin:0;">${s.time} | ${s.duration} mins | Class: ${s.class||'All'} | <b>${s.status.toUpperCase()}</b></p>
+            <p style="font-size:0.8rem; color:var(--text-light); margin:0;">${s.time} | ${s.duration} mins | Class: All | <b>${s.status.toUpperCase()}</b></p>
         </div>
         <button class="btn-sm btn-icon btn-danger" onclick="window.appEngineAPI.deleteSchedule('${s.id}')" title="Cancel Schedule"><i class="ri-delete-bin-line"></i></button>
       </div>
@@ -895,11 +890,10 @@ window.appEngineAPI = {
     const date = document.getElementById('schedDate').value;
     const time = document.getElementById('schedTime').value;
     const duration = document.getElementById('schedDuration').value;
-    const cls = document.getElementById('schedClass').value;
     
     if(!date || !time) return displayToast("Date and Time are required.", "error");
     
-    state.scheduledExams.push({ id:`SCH-${Date.now()}`, examId: sel.value, title, date, time, duration, class: cls, status: 'scheduled' });
+    state.scheduledExams.push({ id:`SCH-${Date.now()}`, examId: sel.value, title, date, time, duration, status: 'scheduled' });
     saveLocalState();
     window.appEngineAPI.closeScheduler();
     displayToast("Exam Scheduled Successfully!", "success");

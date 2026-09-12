@@ -205,7 +205,7 @@ function renderProctoringTable() {
   `).join('');
 }
 
-// --- CREATOR & GROUPS (Includes Excel engine fixes) ---
+// --- CREATOR & GROUPS ---
 function registerCreatorEvents() {
   document.getElementById('creatorAppendQuestionBtn').onclick = () => {
     const text = document.getElementById('qFormText').value.trim();
@@ -231,43 +231,150 @@ function registerCreatorEvents() {
   document.getElementById('excelFileInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if(!file) return;
+
+      if (state.creatorQuestions.length > 0) {
+          if (!confirm(`You already have ${state.creatorQuestions.length} unsaved questions.\nImporting another Excel file will replace this draft.\nContinue?`)) {
+              e.target.value = ''; // Reset input to allow re-selection
+              return;
+          }
+      }
+
       try {
           const data = await file.arrayBuffer();
           const wb = XLSX.read(data);
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(ws);
           
-          if(json.length === 0) return displayToast("Excel file is empty.", "error");
+          if (wb.SheetNames.length === 0) {
+              displayToast("Excel file has no sheets.", "error");
+              e.target.value = '';
+              return;
+          }
+
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(ws, { defval: '' }); // Fetch rows keeping empty cells as string literals
+          
+          if(json.length === 0) {
+              displayToast("Excel file is empty or missing data.", "error");
+              e.target.value = '';
+              return;
+          }
+
+          const headerMap = {
+              'question': 'text', 'questions': 'text', 'questiontext': 'text',
+              'a': 'a', 'optiona': 'a',
+              'b': 'b', 'optionb': 'b',
+              'c': 'c', 'optionc': 'c',
+              'd': 'd', 'optiond': 'd',
+              'answer': 'answer', 'correctanswer': 'answer', 'key': 'answer', 'options': 'answer'
+          };
+
+          const safeString = (val) => {
+              if (val === null || val === undefined || Number.isNaN(val)) return '';
+              return String(val).trim();
+          };
+
+          const normalizeAnswer = (val) => {
+              let v = safeString(val).toUpperCase();
+              if (v === 'OPTION A' || v === '1') return 'A';
+              if (v === 'OPTION B' || v === '2') return 'B';
+              if (v === 'OPTION C' || v === '3') return 'C';
+              if (v === 'OPTION D' || v === '4') return 'D';
+              return v;
+          };
+
+          const escapeHTML = (str) => {
+              const div = document.createElement('div');
+              div.textContent = str;
+              return div.innerHTML;
+          };
           
           state.creatorQuestions = []; // Reset for new import
-          const tbody = document.querySelector('#excelPreviewTable tbody');
-          tbody.innerHTML = '';
           
-          json.forEach((row, i) => {
-              if(!row.Question) return; // Skip empty rows
-              const q = {
-                  text: String(row.Question).trim(),
-                  a: row.A ? String(row.A).trim() : '',
-                  b: row.B ? String(row.B).trim() : '',
-                  c: row.C ? String(row.C).trim() : '',
-                  d: row.D ? String(row.D).trim() : '',
-                  answer: row.Answer ? String(row.Answer).toUpperCase().trim() : 'A'
-              };
-              // Validation for normalization
-              if(!['A','B','C','D'].includes(q.answer)) q.answer = 'A';
-              
-              state.creatorQuestions.push(q);
-              tbody.innerHTML += `<tr><td>${i+1}</td><td>${q.a}</td><td>${q.b}</td><td>${q.c}</td><td>${q.d}</td><td><strong>${q.answer}</strong></td></tr>`;
+          let validCount = 0;
+          let errorCount = 0;
+          
+          json.forEach((row) => {
+              let mappedData = { text: '', a: '', b: '', c: '', d: '', answer: '' };
+              let isEmptyRow = true;
+
+              // Dynamically map headers irrespective of visual column order
+              Object.keys(row).forEach(k => {
+                  const val = safeString(row[k]);
+                  if (val !== '') isEmptyRow = false;
+                  const normKey = k.toLowerCase().replace(/\s+/g, '');
+                  const targetKey = headerMap[normKey];
+                  if (targetKey) {
+                      mappedData[targetKey] = val;
+                  }
+              });
+
+              if (isEmptyRow) return;
+
+              const text = mappedData.text;
+              const a = mappedData.a;
+              const b = mappedData.b;
+              const c = mappedData.c;
+              const d = mappedData.d;
+              const ans = normalizeAnswer(mappedData.answer);
+
+              // Row Validation (Must have valid question, A, B, and valid A/B/C/D answer)
+              if (text && a && b && ['A','B','C','D'].includes(ans)) {
+                  state.creatorQuestions.push({ text, a, b, c, d, answer: ans });
+                  validCount++;
+              } else {
+                  errorCount++;
+              }
           });
+          
+          // Generate strictly matched HTML preview directly from state.creatorQuestions preventing any XSS payload execution
+          const tableElement = document.getElementById('excelPreviewTable');
+          let previewHTML = '';
+          
+          state.creatorQuestions.forEach((q, idx) => {
+              previewHTML += `<tr>
+                  <td>${idx + 1}</td>
+                  <td title="${escapeHTML(q.text)}">${escapeHTML(q.text.length > 35 ? q.text.substring(0,35) + '...' : q.text)}</td>
+                  <td>${escapeHTML(q.a)}</td>
+                  <td>${escapeHTML(q.b)}</td>
+                  <td>${escapeHTML(q.c)}</td>
+                  <td>${escapeHTML(q.d)}</td>
+                  <td><strong>${escapeHTML(q.answer)}</strong></td>
+                  <td><span style="color:var(--success);font-weight:bold;">Ready</span></td>
+              </tr>`;
+          });
+
+          tableElement.innerHTML = `
+              <thead>
+                  <tr>
+                      <th>No.</th>
+                      <th>Question</th>
+                      <th>A</th>
+                      <th>B</th>
+                      <th>C</th>
+                      <th>D</th>
+                      <th>Answer</th>
+                      <th>Status</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  ${previewHTML}
+              </tbody>
+          `;
           
           document.getElementById('excelPreviewContainer').classList.remove('hidden');
           document.getElementById('pendingQuestionsCount').textContent = state.creatorQuestions.length;
-          displayToast(`Successfully imported ${state.creatorQuestions.length} valid questions.`, "success");
+
+          if (errorCount > 0) {
+              displayToast(`Import completed. ${validCount} valid questions are ready to save. ${errorCount} Excel rows contained errors and were excluded.`, "warning");
+          } else {
+              displayToast(`Successfully imported ${validCount} valid questions.`, "success");
+          }
+
       } catch(err) {
           console.error(err);
-          displayToast("Failed to parse Excel file. Ensure correct format.", "error");
+          displayToast("Failed to parse Excel file. Ensure it is a valid .xlsx or .xls file.", "error");
+      } finally {
+          e.target.value = ''; // Ensure the file input is cleanly reset
       }
-      e.target.value = ''; // Reset input
   });
   
   // SAVE QUIZ
@@ -276,22 +383,38 @@ function registerCreatorEvents() {
     const metaClass = document.getElementById('creatorClass').value.trim();
     const subject = document.getElementById('creatorSubject').value.trim();
     
-    if (state.creatorQuestions.length === 0) return displayToast("Cannot save an empty quiz.", "error");
+    if (state.creatorQuestions.length === 0) return displayToast("Cannot save an empty quiz. Please add valid questions.", "error");
 
     const newQuiz = { 
         id: `QZ-${Date.now()}`, 
         title, 
         metaClass,
         subject,
-        questions: [...state.creatorQuestions], 
+        // Structurally map fields safely for persistence to guarantee stability
+        questions: state.creatorQuestions.map(q => ({
+            text: q.text,
+            a: q.a,
+            b: q.b,
+            c: q.c,
+            d: q.d,
+            answer: q.answer
+        })), 
         createdAt: Date.now() 
     };
     
     state.quizzes.push(newQuiz);
-    state.creatorQuestions = []; // Clear draft
+    
+    // Clear draft and UI states strictly after successful array insertion
+    state.creatorQuestions = []; 
     document.getElementById('pendingQuestionsCount').textContent = '0';
     document.getElementById('creatorQuizTitle').value = '';
-    document.querySelector('#excelPreviewTable tbody').innerHTML = '';
+    document.getElementById('creatorClass').value = '';
+    document.getElementById('creatorSubject').value = '';
+    
+    const tableElement = document.getElementById('excelPreviewTable');
+    if (tableElement) {
+        tableElement.innerHTML = '<thead><tr><th>Q</th><th>A</th><th>B</th><th>C</th><th>D</th><th>Ans</th></tr></thead><tbody></tbody>';
+    }
     document.getElementById('excelPreviewContainer').classList.add('hidden');
     
     saveLocalState();
@@ -300,7 +423,7 @@ function registerCreatorEvents() {
   };
 }
 
-// --- COMBINED EXAMS (Proper question aggregation) ---
+// --- COMBINED EXAMS ---
 function registerGroupEvents() {
   document.getElementById('groupInventoryContainer').addEventListener('change', (e) => {
     if(e.target.classList.contains('group-chk')){
@@ -340,15 +463,14 @@ function registerGroupEvents() {
         durationMinutes: duration,
         isGroup: true, 
         sourceRefs: selectedRefs,
-        questions: combinedQuestions, // Deep store actual questions for PDF & Live compatibility
+        questions: combinedQuestions,
         createdAt: Date.now()
     };
     
-    state.quizzes.push(combinedExam); // Save as a unified exam type
+    state.quizzes.push(combinedExam);
     saveLocalState();
     displayToast(`Combined Exam created with ${combinedQuestions.length} questions.`, "success");
     
-    // Reset Form
     document.getElementById('groupNameInput').value = '';
     document.getElementById('groupMetricCount').textContent = '0';
     document.querySelectorAll('.group-chk').forEach(chk => chk.checked = false);
@@ -452,7 +574,7 @@ document.getElementById('runnerSubmitBtn').onclick = () => {
   switchViewport('reviewSection');
 };
 
-// --- PDF GENERATOR (Fixing blank PDFs, A4 formatting, long text wrap) ---
+// --- PDF GENERATOR ---
 function registerPdfEvents() {
   document.getElementById('pdfSourceAssetSelect').addEventListener('change', (e) => {
       const qz = state.quizzes.find(q => q.id === e.target.value);
@@ -476,9 +598,9 @@ async function generatePDF(type) {
   if(!window.jspdf) return displayToast("PDF engine is initializing, please wait...", "error");
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p', 'mm', 'a4'); // strictly A4 format
+  const doc = new jsPDF('p', 'mm', 'a4');
   let y = 20;
-  const pageHeight = 285; // A4 max printable height area
+  const pageHeight = 285; 
   
   const checkPageBreak = (neededSpace) => {
       if (y + neededSpace > pageHeight) {
@@ -510,7 +632,6 @@ async function generatePDF(type) {
     const prefix = `${i+1}. `;
     const qStr = type === 'key' ? `${prefix}${q.text}  [ KEY: ${q.answer||'A'} ]` : `${prefix}${q.text}`;
     
-    // Wrap long strings properly
     const qLines = doc.splitTextToSize(qStr, 180);
     checkPageBreak((qLines.length * 6) + 10);
     doc.text(qLines, 15, y);
@@ -522,7 +643,7 @@ async function generatePDF(type) {
       checkPageBreak((optLines.length * 6) + 5);
       doc.setFont("helvetica", "normal");
       doc.text(optLines, 20, y);
-      y += (optLines.length * 6) + 6; // Extra space between questions
+      y += (optLines.length * 6) + 6; 
     } else {
         y += 4;
     }
@@ -573,7 +694,6 @@ function renderDashboardData() {
   if(state.scheduledExams.length === 0) {
     calBox.innerHTML = `<div class="empty-state-msg"><p>You have no scheduled examinations.</p><button class="btn-sm btn-primary mt-10" onclick="window.appEngineAPI.openScheduler()">Schedule Exam</button></div>`;
   } else {
-    // Sort by date/time
     const sorted = [...state.scheduledExams].sort((a,b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
     calBox.innerHTML = sorted.map(s => `
       <div class="agenda-item">
@@ -667,7 +787,6 @@ function renderLibrary() {
     </div>
   `).join('');
   
-  // Re-render group inventory
   const gi = document.getElementById('groupInventoryContainer');
   if(gi) {
       gi.innerHTML = state.quizzes.filter(q => !q.isGroup).map(q => `
@@ -752,7 +871,7 @@ window.appEngineAPI = {
   },
   selectAnswer: (opt) => { 
       state.userAnswers[state.currentQuestionIndex] = opt; 
-      renderActiveQuestion(); // re-render to show selection styling
+      renderActiveQuestion(); 
   },
   openScheduler: () => { populateSelects(); document.getElementById('scheduleModal').classList.remove('hidden'); },
   closeScheduler: () => document.getElementById('scheduleModal').classList.add('hidden'),
@@ -794,7 +913,6 @@ window.appEngineAPI = {
   pdfFromLibrary: (id) => {
       switchViewport('pdfSection');
       document.getElementById('pdfSourceAssetSelect').value = id;
-      // trigger change event to auto-populate class/subject
       document.getElementById('pdfSourceAssetSelect').dispatchEvent(new Event('change'));
   },
   startTutorial: () => { state.tutStep=1; window.appEngineAPI.renderTut(); document.getElementById('tutorialModal').classList.remove('hidden'); },

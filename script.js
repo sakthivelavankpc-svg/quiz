@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { 
   getFirestore, collection, getDocs, addDoc, doc, setDoc, deleteDoc, 
-  onSnapshot, query, where 
+  onSnapshot, query, where, updateDoc, arrayUnion, getDoc
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -47,6 +47,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadAndMigrateCloudState();
   checkAutoOpenSchedules();
   setInterval(checkAutoOpenSchedules, 60000);
+
+  // Auto-fill student PIN if opened from shortened URL link
+  const urlParams = new URLSearchParams(window.location.search);
+  const pinFromUrl = urlParams.get('pin');
+  if (pinFromUrl) {
+      document.getElementById('studentPinInput').value = pinFromUrl;
+  }
 });
 
 // --- THEME & UI ---
@@ -117,9 +124,18 @@ async function handleStudentLiveJoin() {
   
   if(!quizAsset) return displayToast("Exam data unavailable locally. Host must share properly.", "error");
 
+  const participantRecord = { name, rollNo, status: 'joined', score: 0, currentQuestion: 1, completionTime: '-' };
+
   if (state.liveRoom.active && state.liveRoom.pin === pin) {
-      state.liveRoom.participants.push({ name, rollNo, status: 'joined', score: 0, currentQuestion: 1 });
+      state.liveRoom.participants.push(participantRecord);
       renderProctoringTable();
+  } else if (db && targetRoom) {
+      // Sync joined status to Firebase so host's marksheet live monitor updates instantly
+      try {
+          await updateDoc(doc(db, "live_rooms", pin), {
+              participants: arrayUnion(participantRecord)
+          });
+      } catch(e) { console.warn("Could not sync participant to cloud."); }
   }
 
   launchLiveQuizRunner(quizAsset, targetRoom.durationMinutes);
@@ -158,10 +174,46 @@ function startLiveExam() {
   document.getElementById('liveHostExamTitle').textContent = state.liveRoom.title;
   document.getElementById('globalLiveBadge').classList.remove('hidden');
 
+  // URL link and QR Code Generation
+  const joinUrl = window.location.origin + window.location.pathname + "?pin=" + pin;
+  
+  document.getElementById('liveHostShareUrl').innerHTML = `Link: <a href="${joinUrl}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:bold;">${joinUrl}</a> <i class="ri-clipboard-line" style="cursor:pointer; margin-left:8px; font-size:1.1rem;" title="Copy Link" onclick="window.appEngineAPI.displayToast('Link Copied!', 'success'); navigator.clipboard.writeText('${joinUrl}')"></i>`;
+  
+  const qrBox = document.getElementById('liveRoomQrBox');
+  qrBox.innerHTML = '';
+  new QRCode(qrBox, { text: joinUrl, width: 100, height: 100 });
+  qrBox.style.cursor = 'pointer';
+  qrBox.title = "Click to download QR Code";
+  
+  // Download QR Code Action
+  qrBox.onclick = () => {
+      const cvs = qrBox.querySelector('canvas');
+      if(cvs) {
+          const a = document.createElement('a');
+          a.href = cvs.toDataURL("image/png");
+          a.download = `Exam_QR_${pin}.png`;
+          a.click();
+      }
+  };
+
   renderProctoringTable(); 
 
+  // Real-time Dashboard Sync Initialization
   if (db) {
-      try { setDoc(doc(db, "live_rooms", pin), { pinCode: pin, status: "active", sourceQuizId: quiz.id, durationMinutes: duration }); } 
+      try { 
+          setDoc(doc(db, "live_rooms", pin), { 
+              pinCode: pin, status: "active", sourceQuizId: quiz.id, durationMinutes: duration,
+              participants: []
+          }); 
+          
+          // Listen for participant progress
+          onSnapshot(doc(db, "live_rooms", pin), (docSnap) => {
+              if(docSnap.exists()) {
+                  state.liveRoom.participants = docSnap.data().participants || [];
+                  renderProctoringTable();
+              }
+          });
+      } 
       catch(e) { console.warn("Firebase unreachable, running locally."); }
   }
   
@@ -203,6 +255,28 @@ function renderProctoringTable() {
   `).join('');
 }
 
+// Sync function for live student progress to the host dashboard
+async function updateCloudParticipantProgress(newStatus, score = 0, completionTime = '-') {
+    if(!db || !state.studentMeta.pin) return;
+    try {
+        const roomRef = doc(db, "live_rooms", state.studentMeta.pin);
+        const docSnap = await getDoc(roomRef);
+        if(docSnap.exists()) {
+            let parts = docSnap.data().participants || [];
+            let meIndex = parts.findIndex(p => p.name === state.studentMeta.name && p.rollNo === state.studentMeta.rollNo);
+            if(meIndex > -1) {
+                parts[meIndex].status = newStatus;
+                parts[meIndex].currentQuestion = state.currentQuestionIndex + 1;
+                if (newStatus === 'submitted') {
+                    parts[meIndex].score = score;
+                    parts[meIndex].completionTime = completionTime;
+                }
+                await updateDoc(roomRef, { participants: parts });
+            }
+        }
+    } catch(e) { console.warn("Progress sync failed"); }
+}
+
 // --- CREATOR & GROUPS ---
 function registerCreatorEvents() {
   document.getElementById('creatorAppendQuestionBtn').onclick = () => {
@@ -213,7 +287,6 @@ function registerCreatorEvents() {
     const b = document.getElementById('qFormOptB').value.trim();
     if(!a || !b) return displayToast("At least Option A and B are required.", "error");
 
-    // Allow user basic HTML in manual too, strictly escaping script tags.
     const sanitize = (str) => str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     
     state.creatorQuestions.push({ 
@@ -228,7 +301,6 @@ function registerCreatorEvents() {
     displayToast("Question added to draft.", "success");
   };
 
-  // EXCEL / GOOGLE SHEET (CSV) IMPORT PARSER
   document.getElementById('excelFileInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if(!file) return;
@@ -250,12 +322,10 @@ function registerCreatorEvents() {
               return;
           }
 
-          // Clean up old dynamic UI if present
           if (document.getElementById('sheetSelectorUI')) {
               document.getElementById('sheetSelectorUI').remove();
           }
 
-          // Prompt User for Sheet Selection if multiple exist
           if (wb.SheetNames.length > 1) {
               const dropZone = document.getElementById('excelDropZone');
               const selectorHTML = `
@@ -276,7 +346,6 @@ function registerCreatorEvents() {
                   document.getElementById('sheetSelectorUI').remove();
               };
           } else {
-              // Direct load if only one sheet
               processWorksheet(wb.Sheets[wb.SheetNames[0]]);
           }
       } catch(err) {
@@ -287,11 +356,9 @@ function registerCreatorEvents() {
       }
   });
   
-  // NEW ROBUST WORKSHEET PROCESSOR (Extracts Rich Text Formatting to HTML)
   function processWorksheet(ws) {
       if(!ws || !ws['!ref']) return displayToast("Selected sheet is empty.", "error");
       
-      // Use SheetJS HTML generator to preserve underlines (<u>) and bold (<b>) effortlessly
       const htmlStr = XLSX.utils.sheet_to_html(ws);
       const parser = new DOMParser();
       const htmlDoc = parser.parseFromString(htmlStr, 'text/html');
@@ -308,12 +375,10 @@ function registerCreatorEvents() {
           cells.forEach((cell, colIndex) => {
               let rawHtml = cell.innerHTML.trim();
               
-              // Normalize SheetJS CSS outputs into standard HTML tags to survive jsPDF injection
               rawHtml = rawHtml.replace(/<span[^>]*style="[^"]*text-decoration:\s*underline[^"]*"[^>]*>(.*?)<\/span>/gi, '<u>$1</u>');
               rawHtml = rawHtml.replace(/<span[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>(.*?)<\/span>/gi, '<b>$1</b>');
               rawHtml = rawHtml.replace(/<span[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>(.*?)<\/span>/gi, '<i>$1</i>');
               
-              // Strict Sanitation: Remove all tags EXCEPT <u>, <b>, <i>, <br>
               rawHtml = rawHtml.replace(/<\/?(?!(u|b|i|br)\b)[a-z0-9]+[^>]*>/gi, '');
               
               const textContent = cell.textContent.trim();
@@ -351,7 +416,6 @@ function registerCreatorEvents() {
               if (targetKey) mappedData[targetKey] = row[k];
           });
           
-          // Pure text for checking logic
           const stripHTML = (s) => (s||'').replace(/<[^>]+>/g, '').trim();
           let rawAns = stripHTML(mappedData.answer).toUpperCase();
           let ans = rawAns;
@@ -379,7 +443,6 @@ function registerCreatorEvents() {
           }
       });
       
-      // Render Preview UI utilizing mapped HTML directly
       const tableElement = document.getElementById('excelPreviewTable');
       let previewHTML = '';
       state.creatorQuestions.forEach((q, idx) => {
@@ -530,13 +593,11 @@ function renderActiveQuestion() {
   const q = state.activeQuestions[state.currentQuestionIndex];
   document.getElementById('runnerQuestionMeta').textContent = `Question ${state.currentQuestionIndex + 1} of ${state.activeQuestions.length}`;
   
-  // Use innerHTML to visibly render <u>, <b>, <i> extracted from the Excel files
   document.getElementById('runnerQuestionText').innerHTML = q.text; 
   
   const prog = ((state.currentQuestionIndex + 1) / state.activeQuestions.length) * 100;
   document.getElementById('runnerProgressBar').style.width = `${prog}%`;
   
-  // Render options identically evaluating inner HTML values
   document.getElementById('runnerOptionsGrid').innerHTML = ['A','B','C','D'].filter(opt=>q[opt.toLowerCase()]).map(opt=>`
     <div class="glass-card option-card" style="padding:14px; cursor:pointer; border:2px solid ${state.userAnswers[state.currentQuestionIndex]===opt?'var(--primary)':'var(--border)'}; background:${state.userAnswers[state.currentQuestionIndex]===opt?'var(--primary-light)':'transparent'}" onclick="window.appEngineAPI.selectAnswer('${opt}')">
       <b>${opt}:</b> <span>${q[opt.toLowerCase()]}</span>
@@ -549,6 +610,9 @@ function renderActiveQuestion() {
   document.getElementById('runnerPrevBtn').disabled = isFirst;
   document.getElementById('runnerNextBtn').classList.toggle('hidden', isLast);
   document.getElementById('runnerSubmitBtn').classList.toggle('hidden', !isLast);
+
+  // Sync to Host Table
+  updateCloudParticipantProgress('answering');
 }
 
 document.getElementById('runnerSubmitBtn').onclick = () => {
@@ -576,6 +640,9 @@ document.getElementById('runnerSubmitBtn').onclick = () => {
       renderProctoringTable();
   }
 
+  // Update cloud instant marksheet
+  updateCloudParticipantProgress('submitted', correct, timeStr);
+
   state.submissions.push({
       examId: state.activeQuiz.id,
       studentName: state.studentMeta.name,
@@ -596,7 +663,7 @@ document.getElementById('runnerSubmitBtn').onclick = () => {
   switchViewport('reviewSection');
 };
 
-// --- PDF GENERATOR (Rewritten for HTML-Native Formats) ---
+// --- PDF GENERATOR ---
 function registerPdfEvents() {
   document.getElementById('pdfSourceAssetSelect').addEventListener('change', (e) => {
       const qz = state.quizzes.find(q => q.id === e.target.value);
@@ -624,7 +691,6 @@ async function generatePDF(type) {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
   
-  // Create an invisible, precisely styled container for the HTML payload
   const container = document.createElement('div');
   container.style.width = '180mm';
   container.style.padding = '10mm';
@@ -646,7 +712,6 @@ async function generatePDF(type) {
   </div>`;
   
   qz.questions.forEach((q, i) => {
-      // Use page-break-inside: avoid so jsPDF's autoPaging cleanly breaks layouts
       html += `<div style="margin-bottom:16px; page-break-inside:avoid;">`;
       if (type === 'key') {
           html += `<div><strong>${i+1}.</strong> ${q.text} <span style="float:right; font-weight:bold; color:#059669;">[ KEY: ${q.answer||'A'} ]</span></div>`;
@@ -676,7 +741,7 @@ async function generatePDF(type) {
           y: 15,
           width: 180,
           windowWidth: container.offsetWidth,
-          autoPaging: 'text' // Intelligently handles page overflows ensuring <u> tags split cleanly
+          autoPaging: 'text' 
       });
   } catch(err) {
       console.error(err);
@@ -727,16 +792,22 @@ function renderDashboardData() {
     calBox.innerHTML = `<div class="empty-state-msg"><p>You have no scheduled examinations.</p><button class="btn-sm btn-primary mt-10" onclick="window.appEngineAPI.openScheduler()">Schedule Exam</button></div>`;
   } else {
     const sorted = [...state.scheduledExams].sort((a,b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
-    calBox.innerHTML = sorted.map(s => `
+    calBox.innerHTML = sorted.map(s => {
+      const sUrl = window.location.origin + window.location.pathname + "?pin=" + (s.pin || '');
+      return `
       <div class="agenda-item">
         <div class="agenda-date">${new Date(s.date).toLocaleDateString('en-GB',{month:'short',day:'numeric'})}</div>
         <div class="agenda-body" style="flex:1;">
             <strong style="display:block; margin-bottom:4px;">${s.title}</strong>
             <p style="font-size:0.8rem; color:var(--text-light); margin:0;">${s.time} | ${s.duration} mins | Class: All | <b>${s.status.toUpperCase()}</b></p>
+            ${s.pin ? `<div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+                <span style="background:var(--primary-light); color:var(--primary-dark); padding:2px 8px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-weight:bold; font-size:0.85rem;">PIN: ${s.pin}</span>
+                <button class="btn-sm btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="navigator.clipboard.writeText('${sUrl}'); window.appEngineAPI.displayToast('Link Copied!', 'success')" title="Copy Link"><i class="ri-links-line"></i> Copy Link</button>
+            </div>` : ''}
         </div>
         <button class="btn-sm btn-icon btn-danger" onclick="window.appEngineAPI.deleteSchedule('${s.id}')" title="Cancel Schedule"><i class="ri-delete-bin-line"></i></button>
-      </div>
-    `).join('');
+      </div>`
+    }).join('');
   }
 }
 
@@ -888,6 +959,7 @@ const tutSteps = [
 
 window.appEngineAPI = {
   switchContext: switchViewport,
+  displayToast: displayToast, // Expose for inline clicks
   toggleCreatorTab: (tab) => {
     document.getElementById('creatorQuestionForm').classList.toggle('hidden', tab !== 'manual');
     document.getElementById('creatorExcelForm').classList.toggle('hidden', tab !== 'excel');
@@ -918,7 +990,8 @@ window.appEngineAPI = {
     
     if(!date || !time) return displayToast("Date and Time are required.", "error");
     
-    state.scheduledExams.push({ id:`SCH-${Date.now()}`, examId: sel.value, title, date, time, duration, status: 'scheduled' });
+    const pin = `TN${Math.floor(1000 + Math.random() * 9000)}`;
+    state.scheduledExams.push({ id:`SCH-${Date.now()}`, examId: sel.value, title, date, time, duration, status: 'scheduled', pin: pin });
     saveLocalState();
     window.appEngineAPI.closeScheduler();
     displayToast("Exam Scheduled Successfully!", "success");

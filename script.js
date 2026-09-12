@@ -227,13 +227,13 @@ function registerCreatorEvents() {
     displayToast("Question added to draft.", "success");
   };
 
-  // EXCEL IMPORT PARSER
+  // EXCEL / GOOGLE SHEET (CSV) IMPORT PARSER
   document.getElementById('excelFileInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if(!file) return;
 
       if (state.creatorQuestions.length > 0) {
-          if (!confirm(`You already have ${state.creatorQuestions.length} unsaved questions.\nImporting another Excel file will replace this draft.\nContinue?`)) {
+          if (!confirm(`You already have ${state.creatorQuestions.length} unsaved questions.\nImporting a new file will replace this draft.\nContinue?`)) {
               e.target.value = ''; // Reset input to allow re-selection
               return;
           }
@@ -241,10 +241,11 @@ function registerCreatorEvents() {
 
       try {
           const data = await file.arrayBuffer();
-          const wb = XLSX.read(data);
+          // SheetJS inherently handles .csv, .xls, and .xlsx transparently 
+          const wb = XLSX.read(data, { type: 'array' });
           
           if (wb.SheetNames.length === 0) {
-              displayToast("Excel file has no sheets.", "error");
+              displayToast("File has no sheets.", "error");
               e.target.value = '';
               return;
           }
@@ -253,7 +254,7 @@ function registerCreatorEvents() {
           const json = XLSX.utils.sheet_to_json(ws, { defval: '' }); // Fetch rows keeping empty cells as string literals
           
           if(json.length === 0) {
-              displayToast("Excel file is empty or missing data.", "error");
+              displayToast("File is empty or missing data.", "error");
               e.target.value = '';
               return;
           }
@@ -364,14 +365,14 @@ function registerCreatorEvents() {
           document.getElementById('pendingQuestionsCount').textContent = state.creatorQuestions.length;
 
           if (errorCount > 0) {
-              displayToast(`Import completed. ${validCount} valid questions are ready to save. ${errorCount} Excel rows contained errors and were excluded.`, "warning");
+              displayToast(`Import completed. ${validCount} valid questions are ready to save. ${errorCount} rows contained errors and were excluded.`, "warning");
           } else {
               displayToast(`Successfully imported ${validCount} valid questions.`, "success");
           }
 
       } catch(err) {
           console.error(err);
-          displayToast("Failed to parse Excel file. Ensure it is a valid .xlsx or .xls file.", "error");
+          displayToast("Failed to parse file. Ensure it is a valid .xlsx, .xls, or .csv exported file.", "error");
       } finally {
           e.target.value = ''; // Ensure the file input is cleanly reset
       }
@@ -846,7 +847,7 @@ function displayToast(msg, type="info") {
 }
 
 const tutSteps = [
-  {t:"1. Choose Quiz", d:"Create a quiz manually or import from Excel."},
+  {t:"1. Choose Quiz", d:"Create a quiz manually or import from an exported Excel/Google Sheet."},
   {t:"2. Schedule or Start Now", d:"Set a date for later or launch live immediately."},
   {t:"3. Share PIN", d:"Give the 4-digit PIN to students. No login needed for them."},
   {t:"4. Watch Students", d:"Monitor who joins and their live answering progress."},
@@ -863,7 +864,7 @@ window.appEngineAPI = {
     document.getElementById('tabExcel').classList.toggle('active', tab === 'excel');
   },
   downloadExcelTemplate: () => {
-    if(!window.XLSX) return displayToast("Excel engine loading, try again in a moment.", "error");
+    if(!window.XLSX) return displayToast("Sheet engine loading, try again in a moment.", "error");
     const ws = XLSX.utils.json_to_sheet([{ Question: "Sample Question Text", A: "Option 1", B: "Option 2", C: "Option 3", D: "Option 4", Answer: "A" }]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Questions");

@@ -251,7 +251,7 @@
               <div class="wf-step" onclick="window.appEngineAPI.switchContext('creatorSection')">
                 <div class="wf-icon"><i class="ri-add-circle-line"></i></div>
                 <h4>STEP 1</h4><strong>Create / Import Quiz</strong>
-                <p>Add questions manually or via Excel.</p>
+                <p>Add questions manually or via Sheets.</p>
               </div>
               <div class="wf-arrow"><i class="ri-arrow-right-line"></i></div>
               
@@ -606,7 +606,7 @@
           <div class="section-header">
             <div class="header-titles">
               <h2><i class="ri-file-add-line"></i> Create / Import Quiz</h2>
-              <p>Create questions manually or import from Excel.</p>
+              <p>Create questions manually or import from an exported Excel/Google Sheet file.</p>
             </div>
           </div>
           <div class="glass-card">
@@ -617,7 +617,7 @@
             </div>
             <div class="admin-tabs mt-10" style="display:flex; gap:10px; margin-bottom:16px;">
               <button class="btn-secondary active" id="tabManual" onclick="window.appEngineAPI.toggleCreatorTab('manual')">Manual Entry</button>
-              <button class="btn-secondary" id="tabExcel" onclick="window.appEngineAPI.toggleCreatorTab('excel')">Excel Import</button>
+              <button class="btn-secondary" id="tabExcel" onclick="window.appEngineAPI.toggleCreatorTab('excel')">Excel / Sheet Import</button>
             </div>
             
             <div id="creatorQuestionForm" class="mt-10">
@@ -636,9 +636,9 @@
 
             <div id="creatorExcelForm" class="hidden mt-10">
               <div class="excel-drop-zone" id="excelDropZone" style="border:2px dashed var(--border); padding:40px; text-align:center; border-radius:var(--radius); background:var(--secondary);">
-                <h3><i class="ri-file-excel-line" style="font-size:2rem; color:var(--success);"></i><br/>Upload Excel File Here</h3>
-                <p class="subtext mt-10">Upload a `.xlsx` file containing your question bank.</p>
-                <input type="file" id="excelFileInput" accept=".xlsx, .xls" hidden />
+                <h3><i class="ri-file-excel-line" style="font-size:2rem; color:var(--success);"></i><br/>Upload Excel / Google Sheet</h3>
+                <p class="subtext mt-10">Upload a `.xlsx`, `.xls`, or `.csv` file exported from Excel or Google Sheets containing your question bank.</p>
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" hidden />
                 <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
                     <button class="btn-secondary" onclick="window.appEngineAPI.downloadExcelTemplate()"><i class="ri-download-line"></i> Download Template</button>
                     <button class="btn-success" onclick="document.getElementById('excelFileInput').click()"><i class="ri-upload-2-line"></i> Browse File</button>
@@ -720,7 +720,7 @@
         <p class="mt-10 mb-24">You don't need to learn everything at once. Let's see how simple it is to run an exam.</p>
         <div class="tutorial-progress">Step <span id="tutStepNum">1</span> of 6</div>
         <h3 id="tutTitle" class="mt-10" style="color:var(--primary);">1. Choose Quiz</h3>
-        <p id="tutDesc" class="mt-10">Create a quiz manually or import from Excel.</p>
+        <p id="tutDesc" class="mt-10">Create a quiz manually or import from an exported Excel/Google Sheet.</p>
       </div>
       <div class="modal-footer" style="justify-content: space-between;">
         <button class="btn-secondary" onclick="window.appEngineAPI.closeTutorial()">Skip</button>

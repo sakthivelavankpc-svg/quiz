@@ -1,4 +1,4 @@
-name: Node.js CI
+name: Node.js install
 
 on: [push]
 
@@ -13,7 +13,7 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20' # Specify the version you want
+        node-version: '45' # Specify the version you want
         
     - name: Install dependencies
       run: npm install

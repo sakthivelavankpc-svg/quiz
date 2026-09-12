@@ -347,7 +347,9 @@
                 <h3><i class="ri-line-chart-line"></i> Subject Mastery</h3>
                 <span class="badge-pill">Analytics</span>
               </div>
-              <div class="telemetry-bar-list" id="dashboardSubjectMasteryBars"></div>
+              <div class="telemetry-bar-list" id="dashboardSubjectMasteryBars">
+                  <div class="empty-state-msg">Data will populate after exams are completed.</div>
+              </div>
             </div>
           </div>
         </section>
@@ -375,7 +377,7 @@
               </div>
               <div class="form-group">
                 <label>Duration (Minutes)</label>
-                <input type="number" id="liveSetupDuration" class="form-control" value="30" />
+                <input type="number" id="liveSetupDuration" class="form-control" value="30" min="1" />
               </div>
             </div>
             <div class="checklist-box mt-10 mb-10" id="liveSetupChecklist">
@@ -398,7 +400,7 @@
                   <span class="pin-code" id="liveHostPinCode">TN0000</span>
                   <button class="btn-sm btn-secondary" id="btnCopyLivePin" title="Copy PIN"><i class="ri-file-copy-line"></i></button>
                 </div>
-                <p class="room-url-share" id="liveHostShareUrl">Link: ...</p>
+                <p class="room-url-share" id="liveHostShareUrl">Link: Direct Join</p>
               </div>
               <div class="room-banner-center">
                 <div class="qr-canvas-box" id="liveRoomQrBox"></div>
@@ -410,7 +412,7 @@
                   <div class="timer-value" id="liveHostTimer">00:00:00</div>
                 </div>
                 <div class="teacher-control-cluster">
-                  <button class="btn-warning btn-sm" id="btnLivePauseToggle"><i class="ri-pause-line"></i> Pause</button>
+                  <button class="btn-warning btn-sm" id="btnLivePauseToggle" onclick="window.appEngineAPI.switchContext('homeSection')"><i class="ri-home-line"></i> Return Home</button>
                   <button class="btn-danger btn-sm" id="btnLiveConclude"><i class="ri-stop-circle-line"></i> Finish Exam</button>
                 </div>
               </div>
@@ -425,7 +427,7 @@
                 </div>
                 <div class="table-actions" style="display:flex; gap:10px;">
                   <button class="btn-sm btn-icon explain-btn" data-tooltip="Watch students join and answer questions in real time."><i class="ri-question-line"></i></button>
-                  <button class="btn-secondary btn-sm" id="btnLiveLeaderboard"><i class="ri-trophy-line"></i> View Results</button>
+                  <button class="btn-secondary btn-sm" id="btnLiveLeaderboard" onclick="window.appEngineAPI.switchContext('leaderboardSection')"><i class="ri-trophy-line"></i> View Results</button>
                 </div>
               </div>
 
@@ -467,18 +469,18 @@
             <div class="glass-card builder-config-pane">
               <h3>2. Combined Exam Details</h3>
               <div class="form-group-row mt-10">
-                <div class="form-group"><label>Exam Title</label><input type="text" id="groupNameInput" class="form-control" /></div>
-                <div class="form-group"><label>Duration (Mins)</label><input type="number" id="groupDurationInput" class="form-control" value="60" /></div>
+                <div class="form-group"><label>Exam Title</label><input type="text" id="groupNameInput" class="form-control" placeholder="e.g., Midterm Exam" /></div>
+                <div class="form-group"><label>Duration (Mins)</label><input type="number" id="groupDurationInput" class="form-control" value="60" min="1" /></div>
               </div>
               <div class="form-group-row">
-                <div class="form-group"><label>Class</label><input type="text" id="groupClassInput" class="form-control" /></div>
-                <div class="form-group"><label>Subject</label><input type="text" id="groupSubjectInput" class="form-control" /></div>
+                <div class="form-group"><label>Class</label><input type="text" id="groupClassInput" class="form-control" placeholder="e.g., Class 10" /></div>
+                <div class="form-group"><label>Subject</label><input type="text" id="groupSubjectInput" class="form-control" placeholder="e.g., Science" /></div>
               </div>
               <div class="composite-controls-strip mt-10">
                 <button id="groupCommitBtn" class="btn-primary btn-full"><i class="ri-cloud-upload-line"></i> Save Combined Exam</button>
               </div>
-              <div class="composite-selected-banner mt-10">
-                <span>Selected Questions: <strong id="groupMetricCount">0</strong></span>
+              <div class="composite-selected-banner mt-10" style="padding: 12px; background: var(--secondary); border-radius: var(--radius-sm); text-align: center;">
+                <span>Total Selected Questions: <strong id="groupMetricCount">0</strong></span>
               </div>
             </div>
           </div>
@@ -496,7 +498,9 @@
             <div class="table-wrapper">
               <table class="data-table">
                 <thead><tr><th>ID</th><th>Question</th><th>Class</th><th>Bloom Level</th><th>Answer</th><th>Actions</th></tr></thead>
-                <tbody id="bankTableBody"></tbody>
+                <tbody id="bankTableBody">
+                    <tr><td colspan="6" class="text-center">Data will propagate from saved quizzes.</td></tr>
+                </tbody>
               </table>
             </div>
           </div>
@@ -513,16 +517,18 @@
           <div class="pdf-center-grid">
             <div class="pdf-config-panel glass-card">
               <h3>Document Parameters</h3>
-              <div class="form-group mt-10"><label>Select Exam</label><select id="pdfSourceAssetSelect" class="form-control"></select></div>
+              <div class="form-group mt-10">
+                  <label>Select Exam / Assessment</label>
+                  <select id="pdfSourceAssetSelect" class="form-control"></select>
+              </div>
               <div class="form-group"><label>School Header</label><input type="text" id="pdfSchoolHeaderInput" class="form-control" value="GOVERNMENT HIGH SCHOOL" /></div>
               <div class="form-group-row">
-                <div class="form-group"><label>Class</label><input type="text" id="pdfClass" class="form-control" value="CLASS 10" /></div>
-                <div class="form-group"><label>Subject</label><input type="text" id="pdfSubject" class="form-control" value="SCIENCE" /></div>
+                <div class="form-group"><label>Class</label><input type="text" id="pdfClass" class="form-control" value="" placeholder="Auto-fills on selection" /></div>
+                <div class="form-group"><label>Subject</label><input type="text" id="pdfSubject" class="form-control" value="" placeholder="Auto-fills on selection" /></div>
               </div>
               <div class="pdf-button-cluster mt-10">
-                <button id="pdfGenerateDownloadBtn" class="btn-primary btn-full"><i class="ri-file-pdf-line"></i> Question Paper PDF</button>
-                <button id="pdfGenerateKeyBtn" class="btn-secondary btn-full"><i class="ri-key-2-line"></i> Answer Key PDF</button>
-                <button id="pdfGenerateOMRBtn" class="btn-secondary btn-full"><i class="ri-bubble-chart-line"></i> OMR Sheet PDF</button>
+                <button id="pdfGenerateDownloadBtn" class="btn-primary btn-full mb-10"><i class="ri-file-pdf-line"></i> Question Paper PDF</button>
+                <button id="pdfGenerateKeyBtn" class="btn-secondary btn-full mb-10"><i class="ri-key-2-line"></i> Answer Key PDF</button>
               </div>
             </div>
           </div>
@@ -537,15 +543,16 @@
             </div>
             <div class="header-action-strip">
               <button class="btn-primary" id="btnExportMarksheetPDF"><i class="ri-file-pdf-line"></i> Export PDF</button>
-              <button class="btn-secondary" id="btnExportMarksheetExcel"><i class="ri-file-excel-line"></i> Export Excel</button>
             </div>
           </div>
           <div class="glass-card table-panel">
-            <div class="form-group"><select id="marksheetExamSelect" class="form-control"><option>-- Select Exam --</option></select></div>
+            <div class="form-group"><select id="marksheetExamSelect" class="form-control"><option value="">-- Select Exam --</option></select></div>
             <div class="table-wrapper mt-10">
               <table class="data-table" id="consolidatedMarksheetTable">
-                <thead><tr><th>Rank</th><th>Student</th><th>Roll No</th><th>Correct</th><th>Wrong</th><th>Skipped</th><th>Marks</th><th>%</th><th>Time</th></tr></thead>
-                <tbody id="marksheetTableBody"></tbody>
+                <thead><tr><th>Rank</th><th>Student Name</th><th>Roll No</th><th>Correct</th><th>Wrong</th><th>Marks</th><th>%</th><th>Time</th></tr></thead>
+                <tbody id="marksheetTableBody">
+                    <tr><td colspan="8" class="text-center">Select an exam to view results.</td></tr>
+                </tbody>
               </table>
             </div>
           </div>
@@ -565,28 +572,30 @@
               <p>Find your saved quizzes and combined exams.</p>
             </div>
           </div>
-          <div id="libraryContainer" class="library-grid-layout"></div>
+          <div id="libraryContainer" class="library-grid-layout">
+              <!-- Rendered via JS -->
+          </div>
         </section>
 
         <!-- ================= 9. SECURE QUIZ RUNNER (STUDENT VIEW) ================= -->
         <section id="quizSection" class="view-section hidden">
           <div class="quiz-runner-box glass-card">
-            <div class="runner-header">
+            <div class="runner-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px;">
               <div class="runner-brand-title">
                 <h2 id="runnerQuizTitle">Exam Title</h2>
-                <span class="runner-candidate-badge" id="runnerCandidateBadge">Candidate: Name</span>
+                <span class="runner-candidate-badge" id="runnerCandidateBadge" style="color:var(--text-light); font-size:0.9rem;">Candidate: Name</span>
               </div>
-              <div id="runnerTimer" class="timer-badge">00:00</div>
+              <div id="runnerTimer" class="timer-badge" style="font-family:'JetBrains Mono', monospace; font-size:1.5rem; font-weight:800; color:var(--primary);">00:00</div>
             </div>
-            <div class="progress-container"><div id="runnerProgressBar" class="progress-bar-fill" style="width: 0%;"></div></div>
+            <div class="progress-container" style="background:var(--border); height:6px; border-radius:3px; margin-bottom:20px; overflow:hidden;"><div id="runnerProgressBar" class="progress-bar-fill" style="width: 0%; height:100%; background:var(--primary); transition:0.3s;"></div></div>
             <div class="question-body-card">
-              <div class="q-meta-strip"><span id="runnerQuestionMeta" class="q-meta">Question 1</span></div>
-              <div id="runnerQuestionText" class="runner-question-text">Loading...</div>
-              <div id="runnerOptionsGrid" class="options-grid-layout"></div>
+              <div class="q-meta-strip mb-10"><strong id="runnerQuestionMeta" class="q-meta" style="color:var(--primary);">Question 1</strong></div>
+              <div id="runnerQuestionText" class="runner-question-text mb-24" style="font-size:1.2rem; font-weight:600; line-height:1.6;">Loading...</div>
+              <div id="runnerOptionsGrid" class="options-grid-layout" style="display:grid; gap:12px;"></div>
             </div>
-            <div class="runner-controls">
+            <div class="runner-controls mt-24" style="display:flex; justify-content:space-between; padding-top:16px; border-top:1px solid var(--border);">
               <button id="runnerPrevBtn" class="btn-secondary"><i class="ri-arrow-left-s-line"></i> Previous</button>
-              <button id="runnerSubmitBtn" class="btn-success"><i class="ri-check-double-line"></i> Submit Exam</button>
+              <button id="runnerSubmitBtn" class="btn-success hidden"><i class="ri-check-double-line"></i> Submit Exam</button>
               <button id="runnerNextBtn" class="btn-primary">Next <i class="ri-arrow-right-s-line"></i></button>
             </div>
           </div>
@@ -602,17 +611,18 @@
           </div>
           <div class="glass-card">
             <div class="form-group-row">
-              <div class="form-group"><label>Quiz Title</label><input type="text" id="creatorQuizTitle" class="form-control" /></div>
-              <div class="form-group"><label>Class</label><input type="text" id="creatorClass" class="form-control" /></div>
-              <div class="form-group"><label>Subject</label><input type="text" id="creatorSubject" class="form-control" /></div>
+              <div class="form-group"><label>Quiz Title</label><input type="text" id="creatorQuizTitle" class="form-control" placeholder="Enter Quiz Name" /></div>
+              <div class="form-group"><label>Class</label><input type="text" id="creatorClass" class="form-control" placeholder="e.g. Class 10" /></div>
+              <div class="form-group"><label>Subject</label><input type="text" id="creatorSubject" class="form-control" placeholder="e.g. Science" /></div>
             </div>
-            <div class="admin-tabs mt-10">
+            <div class="admin-tabs mt-10" style="display:flex; gap:10px; margin-bottom:16px;">
               <button class="btn-secondary active" id="tabManual" onclick="window.appEngineAPI.toggleCreatorTab('manual')">Manual Entry</button>
               <button class="btn-secondary" id="tabExcel" onclick="window.appEngineAPI.toggleCreatorTab('excel')">Excel Import</button>
             </div>
+            
             <div id="creatorQuestionForm" class="mt-10">
               <div class="form-group"><label>Question</label><input type="text" id="qFormText" class="form-control" /></div>
-              <div class="options-build-grid">
+              <div class="options-build-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                 <div class="form-group"><label>Option A</label><input type="text" id="qFormOptA" class="form-control" /></div>
                 <div class="form-group"><label>Option B</label><input type="text" id="qFormOptB" class="form-control" /></div>
                 <div class="form-group"><label>Option C</label><input type="text" id="qFormOptC" class="form-control" /></div>
@@ -621,22 +631,32 @@
               <div class="form-group"><label>Correct Answer</label>
                 <select id="qFormAnswer" class="form-control"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
               </div>
-              <button id="creatorAppendQuestionBtn" class="btn-secondary"><i class="ri-add-line"></i> Add Question</button>
+              <button id="creatorAppendQuestionBtn" class="btn-secondary"><i class="ri-add-line"></i> Add Question to Draft</button>
             </div>
+
             <div id="creatorExcelForm" class="hidden mt-10">
-              <div class="excel-drop-zone" id="excelDropZone">
-                <h3>Drag & Drop Excel Here</h3>
+              <div class="excel-drop-zone" id="excelDropZone" style="border:2px dashed var(--border); padding:40px; text-align:center; border-radius:var(--radius); background:var(--secondary);">
+                <h3><i class="ri-file-excel-line" style="font-size:2rem; color:var(--success);"></i><br/>Upload Excel File Here</h3>
+                <p class="subtext mt-10">Upload a `.xlsx` file containing your question bank.</p>
                 <input type="file" id="excelFileInput" accept=".xlsx, .xls" hidden />
-                <button class="btn-primary mt-10" onclick="document.getElementById('excelFileInput').click()">Browse File</button>
-                <button class="btn-secondary mt-10" onclick="window.appEngineAPI.downloadExcelTemplate()">Download Template</button>
+                <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                    <button class="btn-secondary" onclick="window.appEngineAPI.downloadExcelTemplate()"><i class="ri-download-line"></i> Download Template</button>
+                    <button class="btn-success" onclick="document.getElementById('excelFileInput').click()"><i class="ri-upload-2-line"></i> Browse File</button>
+                </div>
               </div>
-              <div id="excelPreviewContainer" class="hidden mt-10">
-                <table class="data-table" id="excelPreviewTable"><thead><tr><th>Q</th><th>A</th><th>B</th><th>C</th><th>D</th><th>Ans</th></tr></thead><tbody></tbody></table>
+              <div id="excelPreviewContainer" class="hidden mt-24 table-panel">
+                <h4 class="mb-10">Data Preview</h4>
+                <div class="table-wrapper" style="max-height:300px; overflow-y:auto;">
+                    <table class="data-table" id="excelPreviewTable"><thead><tr><th>Q</th><th>A</th><th>B</th><th>C</th><th>D</th><th>Ans</th></tr></thead><tbody></tbody></table>
+                </div>
               </div>
             </div>
-            <div class="workspace-action-row mt-24 pt-24" style="border-top:1px solid var(--border);">
-              <div>Questions Added: <strong id="pendingQuestionsCount">0</strong></div>
-              <button id="creatorToWorkspaceBtn" class="btn-primary btn-full mt-10"><i class="ri-save-line"></i> Save Quiz</button>
+
+            <div class="workspace-action-row mt-24 pt-24" style="border-top:1px solid var(--border); display:flex; flex-direction:column; gap:10px;">
+              <div style="text-align:center; background:var(--primary-light); color:var(--primary-dark); padding:10px; border-radius:var(--radius-sm);">
+                  Questions Ready for Saving: <strong id="pendingQuestionsCount">0</strong>
+              </div>
+              <button id="creatorToWorkspaceBtn" class="btn-primary btn-full btn-large"><i class="ri-save-line"></i> Save Assessment to Library</button>
             </div>
           </div>
         </section>
@@ -644,7 +664,7 @@
         <!-- ================= 11. WORKSPACE CANVAS ================= -->
         <section id="workspaceSection" class="view-section hidden">
           <div class="section-header"><h2><i class="ri-drag-drop-line"></i> Interactive Canvas</h2></div>
-          <div id="visualCanvasContainer" class="visual-canvas-grid"></div>
+          <div id="visualCanvasContainer" class="visual-canvas-grid glass-card"><p>Drag and Drop functionality initialized.</p></div>
         </section>
 
         <!-- ================= 12. EVALUATION REVIEW (STUDENT RESULT) ================= -->
@@ -655,27 +675,32 @@
               <p>Your responses have been recorded.</p>
             </div>
           </div>
-          <div class="score-summary-banner glass-card text-center">
-            <h3>Score: <span id="reviewScoreText">0/0</span></h3>
-            <h4 id="reviewPercentageText">0%</h4>
-            <p>Completion Time: <b id="reviewTimeText">--</b> | Rank: <b id="reviewRankText">--</b></p>
-            <div id="passFailText" class="pf-badge mt-10">--</div>
+          <div class="score-summary-banner glass-card text-center" style="padding:40px;">
+            <h3 style="font-size:2rem; margin-bottom:10px;">Final Score: <span id="reviewScoreText" style="color:var(--primary);">0/0</span></h3>
+            <h4 id="reviewPercentageText" style="font-size:3rem; font-weight:800; margin-bottom:20px;">0%</h4>
+            <p style="font-size:1.1rem; color:var(--text-light);">Completion Time: <b id="reviewTimeText">--</b></p>
+            <div id="passFailText" class="pf-badge mt-24" style="font-size:1.5rem;">--</div>
           </div>
-          <div class="review-button-row mt-10">
-            <button id="btnDownloadResponsePDF" class="btn-primary"><i class="ri-file-pdf-line"></i> Download Marksheet</button>
-            <button class="btn-secondary" onclick="window.appEngineAPI.switchContext('homeSection')">Return Home</button>
+          <div class="review-button-row mt-24" style="display:flex; gap:16px; justify-content:center;">
+            <button class="btn-secondary btn-large" onclick="window.appEngineAPI.switchContext('homeSection')"><i class="ri-home-line"></i> Return to Home</button>
           </div>
-          <div id="reviewAnalysisContainer" class="review-cards-stack mt-24"></div>
         </section>
 
         <!-- ================= 13. ANALYTICS & 14. LEADERBOARD ================= -->
         <section id="analyticsSection" class="view-section hidden">
           <div class="section-header"><h2><i class="ri-bar-chart-box-line"></i> Analytics Center</h2></div>
-          <div class="glass-card"><p>Analytics dashboard loading...</p></div>
+          <div class="glass-card"><p>Check the Dashboard and Consolidated Marksheets for metrics.</p></div>
         </section>
         <section id="leaderboardSection" class="view-section hidden">
-          <div class="section-header"><h2><i class="ri-trophy-line"></i> Leaderboard</h2></div>
-          <div class="glass-card table-panel"><table class="data-table"><thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Time</th></tr></thead><tbody id="leaderboardTableBody"></tbody></table></div>
+          <div class="section-header"><h2><i class="ri-trophy-line"></i> Exam Leaderboard</h2></div>
+          <div class="glass-card table-panel">
+            <div class="form-group"><select id="leaderboardExamSelect" class="form-control"><option value="">-- Select Exam --</option></select></div>
+            <div class="table-wrapper mt-10">
+                <table class="data-table"><thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Percentage</th><th>Time</th></tr></thead><tbody id="leaderboardTableBody">
+                    <tr><td colspan="5" class="text-center">Select an exam to view leaderboard.</td></tr>
+                </tbody></table>
+            </div>
+          </div>
         </section>
         
         <section id="guidesSection" class="view-section hidden"><div class="section-header"><h2>Guides</h2></div></section>
@@ -721,7 +746,7 @@
           <div class="form-group"><label>Start Time</label><input type="time" id="schedTime" class="form-control" /></div>
         </div>
         <div class="form-group-row">
-          <div class="form-group"><label>Duration (Mins)</label><input type="number" id="schedDuration" class="form-control" value="45" /></div>
+          <div class="form-group"><label>Duration (Mins)</label><input type="number" id="schedDuration" class="form-control" value="45" min="1" /></div>
           <div class="form-group"><label>Class / Group</label><input type="text" id="schedClass" class="form-control" placeholder="e.g. Class 10" /></div>
         </div>
       </div>

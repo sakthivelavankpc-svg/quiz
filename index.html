@@ -239,7 +239,6 @@
                 </div>
               </button>
               
-              <!-- NEW: Download Schema Button -->
               <button class="quick-action-btn" onclick="window.appEngineAPI.downloadSchemaPDF()">
                 <div class="qa-icon emerald"><i class="ri-database-2-line"></i></div>
                 <div class="qa-text">
@@ -599,6 +598,7 @@
             <div class="progress-container" style="background:var(--border); height:6px; border-radius:3px; margin-bottom:20px; overflow:hidden;"><div id="runnerProgressBar" class="progress-bar-fill" style="width: 0%; height:100%; background:var(--primary); transition:0.3s;"></div></div>
             <div class="question-body-card">
               <div class="q-meta-strip mb-10"><strong id="runnerQuestionMeta" class="q-meta" style="color:var(--primary);">Question 1</strong></div>
+              <!-- Changed to innerHTML to render formatted text -->
               <div id="runnerQuestionText" class="runner-question-text mb-24" style="font-size:1.2rem; font-weight:600; line-height:1.6;">Loading...</div>
               <div id="runnerOptionsGrid" class="options-grid-layout" style="display:grid; gap:12px;"></div>
             </div>
@@ -644,7 +644,7 @@
             </div>
 
             <div id="creatorExcelForm" class="hidden mt-10">
-              <div class="excel-drop-zone" id="excelDropZone" style="border:2px dashed var(--border); padding:40px; text-align:center; border-radius:var(--radius); background:var(--secondary);">
+              <div class="excel-drop-zone" id="excelDropZone" style="border:2px dashed var(--border); padding:40px; text-align:center; border-radius:var(--radius); background:var(--secondary); position:relative;">
                 <h3><i class="ri-file-excel-line" style="font-size:2rem; color:var(--success);"></i><br/>Upload Excel / Google Sheet</h3>
                 <p class="subtext mt-10">Upload a `.xlsx`, `.xls`, or `.csv` file exported from Excel or Google Sheets containing your question bank.</p>
                 <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" hidden />

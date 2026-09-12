@@ -33,6 +33,11 @@ html[data-mode="dark"] {
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
 body { background: var(--bg-body); color: var(--text-main); min-height: 100vh; transition: 0.3s ease; }
 
+/* Safe formatting resets for dynamic HTML injections */
+u { text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1.5px; }
+b, strong { font-weight: 700; }
+i, em { font-style: italic; }
+
 /* Utilities */
 .hidden { display: none !important; }
 .mt-10 { margin-top: 10px; } .mt-24 { margin-top: 24px; }

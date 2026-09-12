@@ -101,7 +101,6 @@ async function handleStudentLiveJoin() {
 
   let targetRoom = (state.liveRoom.active && state.liveRoom.pin === pin) ? state.liveRoom : null;
   
-  // If not local host room, fallback to Firebase check if online
   if(!targetRoom && db) {
     try {
         const snap = await getDocs(query(collection(db, "live_rooms"), where("pinCode", "==", pin)));
@@ -118,7 +117,6 @@ async function handleStudentLiveJoin() {
   
   if(!quizAsset) return displayToast("Exam data unavailable locally. Host must share properly.", "error");
 
-  // Log participant locally
   if (state.liveRoom.active && state.liveRoom.pin === pin) {
       state.liveRoom.participants.push({ name, rollNo, status: 'joined', score: 0, currentQuestion: 1 });
       renderProctoringTable();
@@ -160,7 +158,7 @@ function startLiveExam() {
   document.getElementById('liveHostExamTitle').textContent = state.liveRoom.title;
   document.getElementById('globalLiveBadge').classList.remove('hidden');
 
-  renderProctoringTable(); // clear table
+  renderProctoringTable(); 
 
   if (db) {
       try { setDoc(doc(db, "live_rooms", pin), { pinCode: pin, status: "active", sourceQuizId: quiz.id, durationMinutes: duration }); } 
@@ -215,10 +213,13 @@ function registerCreatorEvents() {
     const b = document.getElementById('qFormOptB').value.trim();
     if(!a || !b) return displayToast("At least Option A and B are required.", "error");
 
+    // Allow user basic HTML in manual too, strictly escaping script tags.
+    const sanitize = (str) => str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
     state.creatorQuestions.push({ 
-        text, a, b, 
-        c: document.getElementById('qFormOptC').value.trim(), 
-        d: document.getElementById('qFormOptD').value.trim(), 
+        text: sanitize(text), a: sanitize(a), b: sanitize(b), 
+        c: sanitize(document.getElementById('qFormOptC').value.trim()), 
+        d: sanitize(document.getElementById('qFormOptD').value.trim()), 
         answer: document.getElementById('qFormAnswer').value 
     });
     
@@ -234,14 +235,13 @@ function registerCreatorEvents() {
 
       if (state.creatorQuestions.length > 0) {
           if (!confirm(`You already have ${state.creatorQuestions.length} unsaved questions.\nImporting a new file will replace this draft.\nContinue?`)) {
-              e.target.value = ''; // Reset input to allow re-selection
+              e.target.value = ''; 
               return;
           }
       }
 
       try {
           const data = await file.arrayBuffer();
-          // SheetJS inherently handles .csv, .xls, and .xlsx transparently 
           const wb = XLSX.read(data, { type: 'array' });
           
           if (wb.SheetNames.length === 0) {
@@ -250,144 +250,161 @@ function registerCreatorEvents() {
               return;
           }
 
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(ws, { defval: '' }); // Fetch rows keeping empty cells as string literals
-          
-          if(json.length === 0) {
-              displayToast("File is empty or missing data.", "error");
-              e.target.value = '';
-              return;
+          // Clean up old dynamic UI if present
+          if (document.getElementById('sheetSelectorUI')) {
+              document.getElementById('sheetSelectorUI').remove();
           }
 
-          const headerMap = {
-              'question': 'text', 'questions': 'text', 'questiontext': 'text',
-              'a': 'a', 'optiona': 'a',
-              'b': 'b', 'optionb': 'b',
-              'c': 'c', 'optionc': 'c',
-              'd': 'd', 'optiond': 'd',
-              'answer': 'answer', 'correctanswer': 'answer', 'key': 'answer', 'options': 'answer'
-          };
-
-          const safeString = (val) => {
-              if (val === null || val === undefined || Number.isNaN(val)) return '';
-              return String(val).trim();
-          };
-
-          const normalizeAnswer = (val) => {
-              let v = safeString(val).toUpperCase();
-              if (v === 'OPTION A' || v === '1') return 'A';
-              if (v === 'OPTION B' || v === '2') return 'B';
-              if (v === 'OPTION C' || v === '3') return 'C';
-              if (v === 'OPTION D' || v === '4') return 'D';
-              return v;
-          };
-
-          const escapeHTML = (str) => {
-              const div = document.createElement('div');
-              div.textContent = str;
-              return div.innerHTML;
-          };
-          
-          state.creatorQuestions = []; // Reset for new import
-          
-          let validCount = 0;
-          let errorCount = 0;
-          
-          json.forEach((row) => {
-              let mappedData = { text: '', a: '', b: '', c: '', d: '', answer: '' };
-              let isEmptyRow = true;
-
-              // Dynamically map headers irrespective of visual column order
-              Object.keys(row).forEach(k => {
-                  const val = safeString(row[k]);
-                  if (val !== '') isEmptyRow = false;
-                  const normKey = k.toLowerCase().replace(/\s+/g, '');
-                  const targetKey = headerMap[normKey];
-                  if (targetKey) {
-                      mappedData[targetKey] = val;
-                  }
-              });
-
-              if (isEmptyRow) return;
-
-              const text = mappedData.text;
-              const a = mappedData.a;
-              const b = mappedData.b;
-              const c = mappedData.c;
-              const d = mappedData.d;
-              let ans = normalizeAnswer(mappedData.answer);
-
-              // ENHANCED LOGIC: Allow matching by the exact text of the option as well as A, B, C, D
-              if (!['A','B','C','D'].includes(ans)) {
-                  const rawAns = safeString(mappedData.answer).toLowerCase();
-                  if (rawAns !== '') {
-                      if (a && rawAns === a.toLowerCase()) ans = 'A';
-                      else if (b && rawAns === b.toLowerCase()) ans = 'B';
-                      else if (c && rawAns === c.toLowerCase()) ans = 'C';
-                      else if (d && rawAns === d.toLowerCase()) ans = 'D';
-                  }
-              }
-
-              // Row Validation (Must have valid question, A, B, and valid A/B/C/D answer)
-              if (text && a && b && ['A','B','C','D'].includes(ans)) {
-                  state.creatorQuestions.push({ text, a, b, c, d, answer: ans });
-                  validCount++;
-              } else {
-                  errorCount++;
-              }
-          });
-          
-          // Generate strictly matched HTML preview directly from state.creatorQuestions preventing any XSS payload execution
-          const tableElement = document.getElementById('excelPreviewTable');
-          let previewHTML = '';
-          
-          state.creatorQuestions.forEach((q, idx) => {
-              previewHTML += `<tr>
-                  <td>${idx + 1}</td>
-                  <td title="${escapeHTML(q.text)}">${escapeHTML(q.text.length > 35 ? q.text.substring(0,35) + '...' : q.text)}</td>
-                  <td>${escapeHTML(q.a)}</td>
-                  <td>${escapeHTML(q.b)}</td>
-                  <td>${escapeHTML(q.c)}</td>
-                  <td>${escapeHTML(q.d)}</td>
-                  <td><strong>${escapeHTML(q.answer)}</strong></td>
-                  <td><span style="color:var(--success);font-weight:bold;">Ready</span></td>
-              </tr>`;
-          });
-
-          tableElement.innerHTML = `
-              <thead>
-                  <tr>
-                      <th>No.</th>
-                      <th>Question</th>
-                      <th>A</th>
-                      <th>B</th>
-                      <th>C</th>
-                      <th>D</th>
-                      <th>Answer</th>
-                      <th>Status</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  ${previewHTML}
-              </tbody>
-          `;
-          
-          document.getElementById('excelPreviewContainer').classList.remove('hidden');
-          document.getElementById('pendingQuestionsCount').textContent = state.creatorQuestions.length;
-
-          if (errorCount > 0) {
-              displayToast(`Import completed. ${validCount} valid questions are ready to save. ${errorCount} rows contained errors and were excluded.`, "warning");
+          // Prompt User for Sheet Selection if multiple exist
+          if (wb.SheetNames.length > 1) {
+              const dropZone = document.getElementById('excelDropZone');
+              const selectorHTML = `
+                  <div id="sheetSelectorUI" style="margin-top:20px; padding:20px; background:var(--surface); border:1px solid var(--primary); border-radius:var(--radius-sm); text-align:left;">
+                      <h4 style="margin-bottom:10px; color:var(--primary-dark);"><i class="ri-file-copy-2-line"></i> Multiple sheets detected</h4>
+                      <p class="subtext mb-10">Please select which sheet you want to import questions from:</p>
+                      <select id="sheetSelectDropdown" class="form-control mb-10">
+                          ${wb.SheetNames.map(name => `<option value="${name}">${name}</option>`).join('')}
+                      </select>
+                      <button id="btnConfirmSheet" class="btn-primary btn-full"><i class="ri-check-line"></i> Load Selected Sheet</button>
+                  </div>
+              `;
+              dropZone.insertAdjacentHTML('beforeend', selectorHTML);
+              
+              document.getElementById('btnConfirmSheet').onclick = () => {
+                  const selectedSheetName = document.getElementById('sheetSelectDropdown').value;
+                  processWorksheet(wb.Sheets[selectedSheetName]);
+                  document.getElementById('sheetSelectorUI').remove();
+              };
           } else {
-              displayToast(`Successfully imported ${validCount} valid questions.`, "success");
+              // Direct load if only one sheet
+              processWorksheet(wb.Sheets[wb.SheetNames[0]]);
           }
-
       } catch(err) {
           console.error(err);
-          displayToast("Failed to parse file. Ensure it is a valid .xlsx, .xls, or .csv exported file.", "error");
+          displayToast("Failed to parse file. Ensure it is a valid exported file.", "error");
       } finally {
-          e.target.value = ''; // Ensure the file input is cleanly reset
+          e.target.value = ''; 
       }
   });
+  
+  // NEW ROBUST WORKSHEET PROCESSOR (Extracts Rich Text Formatting to HTML)
+  function processWorksheet(ws) {
+      if(!ws || !ws['!ref']) return displayToast("Selected sheet is empty.", "error");
+      
+      // Use SheetJS HTML generator to preserve underlines (<u>) and bold (<b>) effortlessly
+      const htmlStr = XLSX.utils.sheet_to_html(ws);
+      const parser = new DOMParser();
+      const htmlDoc = parser.parseFromString(htmlStr, 'text/html');
+      const rows = Array.from(htmlDoc.querySelectorAll('tr'));
+      
+      const json = [];
+      let headers = [];
+      
+      rows.forEach((row, rowIndex) => {
+          const cells = Array.from(row.querySelectorAll('td, th'));
+          let isEmpty = true;
+          let rowData = {};
+          
+          cells.forEach((cell, colIndex) => {
+              let rawHtml = cell.innerHTML.trim();
+              
+              // Normalize SheetJS CSS outputs into standard HTML tags to survive jsPDF injection
+              rawHtml = rawHtml.replace(/<span[^>]*style="[^"]*text-decoration:\s*underline[^"]*"[^>]*>(.*?)<\/span>/gi, '<u>$1</u>');
+              rawHtml = rawHtml.replace(/<span[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>(.*?)<\/span>/gi, '<b>$1</b>');
+              rawHtml = rawHtml.replace(/<span[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>(.*?)<\/span>/gi, '<i>$1</i>');
+              
+              // Strict Sanitation: Remove all tags EXCEPT <u>, <b>, <i>, <br>
+              rawHtml = rawHtml.replace(/<\/?(?!(u|b|i|br)\b)[a-z0-9]+[^>]*>/gi, '');
+              
+              const textContent = cell.textContent.trim();
+              if (textContent) isEmpty = false;
+              
+              if (rowIndex === 0) {
+                  headers[colIndex] = textContent.toLowerCase().replace(/\s+/g, '');
+              } else {
+                  if (headers[colIndex]) {
+                      rowData[headers[colIndex]] = rawHtml;
+                  }
+              }
+          });
+          
+          if (rowIndex > 0 && !isEmpty) json.push(rowData);
+      });
+
+      const headerMap = {
+          'question': 'text', 'questions': 'text', 'questiontext': 'text',
+          'a': 'a', 'optiona': 'a',
+          'b': 'b', 'optionb': 'b',
+          'c': 'c', 'optionc': 'c',
+          'd': 'd', 'optiond': 'd',
+          'answer': 'answer', 'correctanswer': 'answer', 'key': 'answer', 'options': 'answer'
+      };
+      
+      state.creatorQuestions = [];
+      let validCount = 0;
+      let errorCount = 0;
+      
+      json.forEach(row => {
+          let mappedData = { text: '', a: '', b: '', c: '', d: '', answer: '' };
+          Object.keys(row).forEach(k => {
+              const targetKey = headerMap[k];
+              if (targetKey) mappedData[targetKey] = row[k];
+          });
+          
+          // Pure text for checking logic
+          const stripHTML = (s) => (s||'').replace(/<[^>]+>/g, '').trim();
+          let rawAns = stripHTML(mappedData.answer).toUpperCase();
+          let ans = rawAns;
+          
+          if (rawAns === 'OPTION A' || rawAns === '1') ans = 'A';
+          else if (rawAns === 'OPTION B' || rawAns === '2') ans = 'B';
+          else if (rawAns === 'OPTION C' || rawAns === '3') ans = 'C';
+          else if (rawAns === 'OPTION D' || rawAns === '4') ans = 'D';
+          else if (!['A','B','C','D'].includes(ans)) {
+              const cleanAns = stripHTML(mappedData.answer).toLowerCase();
+              if (mappedData.a && cleanAns === stripHTML(mappedData.a).toLowerCase()) ans = 'A';
+              else if (mappedData.b && cleanAns === stripHTML(mappedData.b).toLowerCase()) ans = 'B';
+              else if (mappedData.c && cleanAns === stripHTML(mappedData.c).toLowerCase()) ans = 'C';
+              else if (mappedData.d && cleanAns === stripHTML(mappedData.d).toLowerCase()) ans = 'D';
+          }
+
+          if (mappedData.text && mappedData.a && mappedData.b && ['A','B','C','D'].includes(ans)) {
+              state.creatorQuestions.push({ 
+                  text: mappedData.text, a: mappedData.a, b: mappedData.b, 
+                  c: mappedData.c, d: mappedData.d, answer: ans 
+              });
+              validCount++;
+          } else {
+              errorCount++;
+          }
+      });
+      
+      // Render Preview UI utilizing mapped HTML directly
+      const tableElement = document.getElementById('excelPreviewTable');
+      let previewHTML = '';
+      state.creatorQuestions.forEach((q, idx) => {
+          previewHTML += `<tr>
+              <td>${idx + 1}</td>
+              <td>${q.text}</td>
+              <td>${q.a}</td>
+              <td>${q.b}</td>
+              <td>${q.c}</td>
+              <td>${q.d}</td>
+              <td><strong>${q.answer}</strong></td>
+              <td><span style="color:var(--success);font-weight:bold;">Ready</span></td>
+          </tr>`;
+      });
+
+      tableElement.innerHTML = `<thead><tr><th>No.</th><th>Question</th><th>A</th><th>B</th><th>C</th><th>D</th><th>Answer</th><th>Status</th></tr></thead><tbody>${previewHTML}</tbody>`;
+      document.getElementById('excelPreviewContainer').classList.remove('hidden');
+      document.getElementById('pendingQuestionsCount').textContent = state.creatorQuestions.length;
+
+      if (errorCount > 0) {
+          displayToast(`Imported ${validCount} questions. ${errorCount} rows contained errors and were skipped.`, "warning");
+      } else {
+          displayToast(`Successfully imported ${validCount} formatted questions.`, "success");
+      }
+  }
   
   // SAVE QUIZ
   document.getElementById('creatorToWorkspaceBtn').onclick = () => {
@@ -402,7 +419,6 @@ function registerCreatorEvents() {
         title, 
         metaClass,
         subject,
-        // Structurally map fields safely for persistence to guarantee stability
         questions: state.creatorQuestions.map(q => ({
             text: q.text,
             a: q.a,
@@ -415,7 +431,6 @@ function registerCreatorEvents() {
     
     state.quizzes.push(newQuiz);
     
-    // Clear draft and UI states strictly after successful array insertion
     state.creatorQuestions = []; 
     document.getElementById('pendingQuestionsCount').textContent = '0';
     document.getElementById('creatorQuizTitle').value = '';
@@ -514,14 +529,17 @@ function launchLiveQuizRunner(asset, durationMins) {
 function renderActiveQuestion() {
   const q = state.activeQuestions[state.currentQuestionIndex];
   document.getElementById('runnerQuestionMeta').textContent = `Question ${state.currentQuestionIndex + 1} of ${state.activeQuestions.length}`;
-  document.getElementById('runnerQuestionText').textContent = q.text; // TextContent prevents HTML injection bugs
+  
+  // Use innerHTML to visibly render <u>, <b>, <i> extracted from the Excel files
+  document.getElementById('runnerQuestionText').innerHTML = q.text; 
   
   const prog = ((state.currentQuestionIndex + 1) / state.activeQuestions.length) * 100;
   document.getElementById('runnerProgressBar').style.width = `${prog}%`;
   
+  // Render options identically evaluating inner HTML values
   document.getElementById('runnerOptionsGrid').innerHTML = ['A','B','C','D'].filter(opt=>q[opt.toLowerCase()]).map(opt=>`
     <div class="glass-card option-card" style="padding:14px; cursor:pointer; border:2px solid ${state.userAnswers[state.currentQuestionIndex]===opt?'var(--primary)':'var(--border)'}; background:${state.userAnswers[state.currentQuestionIndex]===opt?'var(--primary-light)':'transparent'}" onclick="window.appEngineAPI.selectAnswer('${opt}')">
-      <b>${opt}:</b> ${q[opt.toLowerCase()]}
+      <b>${opt}:</b> <span>${q[opt.toLowerCase()]}</span>
     </div>
   `).join('');
   
@@ -550,7 +568,6 @@ document.getElementById('runnerSubmitBtn').onclick = () => {
   const perc = Math.round((correct / total) * 100);
   const timeStr = document.getElementById('runnerTimer').textContent;
   
-  // Update local participant state for host
   const me = state.liveRoom.participants.find(p => p.name === state.studentMeta.name);
   if(me) {
       me.status = 'submitted';
@@ -559,7 +576,6 @@ document.getElementById('runnerSubmitBtn').onclick = () => {
       renderProctoringTable();
   }
 
-  // Save to global submissions for marksheet strictly aligned with schema
   state.submissions.push({
       examId: state.activeQuiz.id,
       studentName: state.studentMeta.name,
@@ -568,7 +584,6 @@ document.getElementById('runnerSubmitBtn').onclick = () => {
   });
   saveLocalState();
   
-  // Render review UI
   document.getElementById('reviewScoreText').textContent = `${correct} / ${total}`;
   document.getElementById('reviewPercentageText').textContent = `${perc}%`;
   document.getElementById('reviewTimeText').textContent = timeStr;
@@ -581,7 +596,7 @@ document.getElementById('runnerSubmitBtn').onclick = () => {
   switchViewport('reviewSection');
 };
 
-// --- PDF GENERATOR ---
+// --- PDF GENERATOR (Rewritten for HTML-Native Formats) ---
 function registerPdfEvents() {
   document.getElementById('pdfSourceAssetSelect').addEventListener('change', (e) => {
       const qz = state.quizzes.find(q => q.id === e.target.value);
@@ -600,64 +615,74 @@ async function generatePDF(type) {
   if(!assetId) return displayToast("Please select an exam first.", "error");
   
   const qz = state.quizzes.find(q => q.id === assetId);
-  if(!qz) return displayToast("Selected exam could not be found.", "error");
-  if(!qz.questions || qz.questions.length === 0) return displayToast("Cannot generate PDF: Assessment has no questions.", "error");
-  if(!window.jspdf) return displayToast("PDF engine is initializing, please wait...", "error");
+  if(!qz || !qz.questions || qz.questions.length === 0) return displayToast("Cannot generate PDF: Assessment has no questions.", "error");
+  
+  if(!window.jspdf || !window.html2canvas) return displayToast("PDF engine initializing...", "error");
+
+  displayToast("Generating PDF accurately. Please wait...", "info");
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p', 'mm', 'a4');
-  let y = 20;
-  const pageHeight = 285; 
+  const pdf = new jsPDF('p', 'mm', 'a4');
   
-  const checkPageBreak = (neededSpace) => {
-      if (y + neededSpace > pageHeight) {
-          doc.addPage();
-          y = 20;
-      }
-  };
+  // Create an invisible, precisely styled container for the HTML payload
+  const container = document.createElement('div');
+  container.style.width = '180mm';
+  container.style.padding = '10mm';
+  container.style.background = '#ffffff';
+  container.style.color = '#000000';
+  container.style.fontFamily = 'Helvetica, Arial, sans-serif';
+  container.style.fontSize = '14px';
+  container.style.lineHeight = '1.5';
+  container.style.position = 'absolute';
+  container.style.left = '-9999px';
+  container.style.top = '0';
   
-  // Header Formatting
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.text(document.getElementById('pdfSchoolHeaderInput').value || 'SCHOOL EXAM', 105, y, {align:"center"}); 
-  y += 10;
+  let html = `<div style="text-align:center; margin-bottom:20px;">
+      <h2 style="margin:0; font-size:22px;">${document.getElementById('pdfSchoolHeaderInput').value || 'SCHOOL EXAM'}</h2>
+      <h3 style="margin:5px 0 15px 0; font-size:16px;">EXAM: ${qz.title} | ${type === 'key' ? 'ANSWER KEY' : 'QUESTION PAPER'}</h3>
+      <div style="font-size:14px; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px;">
+          Class: ${document.getElementById('pdfClass').value || '-'} | Subject: ${document.getElementById('pdfSubject').value || '-'} | Total Questions: ${qz.questions.length}
+      </div>
+  </div>`;
   
-  doc.setFontSize(12);
-  doc.text(`EXAM: ${qz.title} | ${type === 'key' ? 'ANSWER KEY' : 'QUESTION PAPER'}`, 105, y, {align:"center"}); 
-  y += 8;
-  
-  doc.setFontSize(11);
-  const cls = document.getElementById('pdfClass').value || '-';
-  const sub = document.getElementById('pdfSubject').value || '-';
-  doc.text(`Class: ${cls} | Subject: ${sub} | Total Questions: ${qz.questions.length}`, 105, y, {align:"center"}); 
-  y += 15;
-  
-  // Render Questions
-  doc.setFontSize(11);
   qz.questions.forEach((q, i) => {
-    doc.setFont("helvetica", type === 'key' ? 'bold' : 'normal');
-    const prefix = `${i+1}. `;
-    const qStr = type === 'key' ? `${prefix}${q.text}  [ KEY: ${q.answer||'A'} ]` : `${prefix}${q.text}`;
-    
-    const qLines = doc.splitTextToSize(qStr, 180);
-    checkPageBreak((qLines.length * 6) + 10);
-    doc.text(qLines, 15, y);
-    y += (qLines.length * 6) + 2;
-    
-    if (type !== 'key') {
-      const optStr = `(A) ${q.a}   (B) ${q.b}   (C) ${q.c}   (D) ${q.d}`;
-      const optLines = doc.splitTextToSize(optStr, 175);
-      checkPageBreak((optLines.length * 6) + 5);
-      doc.setFont("helvetica", "normal");
-      doc.text(optLines, 20, y);
-      y += (optLines.length * 6) + 6; 
-    } else {
-        y += 4;
-    }
+      // Use page-break-inside: avoid so jsPDF's autoPaging cleanly breaks layouts
+      html += `<div style="margin-bottom:16px; page-break-inside:avoid;">`;
+      if (type === 'key') {
+          html += `<div><strong>${i+1}.</strong> ${q.text} <span style="float:right; font-weight:bold; color:#059669;">[ KEY: ${q.answer||'A'} ]</span></div>`;
+      } else {
+          html += `<div><strong>${i+1}.</strong> ${q.text}</div>`;
+          html += `<div style="display:flex; flex-wrap:wrap; margin-top:6px; margin-left:16px;">
+              <div style="width:50%; margin-bottom:4px;">(A) ${q.a}</div>
+              <div style="width:50%; margin-bottom:4px;">(B) ${q.b}</div>
+              <div style="width:50%; margin-bottom:4px;">(C) ${q.c}</div>
+              <div style="width:50%; margin-bottom:4px;">(D) ${q.d}</div>
+          </div>`;
+      }
+      html += `</div>`;
   });
   
-  doc.save(`${qz.title.replace(/\s+/g, '_')}_${type.toUpperCase()}.pdf`);
-  displayToast("PDF Generated Successfully", "success");
+  container.innerHTML = html;
+  document.body.appendChild(container);
+
+  try {
+      await pdf.html(container, {
+          callback: function (doc) {
+              doc.save(`${qz.title.replace(/\s+/g, '_')}_${type.toUpperCase()}.pdf`);
+              document.body.removeChild(container);
+              displayToast("PDF Generated Successfully", "success");
+          },
+          x: 15,
+          y: 15,
+          width: 180,
+          windowWidth: container.offsetWidth,
+          autoPaging: 'text' // Intelligently handles page overflows ensuring <u> tags split cleanly
+      });
+  } catch(err) {
+      console.error(err);
+      document.body.removeChild(container);
+      displayToast("Failed to generate PDF.", "error");
+  }
 }
 
 // --- STATE MANAGEMENT & SCHEDULING ---
@@ -941,7 +966,6 @@ window.appEngineAPI = {
     const doc = new jsPDF('p', 'mm', 'a4');
     let y = 20;
     
-    // Header
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text("Quiz Master Pro - Database Schema Blueprint", 105, y, {align:"center"}); 
@@ -950,7 +974,6 @@ window.appEngineAPI = {
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
     
-    // Schema Definition Mapping
     const schemaText = [
       "This document outlines the JSON document structures for the application state.",
       "",
@@ -991,21 +1014,13 @@ window.appEngineAPI = {
       "  - durationMinutes: Number"
     ];
     
-    // Print lines with auto-page breaks
     schemaText.forEach(line => {
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
-      
+      if (y > 280) { doc.addPage(); y = 20; }
       if(line.match(/^[1-4]\./)) {
-          doc.setFont("helvetica", "bold");
-          doc.setTextColor(5, 150, 105); // Emerald green for headers
+          doc.setFont("helvetica", "bold"); doc.setTextColor(5, 150, 105);
       } else {
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor(15, 23, 42); // Standard text
+          doc.setFont("helvetica", "normal"); doc.setTextColor(15, 23, 42); 
       }
-      
       doc.text(line, 20, y);
       y += 7;
     });

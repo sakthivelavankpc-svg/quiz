@@ -315,7 +315,18 @@ function registerCreatorEvents() {
               const b = mappedData.b;
               const c = mappedData.c;
               const d = mappedData.d;
-              const ans = normalizeAnswer(mappedData.answer);
+              let ans = normalizeAnswer(mappedData.answer);
+
+              // ENHANCED LOGIC: Allow matching by the exact text of the option as well as A, B, C, D
+              if (!['A','B','C','D'].includes(ans)) {
+                  const rawAns = safeString(mappedData.answer).toLowerCase();
+                  if (rawAns !== '') {
+                      if (a && rawAns === a.toLowerCase()) ans = 'A';
+                      else if (b && rawAns === b.toLowerCase()) ans = 'B';
+                      else if (c && rawAns === c.toLowerCase()) ans = 'C';
+                      else if (d && rawAns === d.toLowerCase()) ans = 'D';
+                  }
+              }
 
               // Row Validation (Must have valid question, A, B, and valid A/B/C/D answer)
               if (text && a && b && ['A','B','C','D'].includes(ans)) {
@@ -927,5 +938,85 @@ window.appEngineAPI = {
     document.getElementById('tutNextBtn').textContent = state.tutStep===6?'Finish':'Next';
   },
   nextTutorial: () => { if(state.tutStep<6) { state.tutStep++; window.appEngineAPI.renderTut(); } else window.appEngineAPI.closeTutorial(); },
-  prevTutorial: () => { if(state.tutStep>1) { state.tutStep--; window.appEngineAPI.renderTut(); } }
+  prevTutorial: () => { if(state.tutStep>1) { state.tutStep--; window.appEngineAPI.renderTut(); } },
+  
+  downloadSchemaPDF: () => {
+    if(!window.jspdf) return displayToast("PDF engine is initializing, please wait...", "error");
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    let y = 20;
+    
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Quiz Master Pro - Database Schema Blueprint", 105, y, {align:"center"}); 
+    y += 15;
+    
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    
+    // Schema Definition Mapping
+    const schemaText = [
+      "This document outlines the JSON document structures for the application state.",
+      "",
+      "1. Quizzes & Assessments (Local State)",
+      "  - id: String (Primary Key, format: QZ-[timestamp])",
+      "  - title: String",
+      "  - metaClass: String",
+      "  - subject: String",
+      "  - questions: Array of Objects { text, a, b, c, d, answer }",
+      "  - isGroup: Boolean (Optional - for Combined Exams)",
+      "  - sourceRefs: Array of Strings (Optional - source quiz IDs)",
+      "",
+      "2. Scheduled Exams (Local State)",
+      "  - id: String (Primary Key, format: SCH-[timestamp])",
+      "  - examId: String (Foreign Key -> Quizzes)",
+      "  - title: String",
+      "  - date: String (YYYY-MM-DD)",
+      "  - time: String (HH:MM)",
+      "  - duration: Number (Minutes)",
+      "  - status: String ('scheduled' | 'open')",
+      "",
+      "3. Submissions / Analytics (Local State)",
+      "  - examId: String (Foreign Key -> Quizzes)",
+      "  - studentName: String",
+      "  - rollNo: String",
+      "  - correct: Number",
+      "  - wrong: Number",
+      "  - total: Number",
+      "  - perc: Number (Percentage)",
+      "  - time: String (MM:SS)",
+      "",
+      "4. Live Rooms (Firebase Cloud Firestore)",
+      "  - Collection: 'live_rooms'",
+      "  - Document ID: String (PIN Code, e.g., 'TN1234')",
+      "  - pinCode: String",
+      "  - status: String ('active')",
+      "  - sourceQuizId: String",
+      "  - durationMinutes: Number"
+    ];
+    
+    // Print lines with auto-page breaks
+    schemaText.forEach(line => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      if(line.match(/^[1-4]\./)) {
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(5, 150, 105); // Emerald green for headers
+      } else {
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(15, 23, 42); // Standard text
+      }
+      
+      doc.text(line, 20, y);
+      y += 7;
+    });
+    
+    doc.save("Database_Neural_Schema.pdf");
+    displayToast("Schema PDF Generated Successfully", "success");
+  }
 };

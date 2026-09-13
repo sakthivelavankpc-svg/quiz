@@ -32,7 +32,7 @@
     </div>
 
     <!-- Quick Live Student PIN Participation Portal -->
-    <div class="live-pin-banner glass-card" id="pinJoinPortal">
+    <div class="live-pin-banner glass-card" id="studentJoinPortal">
       <div class="pin-banner-header">
         <div class="pulsing-dot"></div>
         <h3>JOIN EXAM</h3>
@@ -59,7 +59,7 @@
       <button id="btnStudentEnterLive" class="btn-primary btn-large btn-full"><i class="ri-login-circle-line"></i> Join Exam</button>
     </div>
 
-    <div class="gate-grid">
+    <div class="gate-grid" id="teacherAuthGates">
       <div class="gate-card glass-card">
         <div class="gate-icon emerald"><i class="ri-user-smile-line"></i></div>
         <h3>Guest Sandbox</h3>
@@ -91,39 +91,6 @@
         <div class="form-group"><input type="email" id="regEmail" placeholder="Official Email" class="form-control" /></div>
         <div class="form-group"><input type="password" id="regPassword" placeholder="Set Password" class="form-control" /></div>
         <button id="btnRegister" class="btn-accent btn-full"><i class="ri-shield-keyhole-line"></i> Register</button>
-      </div>
-    </div>
-  </main>
-
-  <!-- SHARED EXAM & SCHEDULED EXAM LANDING PAGE -->
-  <main class="auth-wrapper hidden" id="examLandingGate">
-    <div class="glass-card text-center" style="max-width: 600px; margin: 0 auto; padding: 40px;">
-      <h2 id="landingExamTitle" style="font-size: 2rem; margin-bottom: 10px;">EXAM TITLE</h2>
-      <p id="landingExamMeta" class="subtext mb-24">Class: -- | Subject: --</p>
-      
-      <div id="landingCountdownBox" class="countdown-box hidden mb-24">
-        <h3>EXAM STARTS IN</h3>
-        <div class="countdown-grid mt-10">
-          <div><span id="cdDays">00</span><small>Days</small></div>
-          <div><span id="cdHours">00</span><small>Hours</small></div>
-          <div><span id="cdMins">00</span><small>Minutes</small></div>
-          <div><span id="cdSecs">00</span><small>Seconds</small></div>
-        </div>
-        <p id="landingScheduledTimeText" class="mt-10" style="color:var(--primary); font-weight:bold;"></p>
-      </div>
-
-      <div id="landingStatusMessage" class="hidden mb-24" style="padding: 16px; border-radius: var(--radius-sm); font-weight: bold;"></div>
-
-      <div id="landingJoinForm" class="hidden">
-        <div class="form-group" style="text-align: left;">
-          <label>Your Full Name</label>
-          <input type="text" id="landingNameInput" placeholder="Enter your full name" class="form-control" />
-        </div>
-        <div class="form-group" style="text-align: left;">
-          <label>Roll / Register Number (Optional)</label>
-          <input type="text" id="landingRollInput" placeholder="Enter roll number" class="form-control" />
-        </div>
-        <button id="btnLandingStartExam" class="btn-success btn-large btn-full"><i class="ri-play-circle-line"></i> START EXAM</button>
       </div>
     </div>
   </main>
@@ -162,8 +129,6 @@
         <div class="menu-category">Governance</div>
         <a href="#" class="nav-link" data-target="guidesSection"><i class="ri-book-read-line"></i> <span>Guides & Blueprints</span></a>
         <a href="#" class="nav-link auth-required" data-target="profileSection"><i class="ri-user-settings-line"></i> <span>User Profile</span></a>
-        <a href="#" class="nav-link hidden" data-target="adminSection" id="sidebarAdminLink"><i class="ri-admin-line"></i> <span>Master Admin Panel</span></a>
-        <a href="#" class="nav-link hidden" data-target="usersSection" id="sidebarUsersLink"><i class="ri-team-line"></i> <span>User Management</span></a>
       </nav>
 
       <div class="sidebar-footer">
@@ -175,8 +140,8 @@
       </div>
     </aside>
 
-    <div class="main-content">
-      <header class="top-header">
+    <div class="main-content" id="mainContentArea">
+      <header class="top-header" id="appTopHeader">
         <div class="header-left">
           <button id="sidebarToggle" class="btn-icon" aria-label="Toggle Sidebar"><i class="ri-menu-2-line"></i></button>
           <div class="breadcrumb">
@@ -264,85 +229,13 @@
                   <span>Check student performance</span>
                 </div>
               </button>
-              <button class="quick-action-btn" onclick="window.appEngineAPI.switchContext('marksheetSection')">
+              <button class="quick-action-btn" onclick="window.appEngineAPI.switchContext('pdfSection')">
                 <div class="qa-icon danger"><i class="ri-file-pdf-line"></i></div>
                 <div class="qa-text">
                   <strong>Download PDF</strong>
                   <span>Marksheets & answer keys</span>
                 </div>
               </button>
-              
-              <button class="quick-action-btn" onclick="window.appEngineAPI.downloadSchemaPDF()">
-                <div class="qa-icon emerald"><i class="ri-database-2-line"></i></div>
-                <div class="qa-text">
-                  <strong>Download Schema</strong>
-                  <span>Export Data Blueprint PDF</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Guided Workflow Map -->
-          <div class="glass-card mb-24">
-            <div class="card-header-flex">
-              <h3><i class="ri-map-pin-line"></i> Guided Workflow Map</h3>
-              <p class="subtext">Click any step to jump directly to that feature.</p>
-            </div>
-            <div class="workflow-map">
-              <div class="wf-step" onclick="window.appEngineAPI.switchContext('creatorSection')">
-                <div class="wf-icon"><i class="ri-add-circle-line"></i></div>
-                <h4>STEP 1</h4><strong>Create / Import Quiz</strong>
-                <p>Add questions manually or via Sheets.</p>
-              </div>
-              <div class="wf-arrow"><i class="ri-arrow-right-line"></i></div>
-              
-              <div class="wf-step" onclick="window.appEngineAPI.switchContext('groupsSection')">
-                <div class="wf-icon"><i class="ri-stack-line"></i></div>
-                <h4>STEP 2</h4><strong>Combine Quizzes</strong>
-                <p>Join several quizzes into one exam.</p>
-              </div>
-              <div class="wf-arrow"><i class="ri-arrow-right-line"></i></div>
-
-              <div class="wf-step" onclick="window.appEngineAPI.openScheduler()">
-                <div class="wf-icon"><i class="ri-calendar-line"></i></div>
-                <h4>STEP 3</h4><strong>Schedule Exam</strong>
-                <p>Set a future date and time.</p>
-              </div>
-              <div class="wf-arrow"><i class="ri-arrow-right-line"></i></div>
-
-              <div class="wf-step" onclick="window.appEngineAPI.switchContext('liveQuizSection')">
-                <div class="wf-icon"><i class="ri-broadcast-line"></i></div>
-                <h4>STEP 4</h4><strong>Start Live Exam</strong>
-                <p>Open room & let students join.</p>
-              </div>
-              <div class="wf-arrow"><i class="ri-arrow-right-line"></i></div>
-
-              <div class="wf-step" onclick="window.appEngineAPI.switchContext('liveQuizSection')">
-                <div class="wf-icon"><i class="ri-share-forward-line"></i></div>
-                <h4>STEP 5</h4><strong>Share PIN / Link</strong>
-                <p>Students enter name and PIN.</p>
-              </div>
-              <div class="wf-arrow"><i class="ri-arrow-right-line"></i></div>
-
-              <div class="wf-step" onclick="window.appEngineAPI.switchContext('liveQuizSection')">
-                <div class="wf-icon"><i class="ri-eye-line"></i></div>
-                <h4>STEP 6</h4><strong>Monitor Students</strong>
-                <p>Watch live progress.</p>
-              </div>
-              <div class="wf-arrow"><i class="ri-arrow-right-line"></i></div>
-
-              <div class="wf-step" onclick="window.appEngineAPI.switchContext('leaderboardSection')">
-                <div class="wf-icon"><i class="ri-trophy-line"></i></div>
-                <h4>STEP 7</h4><strong>Results & Ranking</strong>
-                <p>See scores instantly.</p>
-              </div>
-              <div class="wf-arrow"><i class="ri-arrow-right-line"></i></div>
-
-              <div class="wf-step" onclick="window.appEngineAPI.switchContext('marksheetSection')">
-                <div class="wf-icon"><i class="ri-printer-line"></i></div>
-                <h4>STEP 8</h4><strong>Download Results</strong>
-                <p>Generate Marksheets & PDFs.</p>
-              </div>
             </div>
           </div>
 
@@ -383,15 +276,6 @@
                 </div>
               </div>
             </div>
-            <div class="chart-card glass-card">
-              <div class="card-header-flex">
-                <h3><i class="ri-line-chart-line"></i> Subject Mastery</h3>
-                <span class="badge-pill">Analytics</span>
-              </div>
-              <div class="telemetry-bar-list" id="dashboardSubjectMasteryBars">
-                  <div class="empty-state-msg">Data will populate after exams are completed.</div>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -400,7 +284,7 @@
           <div class="section-header">
             <div class="header-titles">
               <h2><i class="ri-broadcast-fill" style="color:var(--danger);"></i> Live Classroom Exam Center</h2>
-              <p>Start instantly or monitor scheduled exams in real-time.</p>
+              <p>Start instantly or schedule for later. Monitor students in real-time.</p>
             </div>
             <div class="header-action-strip">
               <button class="btn-success" id="btnModeStartNow"><i class="ri-play-circle-line"></i> Start Exam Now</button>
@@ -418,7 +302,7 @@
               </div>
               <div class="form-group">
                 <label>Duration (Minutes)</label>
-                <input type="number" id="liveSetupDuration" class="form-control" value="60" min="1" />
+                <input type="number" id="liveSetupDuration" class="form-control" value="30" min="1" />
               </div>
             </div>
             <div class="form-group-row">
@@ -464,8 +348,8 @@
                   <p class="subtext">Students Joined: <b id="liveStatJoined">0</b> | Answering: <b id="liveStatAnswering">0</b> | Completed: <b id="liveStatCompleted">0</b></p>
                 </div>
                 <div class="table-actions" style="display:flex; gap:10px;">
-                  <button class="btn-sm btn-icon explain-btn" data-tooltip="Watch students join and answer questions in real time. Disconnects detect stale tabs."><i class="ri-question-line"></i></button>
-                  <button class="btn-secondary btn-sm" id="btnLiveLeaderboard" onclick="window.appEngineAPI.switchContext('marksheetSection')"><i class="ri-trophy-line"></i> View Results</button>
+                  <button class="btn-sm btn-icon explain-btn" data-tooltip="Watch students join and answer questions in real time."><i class="ri-question-line"></i></button>
+                  <button class="btn-secondary btn-sm" id="btnLiveLeaderboard" onclick="window.appEngineAPI.switchContext('leaderboardSection')"><i class="ri-trophy-line"></i> View Results</button>
                 </div>
               </div>
 
@@ -477,15 +361,29 @@
                       <th>Student Name</th>
                       <th>Roll No</th>
                       <th>Current Progress</th>
+                      <th>Answered</th>
                       <th>Score</th>
                       <th>Last Seen</th>
                     </tr>
                   </thead>
                   <tbody id="liveParticipantsTableBody">
-                    <tr><td colspan="6" class="text-center">No students joined yet. Share the link or PIN.</td></tr>
+                    <tr><td colspan="7" class="text-center">No students joined yet. Share the PIN.</td></tr>
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= STUDENT WAITING ROOM ================= -->
+        <section id="waitingRoomSection" class="view-section hidden">
+          <div class="glass-card text-center" style="max-width: 600px; margin: 40px auto; padding: 50px 30px;">
+            <div class="pulsing-dot" style="margin: 0 auto 20px; width: 24px; height: 24px;"></div>
+            <h2 style="font-size: 2rem; margin-bottom: 15px; color: var(--primary);">Waiting for Teacher</h2>
+            <p style="font-size: 1.1rem; color: var(--text-light); margin-bottom: 30px;">You have successfully joined the exam session. The exam will start automatically as soon as your teacher starts it manually.</p>
+            <div style="background: var(--secondary); padding: 20px; border-radius: var(--radius-sm); border: 1px dashed var(--border);">
+              <span style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light);">Elapsed Wait Time</span>
+              <div id="studentWaitTimer" style="font-family: 'JetBrains Mono', monospace; font-size: 3rem; font-weight: 800; color: var(--text-main); margin-top: 5px;">00:00</div>
             </div>
           </div>
         </section>
@@ -517,101 +415,7 @@
               <div class="composite-controls-strip mt-10">
                 <button id="groupCommitBtn" class="btn-primary btn-full"><i class="ri-cloud-upload-line"></i> Save Combined Exam</button>
               </div>
-              <div class="composite-selected-banner mt-10" style="padding: 12px; background: var(--secondary); border-radius: var(--radius-sm); text-align: center;">
-                <span>Total Selected Questions: <strong id="groupMetricCount">0</strong></span>
-              </div>
             </div>
-          </div>
-        </section>
-
-        <!-- ================= 4. QUESTION BANK V2 ================= -->
-        <section id="questionBankSection" class="view-section hidden">
-          <div class="section-header">
-            <div class="header-titles">
-              <h2><i class="ri-database-2-line"></i> Question Bank</h2>
-              <p>Store and manage your questions.</p>
-            </div>
-          </div>
-          <div class="glass-card table-panel">
-            <div class="table-wrapper">
-              <table class="data-table">
-                <thead><tr><th>ID</th><th>Question</th><th>Class</th><th>Bloom Level</th><th>Answer</th><th>Actions</th></tr></thead>
-                <tbody id="bankTableBody">
-                    <tr><td colspan="6" class="text-center">Data will propagate from saved quizzes.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- ================= 5. PDF GENERATOR ================= -->
-        <section id="pdfSection" class="view-section hidden">
-          <div class="section-header">
-            <div class="header-titles">
-              <h2><i class="ri-printer-line"></i> Generate PDFs</h2>
-              <p>Download Marksheets, Answer Keys, and Question Papers.</p>
-            </div>
-          </div>
-          <div class="pdf-center-grid">
-            <div class="pdf-config-panel glass-card">
-              <h3>Document Parameters</h3>
-              <div class="form-group mt-10">
-                  <label>Select Exam / Assessment</label>
-                  <select id="pdfSourceAssetSelect" class="form-control"></select>
-              </div>
-              <div class="form-group"><label>School Header</label><input type="text" id="pdfSchoolHeaderInput" class="form-control" value="GOVERNMENT HIGH SCHOOL" /></div>
-              <div class="form-group-row">
-                <div class="form-group"><label>Class</label><input type="text" id="pdfClass" class="form-control" value="" placeholder="Auto-fills on selection" /></div>
-                <div class="form-group"><label>Subject</label><input type="text" id="pdfSubject" class="form-control" value="" placeholder="Auto-fills on selection" /></div>
-              </div>
-              <div class="pdf-button-cluster mt-10">
-                <button id="pdfGenerateDownloadBtn" class="btn-primary btn-full mb-10"><i class="ri-file-pdf-line"></i> Question Paper PDF</button>
-                <button id="pdfGenerateKeyBtn" class="btn-secondary btn-full mb-10"><i class="ri-key-2-line"></i> Answer Key PDF</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ================= 6. MARKSHEETS ================= -->
-        <section id="marksheetSection" class="view-section hidden">
-          <div class="section-header">
-            <div class="header-titles">
-              <h2><i class="ri-table-line"></i> Consolidated Class Marksheet</h2>
-              <p>Generate student and class results with competition ranking.</p>
-            </div>
-            <div class="header-action-strip">
-              <button class="btn-primary" id="btnExportMarksheetPDF"><i class="ri-file-pdf-line"></i> Export Marksheet PDF</button>
-            </div>
-          </div>
-          <div class="glass-card table-panel">
-            <div class="form-group"><select id="marksheetExamSelect" class="form-control"><option value="">-- Select Exam --</option></select></div>
-            <div class="table-wrapper mt-10">
-              <table class="data-table" id="consolidatedMarksheetTable">
-                <thead><tr><th>Rank</th><th>Student Name</th><th>Roll No</th><th>Correct</th><th>Wrong</th><th>Marks</th><th>%</th><th>Time</th><th>Status</th></tr></thead>
-                <tbody id="marksheetTableBody">
-                    <tr><td colspan="9" class="text-center">Select an exam to view results.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- ================= 7. QUIZ PRO MATRIX ================= -->
-        <section id="quizProSection" class="view-section hidden">
-          <div class="section-header"><h2><i class="ri-share-circle-line"></i> Quiz Pro Matrix</h2></div>
-          <div class="glass-card"><p>Legacy feature preserved. Please use 'Schedule Exam' or 'Combined Exams' for updated workflows.</p></div>
-        </section>
-
-        <!-- ================= 8. ASSESSMENT LIBRARY ================= -->
-        <section id="librarySection" class="view-section hidden">
-          <div class="section-header">
-            <div class="header-titles">
-              <h2><i class="ri-folder-shared-line"></i> Assessment Library</h2>
-              <p>Find your saved quizzes and combined exams.</p>
-            </div>
-          </div>
-          <div id="libraryContainer" class="library-grid-layout">
-              <!-- Rendered via JS -->
           </div>
         </section>
 
@@ -623,10 +427,7 @@
                 <h2 id="runnerQuizTitle">Exam Title</h2>
                 <span class="runner-candidate-badge" id="runnerCandidateBadge" style="color:var(--text-light); font-size:0.9rem;">Candidate: Name</span>
               </div>
-              <div class="timer-badge text-right">
-                <span style="font-size: 0.7rem; color: var(--text-light); text-transform: uppercase;">Time Left</span><br>
-                <span id="runnerTimer" style="font-family:'JetBrains Mono', monospace; font-size:1.5rem; font-weight:800; color:var(--primary);">00:00:00</span>
-              </div>
+              <div id="runnerTimer" class="timer-badge" style="font-family:'JetBrains Mono', monospace; font-size:1.5rem; font-weight:800; color:var(--primary);">00:00</div>
             </div>
             <div class="progress-container" style="background:var(--border); height:6px; border-radius:3px; margin-bottom:20px; overflow:hidden;"><div id="runnerProgressBar" class="progress-bar-fill" style="width: 0%; height:100%; background:var(--primary); transition:0.3s;"></div></div>
             <div class="question-body-card">
@@ -678,18 +479,28 @@
             <div id="creatorExcelForm" class="hidden mt-10">
               <div class="excel-drop-zone" id="excelDropZone" style="border:2px dashed var(--border); padding:40px; text-align:center; border-radius:var(--radius); background:var(--secondary); position:relative;">
                 <h3><i class="ri-file-excel-line" style="font-size:2rem; color:var(--success);"></i><br/>Upload Excel / Google Sheet</h3>
-                <p class="subtext mt-10">Upload a `.xlsx`, `.xls`, or `.csv` file exported from Excel or Google Sheets containing your question bank.</p>
+                <p class="subtext mt-10">Upload a `.xlsx`, `.xls`, or `.csv` file containing columns: Question, A, B, C, D, Answer.</p>
                 <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" hidden />
                 <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
-                    <button class="btn-secondary" onclick="window.appEngineAPI.downloadExcelTemplate()"><i class="ri-download-line"></i> Download Template</button>
+                    <button class="btn-secondary" id="btnDownloadExcelTemplate"><i class="ri-download-line"></i> Download Template</button>
                     <button class="btn-success" onclick="document.getElementById('excelFileInput').click()"><i class="ri-upload-2-line"></i> Browse File</button>
                 </div>
               </div>
-              <div id="excelPreviewContainer" class="hidden mt-24 table-panel">
-                <h4 class="mb-10">Data Preview</h4>
-                <div class="table-wrapper" style="max-height:300px; overflow-y:auto;">
-                    <table class="data-table" id="excelPreviewTable"><thead><tr><th>Q</th><th>A</th><th>B</th><th>C</th><th>D</th><th>Ans</th></tr></thead><tbody></tbody></table>
+
+              <div id="excelSheetSelectWrap" class="form-group mt-10 hidden">
+                <label>Select Worksheet</label>
+                <select id="excelSheetSelect" class="form-control"></select>
+              </div>
+
+              <div id="excelPreviewWrap" class="hidden mt-24">
+                <div id="excelImportSummary" style="text-align:center; background:var(--primary-light); color:var(--primary-dark); padding:10px; border-radius:var(--radius-sm); font-weight:700; margin-bottom:12px;"></div>
+                <div class="table-wrapper" style="max-height:320px; overflow-y:auto;">
+                  <table class="data-table">
+                    <thead><tr><th>#</th><th>Question</th><th>A</th><th>B</th><th>C</th><th>D</th><th>Answer</th><th>Status</th></tr></thead>
+                    <tbody id="excelPreviewTableBody"></tbody>
+                  </table>
                 </div>
+                <button id="btnConfirmExcelImport" class="btn-primary btn-full mt-10 hidden"><i class="ri-check-double-line"></i> Add Valid Questions to Draft</button>
               </div>
             </div>
 
@@ -702,75 +513,138 @@
           </div>
         </section>
 
-        <!-- ================= 11. WORKSPACE CANVAS ================= -->
-        <section id="workspaceSection" class="view-section hidden">
-          <div class="section-header"><h2><i class="ri-drag-drop-line"></i> Interactive Canvas</h2></div>
-          <div id="visualCanvasContainer" class="visual-canvas-grid glass-card"><p>Drag and Drop functionality initialized.</p></div>
-        </section>
-
         <!-- ================= 12. EVALUATION REVIEW (STUDENT RESULT) ================= -->
         <section id="reviewSection" class="view-section hidden">
           <div class="section-header">
             <div class="header-titles">
               <h2>🎉 EXAM COMPLETED</h2>
-              <p>Your responses have been recorded and saved.</p>
+              <p>Your responses have been recorded successfully.</p>
             </div>
           </div>
           <div class="score-summary-banner glass-card text-center" style="padding:40px;">
             <h3 style="font-size:2rem; margin-bottom:10px;">Final Score: <span id="reviewScoreText" style="color:var(--primary);">0/0</span></h3>
             <h4 id="reviewPercentageText" style="font-size:3rem; font-weight:800; margin-bottom:20px;">0%</h4>
             <p style="font-size:1.1rem; color:var(--text-light);">Completion Time: <b id="reviewTimeText">--</b></p>
-            <p style="font-size:1.1rem; color:var(--text-light);">Rank (Current): <b id="reviewRankText">--</b></p>
+            <p style="font-size:1.1rem; color:var(--text-light);" id="reviewRankText">Rank: --</p>
             <div id="passFailText" class="pf-badge mt-24" style="font-size:1.5rem;">--</div>
           </div>
-          <div class="review-button-row mt-24" style="display:flex; gap:16px; justify-content:center;">
-            <button class="btn-primary btn-large" id="btnDownloadIndividualResult"><i class="ri-file-pdf-line"></i> Download My Marksheet PDF</button>
-            <button class="btn-secondary btn-large" onclick="window.location.reload()"><i class="ri-home-line"></i> Exit</button>
+          
+          <div class="review-button-row mt-24" style="display:flex; gap:16px; justify-content:center; flex-wrap: wrap;">
+            <!-- Student PDF Downloads -->
+            <button class="btn-primary btn-large" onclick="window.appEngineAPI.downloadStudentMarksheet()"><i class="ri-file-pdf-line"></i> Download Marksheet</button>
+            <button class="btn-secondary btn-large" onclick="window.appEngineAPI.downloadStudentResponse()"><i class="ri-list-check"></i> Download Response Sheet</button>
           </div>
         </section>
 
-        <!-- ================= 13. ANALYTICS & 14. LEADERBOARD ================= -->
-        <section id="analyticsSection" class="view-section hidden">
-          <div class="section-header"><h2><i class="ri-bar-chart-box-line"></i> Analytics Center</h2></div>
-          <div class="glass-card"><p>Check the Dashboard and Consolidated Marksheets for metrics.</p></div>
+        <!-- ================= ASSESSMENT LIBRARY ================= -->
+        <section id="librarySection" class="view-section hidden">
+          <div class="section-header">
+            <div class="header-titles">
+              <h2><i class="ri-folder-shared-line"></i> Assessment Library</h2>
+              <p>All saved & combined exams. Play instantly or share a permanent link with students.</p>
+            </div>
+            <button class="btn-secondary btn-sm" id="btnRefreshLibrary"><i class="ri-refresh-line"></i> Refresh</button>
+          </div>
+          <div id="libraryGridContainer"></div>
         </section>
-        <section id="leaderboardSection" class="view-section hidden">
-          <div class="section-header"><h2><i class="ri-trophy-line"></i> Exam Leaderboard</h2></div>
-          <div class="glass-card table-panel">
-            <div class="form-group"><select id="leaderboardExamSelect" class="form-control"><option value="">-- Select Exam --</option></select></div>
-            <div class="table-wrapper mt-10">
-                <table class="data-table"><thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Percentage</th><th>Time</th></tr></thead><tbody id="leaderboardTableBody">
-                    <tr><td colspan="5" class="text-center">Select an exam to view leaderboard.</td></tr>
-                </tbody></table>
+
+        <section id="questionBankSection" class="view-section hidden">
+          <div class="section-header"><div class="header-titles"><h2><i class="ri-database-2-line"></i> Question Bank v2</h2><p>Manage reusable questions across assessments.</p></div></div>
+          <div class="glass-card empty-state-msg">Browse and reuse questions directly from the Assessment Library — open any saved exam's Question Paper PDF to review its bank.</div>
+        </section>
+
+        <!-- ================= TN A4 EXAM PAPERS ================= -->
+        <section id="pdfSection" class="view-section hidden">
+          <div class="section-header">
+            <div class="header-titles">
+              <h2><i class="ri-printer-line"></i> TN A4 Exam Papers</h2>
+              <p>Generate printable Question Papers and Answer Keys for any saved exam.</p>
+            </div>
+          </div>
+          <div class="glass-card">
+            <div class="form-group"><label>Select Exam</label><select id="pdfExamSelect" class="form-control"></select></div>
+            <div class="form-group-row mt-10">
+              <button class="btn-primary" id="btnGenQuestionPaper"><i class="ri-file-text-line"></i> Question Paper PDF</button>
+              <button class="btn-secondary" id="btnGenAnswerKey"><i class="ri-key-2-line"></i> Answer Key PDF</button>
             </div>
           </div>
         </section>
-        
-        <section id="guidesSection" class="view-section hidden"><div class="section-header"><h2>Guides</h2></div></section>
-        <section id="profileSection" class="view-section hidden"><div class="section-header"><h2>Profile</h2></div></section>
-        <section id="adminSection" class="view-section hidden"><div class="section-header"><h2>Admin</h2></div></section>
-        <section id="usersSection" class="view-section hidden"><div class="section-header"><h2>Users</h2></div></section>
 
-      </div>
-    </div>
-  </div>
+        <!-- ================= CONSOLIDATED MARKSHEETS ================= -->
+        <section id="marksheetSection" class="view-section hidden">
+          <div class="section-header">
+            <div class="header-titles">
+              <h2><i class="ri-table-line"></i> Consolidated Marksheets</h2>
+              <p>Select an exam to view every participant's result, ranked automatically.</p>
+            </div>
+          </div>
+          <div class="glass-card">
+            <div class="form-group-row" style="align-items:flex-end;">
+              <div class="form-group"><label>Select Exam</label><select id="marksheetExamSelect" class="form-control"></select></div>
+              <div class="form-group" style="width:auto;"><button class="btn-primary" id="btnLoadMarksheet"><i class="ri-refresh-line"></i> Load Results</button></div>
+              <div class="form-group" style="width:auto;"><button class="btn-secondary" id="btnExportMarksheetPdf"><i class="ri-file-pdf-line"></i> Export PDF</button></div>
+            </div>
+            <div class="table-wrapper mt-10">
+              <table class="data-table" id="marksheetTable">
+                <thead><tr><th>Rank</th><th>Student</th><th>Roll No</th><th>Correct</th><th>Wrong</th><th>Unanswered</th><th>Marks</th><th>%</th><th>Time</th><th>Status</th></tr></thead>
+                <tbody id="marksheetTableBody"><tr><td colspan="10" class="text-center">Select an exam to load results.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-  <!-- TUTORIAL MODAL -->
-  <div id="tutorialModal" class="modal-overlay hidden">
-    <div class="modal-content glass-card" style="max-width: 500px; text-align: center;">
-      <div class="modal-body" id="tutorialBody">
-        <h2>Welcome to Quiz Master Pro 👋</h2>
-        <p class="mt-10 mb-24">You don't need to learn everything at once. Let's see how simple it is to run an exam.</p>
-        <div class="tutorial-progress">Step <span id="tutStepNum">1</span> of 6</div>
-        <h3 id="tutTitle" class="mt-10" style="color:var(--primary);">1. Choose Quiz</h3>
-        <p id="tutDesc" class="mt-10">Create a quiz manually or import from an exported Excel/Google Sheet.</p>
-      </div>
-      <div class="modal-footer" style="justify-content: space-between;">
-        <button class="btn-secondary" onclick="window.appEngineAPI.closeTutorial()">Skip</button>
-        <div>
-          <button class="btn-secondary" id="tutBackBtn" onclick="window.appEngineAPI.prevTutorial()">Back</button>
-          <button class="btn-primary" id="tutNextBtn" onclick="window.appEngineAPI.nextTutorial()">Next</button>
-        </div>
+        <!-- ================= SCHEDULED / SHARED EXAM GATEWAY ================= -->
+        <section id="examGatewaySection" class="view-section hidden">
+          <div class="glass-card gateway-card" style="max-width:640px;margin:10px auto;padding:34px;text-align:center;">
+            <h2 id="gwTitle">Exam Title</h2>
+            <p id="gwMeta" class="subtext" style="color:var(--text-light); margin-top:6px;"></p>
+            <div id="gwPhaseBadge" class="gw-phase-badge">LOADING</div>
+
+            <div id="gwCountdownBox" class="hidden mt-24">
+              <div class="gw-countdown" id="gwCountdown">00 : 00 : 00 : 00</div>
+              <div class="subtext" style="color:var(--text-light); font-size:0.8rem; margin-top:4px;">Days : Hours : Minutes : Seconds</div>
+            </div>
+
+            <div id="gwJoinForm" class="hidden mt-24" style="text-align:left; max-width:360px; margin:24px auto 0;">
+              <div class="form-group"><label>Full Name</label><input type="text" id="gwNameInput" class="form-control" /></div>
+              <div class="form-group"><label>Roll / Register No. (Optional)</label><input type="text" id="gwRollInput" class="form-control" /></div>
+              <button class="btn-primary btn-full btn-large mt-10" id="gwStartBtn"><i class="ri-play-fill"></i> Start Exam</button>
+            </div>
+
+            <div id="gwShareBox" class="hidden mt-24">
+              <div class="qr-canvas-box" id="gwQrBox" style="margin:0 auto 10px;"></div>
+              <div class="pin-code" id="gwPinCode">PIN: ----</div>
+              <p class="room-url-share" id="gwLinkText" style="margin-top:10px; word-break:break-all;"></p>
+              <div style="display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap;">
+                <button class="btn-secondary btn-sm" id="gwCopyLinkBtn"><i class="ri-file-copy-line"></i> Copy Link</button>
+                <button class="btn-danger btn-sm hidden" id="gwCancelBtn"><i class="ri-close-circle-line"></i> Cancel Exam</button>
+              </div>
+
+              <div class="glass-card table-panel mt-24" style="text-align:left;">
+                <div class="card-header-flex">
+                  <div>
+                    <h3><i class="ri-group-line"></i> Live Participant Monitor</h3>
+                    <p class="subtext">Joined: <b id="gwStatJoined">0</b> | Answering: <b id="gwStatAnswering">0</b> | Submitted: <b id="gwStatSubmitted">0</b></p>
+                  </div>
+                </div>
+                <div class="table-wrapper">
+                  <table class="data-table">
+                    <thead><tr><th>Status</th><th>Student Name</th><th>Roll No</th><th>Progress</th><th>Answered</th><th>Score</th><th>Last Seen</th></tr></thead>
+                    <tbody id="gwMonitorTableBody"><tr><td colspan="7" class="text-center">No students joined yet.</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="quizProSection" class="view-section hidden"></section>
+        <section id="workspaceSection" class="view-section hidden"></section>
+        <section id="analyticsSection" class="view-section hidden"></section>
+        <section id="leaderboardSection" class="view-section hidden"></section>
+        <section id="guidesSection" class="view-section hidden"></section>
+        <section id="profileSection" class="view-section hidden"></section>
+
       </div>
     </div>
   </div>
@@ -784,29 +658,21 @@
       </div>
       <div class="modal-body">
         <div class="form-group"><label>Select Exam</label><select id="schedQuizSelect" class="form-control"></select></div>
+        <div class="form-group"><label>Exam Date</label><input type="date" id="schedDate" class="form-control" /></div>
         <div class="form-group-row">
-          <div class="form-group"><label>Exam Date</label><input type="date" id="schedDate" class="form-control" /></div>
-        </div>
-        <div class="form-group-row">
-          <div class="form-group"><label>Start Hour</label>
-            <select id="schedHour" class="form-control">
-              <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-              <option value="4">4</option><option value="5">5</option><option value="6">6</option>
-              <option value="7">7</option><option value="8">8</option><option value="9">9</option>
-              <option value="10">10</option><option value="11">11</option><option value="12">12</option>
-            </select>
-          </div>
-          <div class="form-group"><label>Minute</label>
-            <select id="schedMinute" class="form-control">
-              <option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
-            </select>
-          </div>
-          <div class="form-group"><label>AM/PM</label>
-            <select id="schedAmpm" class="form-control"><option value="AM">AM</option><option value="PM">PM</option></select>
+          <div class="form-group"><label>Start Hour</label><input type="number" id="schedHour" class="form-control" min="1" max="12" value="6" /></div>
+          <div class="form-group"><label>Minute</label><input type="number" id="schedMinute" class="form-control" min="0" max="59" value="0" /></div>
+          <div class="form-group"><label>AM / PM</label>
+            <select id="schedAmPm" class="form-control"><option value="AM">AM</option><option value="PM" selected>PM</option></select>
           </div>
         </div>
         <div class="form-group-row">
-          <div class="form-group"><label>Duration (Mins)</label><input type="number" id="schedDuration" class="form-control" value="60" min="1" /></div>
+          <div class="form-group"><label>Duration</label>
+            <select id="schedDuration" class="form-control">
+              <option value="15">15 Mins</option><option value="30">30 Mins</option><option value="45" selected>45 Mins</option>
+              <option value="60">1 Hour</option><option value="90">1.5 Hours</option><option value="120">2 Hours</option><option value="180">3 Hours</option>
+            </select>
+          </div>
           <div class="form-group"><label>Class / Group</label><input type="text" id="schedClass" class="form-control" placeholder="e.g. Class 10" /></div>
         </div>
       </div>

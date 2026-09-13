@@ -175,15 +175,6 @@ body.student-mode .view-container { padding: 15px; }
 .status-joined { background: rgba(245,158,11,0.15); color: var(--warning); }
 .status-answering { background: rgba(16,185,129,0.15); color: var(--success); }
 .status-submitted { background: rgba(37,99,235,0.15); color: #2563eb; }
-.status-danger { background: rgba(239,68,68,0.15); color: var(--danger); }
-
-.gw-phase-badge { display:inline-block; margin-top:14px; padding:8px 18px; border-radius:30px; font-weight:800; font-size:0.95rem; background:var(--secondary); color:var(--text-main); }
-.gw-phase-badge.phase-upcoming { background:rgba(245,158,11,0.15); color:var(--warning); }
-.gw-phase-badge.phase-live { background:rgba(239,68,68,0.15); color:var(--danger); animation: pulseLive 1.8s infinite; }
-.gw-phase-badge.phase-closed { background:rgba(100,116,139,0.15); color:var(--text-light); }
-.gw-countdown { font-family:'JetBrains Mono', monospace; font-size:2.4rem; font-weight:800; color:var(--primary); letter-spacing:1px; }
-
-.library-item-card h3 { font-size: 1.05rem; }
 
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .modal-content { width: 100%; max-width: 500px; background: var(--surface-solid); border-radius: var(--radius); display: flex; flex-direction: column; }
@@ -208,13 +199,4 @@ body.student-mode .view-container { padding: 15px; }
   .main-content { margin-left: 0; }
   .active-room-banner { grid-template-columns: 1fr; text-align: center; }
   .dashboard-split-grid { grid-template-columns: 1fr; }
-}
-/* Functional support for existing controls */
-.sidebar.hidden { transform: translateX(-100%); }
-.main-content.expanded { margin-left: 0; }
-.sticky-home-btn { position: fixed; right: 22px; bottom: 22px; width: 46px; height: 46px; border: 0; border-radius: 50%; background: var(--primary); color: #fff; box-shadow: var(--shadow); z-index: 9500; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.feature-tooltip { max-width: 280px; }
-@media (max-width: 1024px) {
-  .sidebar.hidden { transform: translateX(-100%); }
-  body.student-mode .sticky-home-btn { display: none !important; }
 }

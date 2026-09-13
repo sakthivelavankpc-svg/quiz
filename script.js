@@ -76,7 +76,7 @@ function getShareUrl(contextId) {
 ============================================================ */
 const state = {
   quizzes: [],
-  contexts: [],           // exam_contexts cache (scheduled + practice)
+  contexts: [],
   submissions: [],
   currentUser: { uid: 'GUEST', role: 'guest', name: 'Guest' },
 
@@ -109,6 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   registerMarksheetEvents();
   registerPdfToolEvents();
   registerGatewayEvents();
+  registerGlobalTooltips();
 
   await checkPersistedSession();
   await loadQuizzesFromCloud();
@@ -161,6 +162,19 @@ function setupThemeAndPalette() {
     authorizeSession({ uid: 'U-' + Date.now(), role: role === 'student' ? 'student' : 'teacher', name });
     displayToast("Account created for this session.", "success");
   };
+  
+  const stickyHome = document.getElementById('globalStickyHomeBtn');
+  if (stickyHome) {
+    stickyHome.onclick = () => {
+      if (document.body.classList.contains('student-mode')) {
+        if (confirm("Leave exam and clear session? Progress may be lost.")) {
+          localStorage.clear(); location.reload();
+        }
+      } else {
+        switchViewport('homeSection');
+      }
+    };
+  }
 }
 
 function registerAuthEvents() {
@@ -184,6 +198,26 @@ async function authorizeSession(profile) {
   document.getElementById('welcomeUserName').textContent = profile.name;
   const badge = document.getElementById('headerUserBadge'); if (badge) badge.textContent = profile.name;
   const role = document.getElementById('headerRoleBadge'); if (role) role.textContent = profile.role === 'teacher' ? 'School Admin' : (profile.role === 'student' ? 'Student' : 'Guest');
+  
+  const stickyBtn = document.getElementById('globalStickyHomeBtn');
+  if (stickyBtn && profile.role === 'student') stickyBtn.classList.remove('hidden');
+}
+
+function registerGlobalTooltips() {
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('[data-tooltip]');
+    const tooltip = document.getElementById('globalTooltip');
+    const ttContent = document.getElementById('ttContent');
+    if (target && tooltip && ttContent) {
+      ttContent.textContent = target.getAttribute('data-tooltip');
+      tooltip.classList.remove('hidden');
+      const rect = target.getBoundingClientRect();
+      tooltip.style.left = Math.max(10, rect.left) + 'px';
+      tooltip.style.top = (rect.bottom + 8) + 'px';
+    } else if (tooltip) {
+      tooltip.classList.add('hidden');
+    }
+  });
 }
 
 /* ============================================================
@@ -202,6 +236,9 @@ async function handleStudentQuickJoin() {
   document.getElementById('welcomeGate').classList.add('hidden');
   document.getElementById('appShell').classList.remove('hidden');
   document.getElementById('teacherAuthGates').style.display = 'none';
+  
+  const stickyBtn = document.getElementById('globalStickyHomeBtn');
+  if(stickyBtn) stickyBtn.classList.remove('hidden');
 
   openGateway(ctx.id, 'student', { prefillName: name, prefillRoll: rollNo, autoJoin: true });
 }
@@ -251,13 +288,7 @@ async function deleteQuizEverywhere(quizId) {
 }
 
 /* ============================================================
-   FIRESTORE: EXAM CONTEXTS (scheduled + practice + instant-live)
-   exam_contexts/{contextId}
-     { id, quizId, title, class, subject, type: 'scheduled'|'practice',
-       durationMinutes, windowStart, windowEnd, pin, cancelled, createdAt }
-   exam_contexts/{contextId}/participants/{participantId}
-   exam_contexts/{contextId}/answers/{participantId}       -> { responses: {qIndex: 'A'} }
-   exam_contexts/{contextId}/submissions/{participantId}
+   FIRESTORE: EXAM CONTEXTS
 ============================================================ */
 async function loadContextsFromCloud() {
   if (!db) { loadContextsFromLocal(); renderDashboardData(); return; }
@@ -316,7 +347,7 @@ async function findContextByPin(pin) {
       if (found) return found;
     } catch (e) { console.warn("PIN lookup failed via cloud, checking cache.", e); }
   }
-  return state.contexts.find(c => c.pin === pin) || null;
+  return state.contexts.find(c => c.pin === pin && !c.cancelled) || null;
 }
 
 async function ensurePracticeContext(quizId) {
@@ -365,11 +396,19 @@ function getOrCreateParticipantId(contextId) {
 }
 
 async function getParticipantDoc(contextId, participantId) {
-  if (!db) return null;
-  try {
-    const snap = await getDoc(doc(db, 'exam_contexts', contextId, 'participants', participantId));
-    return snap.exists() ? snap.data() : null;
-  } catch (e) { return null; }
+  const localKey = `qmp_p_${contextId}_${participantId}`;
+  let localP = JSON.parse(localStorage.getItem(localKey) || 'null');
+  if (db) {
+    try {
+      const snap = await getDoc(doc(db, 'exam_contexts', contextId, 'participants', participantId));
+      if(snap.exists()) {
+        const data = snap.data();
+        localStorage.setItem(localKey, JSON.stringify(data));
+        return data;
+      }
+    } catch (e) { return localP; }
+  }
+  return localP;
 }
 
 async function joinOrResumeParticipant(ctx, participantId, name, rollNo) {
@@ -396,6 +435,8 @@ async function joinOrResumeParticipant(ctx, participantId, name, rollNo) {
     lastSeenAt: now,
     deadlineAt
   };
+  
+  localStorage.setItem(`qmp_p_${ctx.id}_${participantId}`, JSON.stringify(record));
   if (db) { try { await setDoc(doc(db, 'exam_contexts', ctx.id, 'participants', participantId), record, { merge: true }); } catch (e) { console.warn("Join sync failed", e); } }
   return record;
 }
@@ -406,34 +447,56 @@ async function heartbeatTick(contextId, participantId) {
 }
 
 async function updateParticipantProgress(contextId, participantId, patch) {
+  const localKey = `qmp_p_${contextId}_${participantId}`;
+  let localP = JSON.parse(localStorage.getItem(localKey) || '{}');
+  Object.assign(localP, patch, { lastSeenAt: nowMs() });
+  localStorage.setItem(localKey, JSON.stringify(localP));
   if (!db) return;
-  try { await setDoc(doc(db, 'exam_contexts', contextId, 'participants', participantId), { ...patch, lastSeenAt: nowMs() }, { merge: true }); } catch (e) { console.warn("Progress sync failed", e); }
+  try { await setDoc(doc(db, 'exam_contexts', contextId, 'participants', participantId), localP, { merge: true }); } catch (e) { console.warn("Progress sync failed", e); }
 }
 
 let saveAnswerTimer = null;
 async function saveAnswerAutoSave(contextId, participantId, questionIndex, value) {
+  const localKey = `qmp_ans_${contextId}_${participantId}`;
+  let localAns = JSON.parse(localStorage.getItem(localKey) || '{}');
+  localAns[questionIndex] = value;
+  localStorage.setItem(localKey, JSON.stringify(localAns));
+
   if (!db) return;
   clearTimeout(saveAnswerTimer);
   saveAnswerTimer = setTimeout(async () => {
     try {
       await setDoc(doc(db, 'exam_contexts', contextId, 'answers', participantId), {
-        participantId, responses: { [questionIndex]: value }, updatedAt: nowMs()
+        participantId, responses: localAns, updatedAt: nowMs()
       }, { merge: true });
     } catch (e) { console.warn("Auto-save failed", e); }
   }, 250);
 }
 
 async function loadSavedAnswers(contextId, participantId) {
-  if (!db) return {};
-  try {
-    const snap = await getDoc(doc(db, 'exam_contexts', contextId, 'answers', participantId));
-    if (snap.exists()) return snap.data().responses || {};
-  } catch (e) {}
-  return {};
+  const localKey = `qmp_ans_${contextId}_${participantId}`;
+  let localAns = JSON.parse(localStorage.getItem(localKey) || '{}');
+  if (db) {
+    try {
+      const snap = await getDoc(doc(db, 'exam_contexts', contextId, 'answers', participantId));
+      if (snap.exists()) {
+        const cloudAns = snap.data().responses || {};
+        const merged = { ...localAns, ...cloudAns };
+        localStorage.setItem(localKey, JSON.stringify(merged));
+        return merged;
+      }
+    } catch (e) {}
+  }
+  return localAns;
 }
 
 async function recordSubmission(contextId, submission) {
   state.submissions.push(submission);
+  let localSubs = JSON.parse(localStorage.getItem(`QMP_SUB_CACHE_${contextId}`) || '[]');
+  const existIdx = localSubs.findIndex(s => s.participantId === submission.participantId);
+  if(existIdx > -1) localSubs[existIdx] = submission; else localSubs.push(submission);
+  localStorage.setItem(`QMP_SUB_CACHE_${contextId}`, JSON.stringify(localSubs));
+
   if (db) {
     try { await setDoc(doc(db, 'exam_contexts', contextId, 'submissions', submission.participantId), submission); }
     catch (e) { console.warn("Submission sync failed — saved locally only.", e); }
@@ -444,11 +507,18 @@ async function recordSubmission(contextId, submission) {
 }
 
 async function fetchSubmissions(contextId) {
-  if (!db) return [];
-  try {
-    const snap = await getDocs(collection(db, 'exam_contexts', contextId, 'submissions'));
-    const list = []; snap.forEach(d => list.push(d.data())); return list;
-  } catch (e) { console.warn("Fetch submissions failed", e); return []; }
+  let localSubs = JSON.parse(localStorage.getItem(`QMP_SUB_CACHE_${contextId}`) || '[]');
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'exam_contexts', contextId, 'submissions'));
+      const list = []; snap.forEach(d => list.push(d.data())); 
+      if(list.length > 0) {
+          localStorage.setItem(`QMP_SUB_CACHE_${contextId}`, JSON.stringify(list));
+          return list;
+      }
+    } catch (e) { console.warn("Fetch submissions failed", e); }
+  }
+  return localSubs;
 }
 
 function computeDenseRanking(rows) {
@@ -466,17 +536,33 @@ function computeDenseRanking(rows) {
 ============================================================ */
 function registerNavigationEvents() {
   document.querySelectorAll('.nav-link').forEach(link => {
-    link.onclick = (e) => { e.preventDefault(); switchViewport(link.getAttribute('data-target')); };
+    link.onclick = (e) => { 
+        e.preventDefault(); 
+        const targetId = link.getAttribute('data-target');
+        switchViewport(targetId); 
+    };
   });
   document.getElementById('sidebarToggle').onclick = () => {
-    document.getElementById('appSidebar').classList.toggle('hidden');
-    document.querySelector('.main-content').classList.toggle('expanded');
+    if (window.innerWidth <= 1024) {
+      document.getElementById('appSidebar').classList.toggle('mobile-open');
+    } else {
+      document.getElementById('appSidebar').classList.toggle('hidden');
+      document.querySelector('.main-content').classList.toggle('expanded');
+    }
   };
   document.getElementById('runnerNextBtn').onclick = () => { if (state.currentQuestionIndex < state.activeQuestions.length - 1) { state.currentQuestionIndex++; renderActiveQuestion(); } };
   document.getElementById('runnerPrevBtn').onclick = () => { if (state.currentQuestionIndex > 0) { state.currentQuestionIndex--; renderActiveQuestion(); } };
 }
 
 function switchViewport(targetId) {
+  const link = document.querySelector(`.nav-link[data-target="${targetId}"]`);
+  if (link && link.classList.contains('auth-required')) {
+      if (state.currentUser.role === 'guest' || state.currentUser.role === 'student') {
+          displayToast("This feature requires an Educator account.", "error");
+          return;
+      }
+  }
+
   if (targetId !== 'examGatewaySection') {
     if (state.gateway.tickerId) { clearInterval(state.gateway.tickerId); state.gateway.tickerId = null; }
     if (state.gateway.monitorUnsub) { state.gateway.monitorUnsub(); state.gateway.monitorUnsub = null; }
@@ -485,7 +571,7 @@ function switchViewport(targetId) {
   document.getElementById(targetId).classList.remove('hidden');
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.getAttribute('data-target') === targetId));
   const bc = document.getElementById('breadcrumbCurrent');
-  if (bc) { const active = document.querySelector(`.nav-link[data-target="${targetId}"] span`); if (active) bc.textContent = active.textContent; }
+  if (bc && link) { const active = link.querySelector('span'); if (active) bc.textContent = active.textContent; }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -548,8 +634,21 @@ function registerCreatorEvents() {
 ============================================================ */
 function registerExcelEvents() {
   const fileInput = document.getElementById('excelFileInput');
-  if (!fileInput) return;
-  fileInput.onchange = handleExcelFileSelected;
+  if (fileInput) fileInput.onchange = handleExcelFileSelected;
+
+  const dropZone = document.getElementById('excelDropZone');
+  if (dropZone) {
+      dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--primary)'; });
+      dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--border)'; });
+      dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.style.borderColor = 'var(--border)';
+          if (e.dataTransfer.files.length) {
+              if(fileInput) fileInput.files = e.dataTransfer.files;
+              handleExcelFileSelected({ target: { files: e.dataTransfer.files } });
+          }
+      });
+  }
 
   const sheetSelect = document.getElementById('excelSheetSelect');
   if (sheetSelect) sheetSelect.onchange = () => parseWorkbookSheet(sheetSelect.value);
@@ -610,10 +709,17 @@ function parseWorkbookSheet(sheetName) {
     const b = bKey ? String(row[bKey]).trim() : '';
     const c = cKey ? String(row[cKey]).trim() : '';
     const d = dKey ? String(row[dKey]).trim() : '';
-    let answer = ansKey ? String(row[ansKey]).trim().toUpperCase() : '';
+    
+    let answerRaw = ansKey ? String(row[ansKey]).trim() : '';
+    let answer = answerRaw.toUpperCase();
+    
+    // Auto-resolve textual answers mapping back to A/B/C/D
     if (answer.length > 1) {
-      if (answer === a) answer = 'A'; else if (answer === b) answer = 'B';
-      else if (answer === c) answer = 'C'; else if (answer === d) answer = 'D'; else answer = answer.charAt(0);
+      if (answerRaw.toLowerCase() === a.toLowerCase()) answer = 'A'; 
+      else if (answerRaw.toLowerCase() === b.toLowerCase()) answer = 'B';
+      else if (answerRaw.toLowerCase() === c.toLowerCase()) answer = 'C'; 
+      else if (answerRaw.toLowerCase() === d.toLowerCase()) answer = 'D'; 
+      else answer = answer.charAt(0); // blind fallback
     }
 
     const errors = [];
@@ -748,7 +854,7 @@ function renderLibrary() {
     <div class="glass-card library-item-card" style="margin-bottom:16px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
         <div>
-          <h3 style="margin-bottom:4px;">${q.title} ${q.isGroup ? '<span class="status-badge status-submitted">COMBINED</span>' : ''}</h3>
+          <h3 style="margin-bottom:4px;">${q.title} ${q.isGroup ? '<span class="status-badge status-submitted" style="margin-left: 8px;">COMBINED</span>' : ''}</h3>
           <p class="subtext" style="color:var(--text-light); font-size:0.85rem;">${(q.questions || []).length} Questions ${q.metaClass ? '· ' + q.metaClass : ''} ${q.subject ? '· ' + q.subject : ''}</p>
         </div>
       </div>
@@ -760,7 +866,7 @@ function renderLibrary() {
         <button class="btn-secondary btn-sm" onclick="window.appEngineAPI.downloadQuestionPaper('${q.id}')"><i class="ri-file-text-line"></i> Question Paper PDF</button>
         <button class="btn-secondary btn-sm" onclick="window.appEngineAPI.downloadAnswerKey('${q.id}')"><i class="ri-key-2-line"></i> Answer Key PDF</button>
         <button class="btn-secondary btn-sm" onclick="window.appEngineAPI.viewLibraryResults('${q.id}')"><i class="ri-bar-chart-box-line"></i> Results</button>
-        <button class="btn-icon btn-danger btn-sm" onclick="window.appEngineAPI.deleteQuiz('${q.id}')"><i class="ri-delete-bin-line"></i></button>
+        <button class="btn-icon btn-danger btn-sm" style="margin-left:auto;" onclick="window.appEngineAPI.deleteQuiz('${q.id}')"><i class="ri-delete-bin-line"></i></button>
       </div>
       <div class="qr-inline-box hidden" id="qrBox-${q.id}" style="margin-top:12px; width:130px; height:130px; background:white; padding:6px; border-radius:8px;"></div>
     </div>`).join('');
@@ -913,7 +1019,7 @@ function renderMonitorTable(rows, tbodyId, joinedStatId, answeringStatId, submit
   if (submittedEl) submittedEl.textContent = rows.filter(p => p.status === 'submitted').length;
   if (answeringEl) answeringEl.textContent = rows.filter(p => computeLiveStatus(p) === 'ANSWERING').length;
 
-  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="8" class="text-center">No students joined yet. Share the PIN or link.</td></tr>`; return; }
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="text-center">No students joined yet. Share the PIN or link.</td></tr>`; return; }
 
   tbody.innerHTML = rows.map(p => {
     const label = computeLiveStatus(p);
@@ -931,7 +1037,7 @@ function renderMonitorTable(rows, tbodyId, joinedStatId, answeringStatId, submit
 }
 
 /* ============================================================
-   LIVE EXAM ROOM (Instant "Start Now" flow) — keeps original UI structure
+   LIVE EXAM ROOM (Instant "Start Now" flow)
 ============================================================ */
 function registerLiveEvents() {
   document.getElementById('btnModeStartNow').onclick = () => {
@@ -1007,7 +1113,7 @@ function concludeLiveExam() {
 }
 
 /* ============================================================
-   SCHEDULE EXAM MODAL (AM/PM friendly form -> epoch timestamps)
+   SCHEDULE EXAM MODAL
 ============================================================ */
 function populateSelects() {
   const opts = '<option value="">-- Select Exam / Assessment --</option>' + state.quizzes.map(q => `<option value="${q.id}">${q.title}</option>`).join('');
@@ -1134,7 +1240,6 @@ window.appEngineAPI = {
     generateAnswerKeyPdf(quiz);
   },
 
-  // --- Instant Student PDF Logic (post-submission) ---
   downloadStudentMarksheet: async () => {
     if (!window.jspdf) return displayToast("PDF engine initializing…", "error");
     const sub = state.submissions[state.submissions.length - 1];
@@ -1144,7 +1249,7 @@ window.appEngineAPI = {
   downloadStudentResponse: async () => {
     if (!window.jspdf) return displayToast("PDF engine initializing…", "error");
     generateResponseSheetPdf();
-  },
+  }
 };
 
 /* ============================================================
@@ -1265,7 +1370,7 @@ function registerPdfToolEvents() {
 }
 
 /* ============================================================
-   PDF GENERATION (robust direct-draw jsPDF — no offscreen html())
+   PDF GENERATION (robust direct-draw jsPDF)
 ============================================================ */
 function newA4Doc() {
   if (!window.jspdf) { displayToast("PDF engine still loading — please try again in a moment.", "error"); return null; }
@@ -1503,8 +1608,8 @@ function renderActiveQuestion() {
   document.getElementById('runnerProgressBar').style.width = `${prog}%`;
 
   document.getElementById('runnerOptionsGrid').innerHTML = ['A', 'B', 'C', 'D'].filter(opt => q[opt.toLowerCase()]).map(opt => `
-    <div class="glass-card option-card" style="padding:14px; cursor:pointer; border:2px solid ${state.userAnswers[state.currentQuestionIndex] === opt ? 'var(--primary)' : 'var(--border)'}; background:${state.userAnswers[state.currentQuestionIndex] === opt ? 'var(--primary-light)' : 'transparent'}" onclick="window.appEngineAPI.selectAnswer('${opt}')">
-      <b>${opt}:</b> <span>${q[opt.toLowerCase()]}</span>
+    <div class="glass-card option-card" style="padding:16px; cursor:pointer; border:2px solid ${state.userAnswers[state.currentQuestionIndex] === opt ? 'var(--primary)' : 'var(--border)'}; background:${state.userAnswers[state.currentQuestionIndex] === opt ? 'var(--primary-light)' : 'transparent'}" onclick="window.appEngineAPI.selectAnswer('${opt}')">
+      <b style="font-size: 1.1rem; margin-right: 8px;">${opt}:</b> <span style="font-size: 1.05rem;">${q[opt.toLowerCase()]}</span>
     </div>
   `).join('');
 

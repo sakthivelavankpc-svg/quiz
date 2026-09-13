@@ -100,6 +100,7 @@ body.student-mode .view-container { padding: 15px; }
 .btn-logout { padding: 10px; border: 1px solid rgba(239,68,68,0.4); background: transparent; color: var(--danger); border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; }
 
 .main-content { flex: 1; margin-left: var(--sidebar-width); display: flex; flex-direction: column; min-height: 100vh; transition: 0.3s; }
+.main-content.expanded { margin-left: 0; }
 .top-header { height: 72px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; position: sticky; top: 0; z-index: 900; }
 .header-left, .header-right { display: flex; align-items: center; gap: 16px; }
 .breadcrumb { font-size: 0.88rem; color: var(--text-light); } .bc-active { color: var(--primary); font-weight: 700; }
@@ -144,7 +145,7 @@ body.student-mode .view-container { padding: 15px; }
 .agenda-date { background: var(--primary-light); color: var(--primary-dark); font-weight: 800; font-size: 0.8rem; padding: 6px 10px; border-radius: 8px; text-align: center; min-width: 65px; }
 
 .form-group { margin-bottom: 16px; width: 100%; }
-.form-group-row { display: flex; gap: 16px; }
+.form-group-row { display: flex; gap: 16px; flex-wrap: wrap; }
 .form-group label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; }
 .form-control { width: 100%; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-solid); color: var(--text-main); outline: none; transition: 0.2s; }
 .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
@@ -160,6 +161,8 @@ body.student-mode .view-container { padding: 15px; }
 .btn-icon { background: transparent; border: none; padding: 8px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: var(--text-main); }
 .btn-icon.btn-danger { background: rgba(239,68,68,0.1); color: var(--danger); }
 .btn-icon:hover { background: var(--secondary); }
+.sticky-home-btn { position: fixed; bottom: 24px; right: 24px; background: var(--primary); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: none; cursor: pointer; box-shadow: var(--shadow); z-index: 9000; transition: 0.3s; }
+.sticky-home-btn:hover { transform: scale(1.1); background: var(--primary-dark); }
 
 .active-room-banner { padding:24px; display:grid; grid-template-columns: 2fr 1fr 1.2fr; gap:24px; align-items:center; background:linear-gradient(135deg, var(--surface), rgba(239,68,68,0.05)); border:2px solid var(--danger); }
 .live-pulse-badge { display:inline-flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:800; color:var(--danger); margin-bottom:8px; }
@@ -191,7 +194,7 @@ body.student-mode .view-container { padding: 15px; }
 .modal-body { padding: 24px; }
 .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
 
-.feature-tooltip { position: absolute; background: var(--text-main); color: var(--surface-solid); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; z-index: 12000; box-shadow: var(--shadow); max-width: 250px; pointer-events: none; }
+.feature-tooltip { position: fixed; background: var(--text-main); color: var(--surface-solid); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; z-index: 12000; box-shadow: var(--shadow); max-width: 250px; pointer-events: none; }
 .explain-btn { color: var(--primary); background: var(--primary-light); }
 
 .toast-container { position: fixed; top: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 11000; }
@@ -203,9 +206,10 @@ body.student-mode .view-container { padding: 15px; }
 .option-card:hover { border-color: var(--primary-dark) !important; background: var(--secondary); }
 
 @media (max-width: 1024px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.mobile-open { transform: translateX(0); }
-  .main-content { margin-left: 0; }
+  .sidebar { transform: translateX(-100%); width: 270px; }
+  .sidebar.mobile-open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.15); }
+  .main-content { margin-left: 0 !important; width: 100%; }
   .active-room-banner { grid-template-columns: 1fr; text-align: center; }
   .dashboard-split-grid { grid-template-columns: 1fr; }
+  .view-container { padding: 20px; }
 }

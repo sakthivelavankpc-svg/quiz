@@ -174,12 +174,12 @@
         <!-- ================= 1. HOME DASHBOARD ================= -->
         <section id="homeSection" class="view-section">
           
-          <div class="welcome-hero glass-card">
+          <div class="welcome-hero glass-card mb-24">
             <div class="hero-text">
               <div class="hero-chip"><i class="ri-verified-badge-fill"></i> Government School System</div>
               <h1>Welcome Back, <span id="welcomeUserName">Educator</span> 👋</h1>
               <p>Create a quiz, schedule it, share the PIN, watch students, and get instant results.</p>
-              <div class="hero-actions">
+              <div class="hero-actions" style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn-primary" onclick="window.appEngineAPI.switchContext('liveQuizSection')"><i class="ri-broadcast-line"></i> Launch Live Exam Room</button>
                 <button class="btn-secondary" onclick="window.appEngineAPI.switchContext('creatorSection')"><i class="ri-file-add-line"></i> Create New Quiz</button>
                 <button class="btn-accent" onclick="window.appEngineAPI.startTutorial()"><i class="ri-compass-discover-line"></i> Start Guided Tour</button>
@@ -189,7 +189,7 @@
 
           <!-- What Should I Do Now Panel -->
           <div class="glass-card mb-24">
-            <div class="card-header-flex">
+            <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
               <h3>What do you want to do?</h3>
               <span class="subtext">Quick Action Menu</span>
             </div>
@@ -222,7 +222,7 @@
                   <span>Create a larger exam</span>
                 </div>
               </button>
-              <button class="quick-action-btn" onclick="window.appEngineAPI.switchContext('analyticsSection')">
+              <button class="quick-action-btn" onclick="window.appEngineAPI.switchContext('marksheetSection')">
                 <div class="qa-icon info"><i class="ri-bar-chart-box-line"></i></div>
                 <div class="qa-text">
                   <strong>View Results</strong>
@@ -261,9 +261,9 @@
 
           <div class="dashboard-split-grid">
             <div class="calendar-card glass-card">
-              <div class="card-header-flex">
-                <h3><i class="ri-calendar-event-line"></i> Scheduled Examinations</h3>
-                <div>
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="display: flex; align-items: center; gap: 8px;"><i class="ri-calendar-event-line"></i> Scheduled Examinations</h3>
+                <div style="display: flex; gap: 8px;">
                   <button class="btn-sm btn-icon explain-btn" data-tooltip="Your examination schedule. Plan exams before the day."><i class="ri-question-line"></i></button>
                   <button class="btn-sm btn-secondary" onclick="window.appEngineAPI.openScheduler()"><i class="ri-add-line"></i> Schedule New</button>
                 </div>
@@ -286,7 +286,7 @@
               <h2><i class="ri-broadcast-fill" style="color:var(--danger);"></i> Live Classroom Exam Center</h2>
               <p>Start instantly or schedule for later. Monitor students in real-time.</p>
             </div>
-            <div class="header-action-strip">
+            <div class="header-action-strip" style="display: flex; gap: 10px;">
               <button class="btn-success" id="btnModeStartNow"><i class="ri-play-circle-line"></i> Start Exam Now</button>
               <button class="btn-primary" id="btnModeSchedule"><i class="ri-calendar-event-line"></i> Schedule Exam</button>
             </div>
@@ -294,7 +294,7 @@
 
           <!-- Wizard Setup Panel (Shown when starting) -->
           <div id="liveSetupPanel" class="glass-card mb-24 hidden">
-            <h3><i class="ri-settings-4-line"></i> Prepare Examination</h3>
+            <h3 style="display: flex; align-items: center; gap: 8px;"><i class="ri-settings-4-line"></i> Prepare Examination</h3>
             <div class="form-group-row mt-10">
               <div class="form-group">
                 <label>Select Quiz / Exam</label>
@@ -305,7 +305,7 @@
                 <input type="number" id="liveSetupDuration" class="form-control" value="30" min="1" />
               </div>
             </div>
-            <div class="form-group-row">
+            <div class="form-group-row" style="justify-content: flex-end;">
               <button class="btn-secondary" onclick="document.getElementById('liveSetupPanel').classList.add('hidden')">Cancel</button>
               <button class="btn-success" id="btnConfirmStartNow"><i class="ri-play-fill"></i> Confirm & Start Live</button>
             </div>
@@ -316,24 +316,24 @@
             <div class="active-room-banner glass-card" id="liveRoomBanner">
               <div class="room-banner-left">
                 <span class="live-pulse-badge"><i class="ri-record-circle-line"></i> EXAM IS LIVE</span>
-                <h3 id="liveHostExamTitle">Exam Title</h3>
-                <div class="room-pin-display">
+                <h3 id="liveHostExamTitle" style="font-size: 1.5rem; margin-bottom: 10px;">Exam Title</h3>
+                <div class="room-pin-display" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                   <span class="pin-label">PIN:</span>
                   <span class="pin-code" id="liveHostPinCode">TN0000</span>
-                  <button class="btn-sm btn-secondary" id="btnCopyLivePin" title="Copy PIN"><i class="ri-file-copy-line"></i></button>
+                  <button class="btn-sm btn-secondary btn-icon" id="btnCopyLivePin" title="Copy PIN"><i class="ri-file-copy-line"></i></button>
                 </div>
-                <p class="room-url-share" id="liveHostShareUrl">Link: Direct Join</p>
+                <p class="room-url-share" id="liveHostShareUrl" style="word-break: break-all;">Link: Direct Join</p>
               </div>
-              <div class="room-banner-center">
+              <div class="room-banner-center" style="text-align: center;">
                 <div class="qr-canvas-box" id="liveRoomQrBox"></div>
-                <span class="qr-caption">Scan to Join</span>
+                <span class="qr-caption" style="font-size: 0.8rem; font-weight: 700;">Scan to Join</span>
               </div>
-              <div class="room-banner-right">
-                <div class="timer-large-display">
-                  <span class="timer-label">ELAPSED TIME</span>
+              <div class="room-banner-right" style="text-align: right;">
+                <div class="timer-large-display" style="margin-bottom: 15px;">
+                  <span class="timer-label" style="font-size: 0.8rem; font-weight: 700; color: var(--text-light); display: block;">ELAPSED TIME</span>
                   <div class="timer-value" id="liveHostTimer">00:00:00</div>
                 </div>
-                <div class="teacher-control-cluster">
+                <div class="teacher-control-cluster" style="display: flex; gap: 10px; justify-content: flex-end;">
                   <button class="btn-warning btn-sm" id="btnLivePauseToggle" onclick="window.appEngineAPI.switchContext('homeSection')"><i class="ri-home-line"></i> Return Home</button>
                   <button class="btn-danger btn-sm" id="btnLiveConclude"><i class="ri-stop-circle-line"></i> Finish Exam</button>
                 </div>
@@ -342,14 +342,14 @@
 
             <!-- Real-Time Student Participation Grid -->
             <div class="glass-card table-panel mt-24">
-              <div class="card-header-flex">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
-                  <h3><i class="ri-group-line"></i> Live Student Monitor</h3>
-                  <p class="subtext">Students Joined: <b id="liveStatJoined">0</b> | Answering: <b id="liveStatAnswering">0</b> | Completed: <b id="liveStatCompleted">0</b></p>
+                  <h3 style="display: flex; align-items: center; gap: 8px;"><i class="ri-group-line"></i> Live Student Monitor</h3>
+                  <p class="subtext" style="margin-top: 5px;">Students Joined: <b id="liveStatJoined">0</b> | Answering: <b id="liveStatAnswering">0</b> | Completed: <b id="liveStatCompleted">0</b></p>
                 </div>
                 <div class="table-actions" style="display:flex; gap:10px;">
                   <button class="btn-sm btn-icon explain-btn" data-tooltip="Watch students join and answer questions in real time."><i class="ri-question-line"></i></button>
-                  <button class="btn-secondary btn-sm" id="btnLiveLeaderboard" onclick="window.appEngineAPI.switchContext('leaderboardSection')"><i class="ri-trophy-line"></i> View Results</button>
+                  <button class="btn-secondary btn-sm" id="btnLiveLeaderboard" onclick="window.appEngineAPI.switchContext('marksheetSection')"><i class="ri-trophy-line"></i> View Results</button>
                 </div>
               </div>
 
@@ -397,10 +397,10 @@
             </div>
             <button class="btn-sm btn-icon explain-btn" data-tooltip="Combine multiple small quizzes into a full-term exam."><i class="ri-question-line"></i></button>
           </div>
-          <div class="blueprint-builder-grid">
+          <div class="blueprint-builder-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
             <div class="glass-card builder-inventory-pane">
               <h3>1. Select Source Quizzes</h3>
-              <div class="inventory-scroll-box mt-10" id="groupInventoryContainer"></div>
+              <div class="inventory-scroll-box mt-10" id="groupInventoryContainer" style="max-height: 400px; overflow-y: auto; padding-right: 10px;"></div>
             </div>
             <div class="glass-card builder-config-pane">
               <h3>2. Combined Exam Details</h3>
@@ -412,8 +412,8 @@
                 <div class="form-group"><label>Class</label><input type="text" id="groupClassInput" class="form-control" placeholder="e.g., Class 10" /></div>
                 <div class="form-group"><label>Subject</label><input type="text" id="groupSubjectInput" class="form-control" placeholder="e.g., Science" /></div>
               </div>
-              <div class="composite-controls-strip mt-10">
-                <button id="groupCommitBtn" class="btn-primary btn-full"><i class="ri-cloud-upload-line"></i> Save Combined Exam</button>
+              <div class="composite-controls-strip mt-24">
+                <button id="groupCommitBtn" class="btn-primary btn-full btn-large"><i class="ri-cloud-upload-line"></i> Save Combined Exam</button>
               </div>
             </div>
           </div>
@@ -421,24 +421,24 @@
 
         <!-- ================= 9. SECURE QUIZ RUNNER (STUDENT VIEW) ================= -->
         <section id="quizSection" class="view-section hidden">
-          <div class="quiz-runner-box glass-card">
-            <div class="runner-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px;">
+          <div class="quiz-runner-box glass-card" style="max-width: 800px; margin: 0 auto;">
+            <div class="runner-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px; flex-wrap: wrap; gap: 15px;">
               <div class="runner-brand-title">
-                <h2 id="runnerQuizTitle">Exam Title</h2>
-                <span class="runner-candidate-badge" id="runnerCandidateBadge" style="color:var(--text-light); font-size:0.9rem;">Candidate: Name</span>
+                <h2 id="runnerQuizTitle" style="font-size: 1.5rem; margin-bottom: 5px;">Exam Title</h2>
+                <span class="runner-candidate-badge" id="runnerCandidateBadge" style="color:var(--text-light); font-size:0.9rem; font-weight: 600;">Candidate: Name</span>
               </div>
-              <div id="runnerTimer" class="timer-badge" style="font-family:'JetBrains Mono', monospace; font-size:1.5rem; font-weight:800; color:var(--primary);">00:00</div>
+              <div id="runnerTimer" class="timer-badge" style="font-family:'JetBrains Mono', monospace; font-size:1.5rem; font-weight:800; color:var(--primary); background: var(--primary-light); padding: 8px 16px; border-radius: 8px;">00:00</div>
             </div>
-            <div class="progress-container" style="background:var(--border); height:6px; border-radius:3px; margin-bottom:20px; overflow:hidden;"><div id="runnerProgressBar" class="progress-bar-fill" style="width: 0%; height:100%; background:var(--primary); transition:0.3s;"></div></div>
+            <div class="progress-container" style="background:var(--border); height:8px; border-radius:4px; margin-bottom:24px; overflow:hidden;"><div id="runnerProgressBar" class="progress-bar-fill" style="width: 0%; height:100%; background:var(--primary); transition:0.3s;"></div></div>
             <div class="question-body-card">
-              <div class="q-meta-strip mb-10"><strong id="runnerQuestionMeta" class="q-meta" style="color:var(--primary);">Question 1</strong></div>
-              <div id="runnerQuestionText" class="runner-question-text mb-24" style="font-size:1.2rem; font-weight:600; line-height:1.6;">Loading...</div>
+              <div class="q-meta-strip mb-10"><strong id="runnerQuestionMeta" class="q-meta" style="color:var(--primary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Question 1</strong></div>
+              <div id="runnerQuestionText" class="runner-question-text mb-24" style="font-size:1.3rem; font-weight:600; line-height:1.6; color: var(--text-main);">Loading...</div>
               <div id="runnerOptionsGrid" class="options-grid-layout" style="display:grid; gap:12px;"></div>
             </div>
-            <div class="runner-controls mt-24" style="display:flex; justify-content:space-between; padding-top:16px; border-top:1px solid var(--border);">
-              <button id="runnerPrevBtn" class="btn-secondary"><i class="ri-arrow-left-s-line"></i> Previous</button>
-              <button id="runnerSubmitBtn" class="btn-success hidden"><i class="ri-check-double-line"></i> Submit Exam</button>
-              <button id="runnerNextBtn" class="btn-primary">Next <i class="ri-arrow-right-s-line"></i></button>
+            <div class="runner-controls mt-24" style="display:flex; justify-content:space-between; padding-top:20px; border-top:1px solid var(--border);">
+              <button id="runnerPrevBtn" class="btn-secondary btn-large"><i class="ri-arrow-left-s-line"></i> Previous</button>
+              <button id="runnerSubmitBtn" class="btn-success btn-large hidden"><i class="ri-check-double-line"></i> Submit Exam</button>
+              <button id="runnerNextBtn" class="btn-primary btn-large">Next <i class="ri-arrow-right-s-line"></i></button>
             </div>
           </div>
         </section>
@@ -457,56 +457,56 @@
               <div class="form-group"><label>Class</label><input type="text" id="creatorClass" class="form-control" placeholder="e.g. Class 10" /></div>
               <div class="form-group"><label>Subject</label><input type="text" id="creatorSubject" class="form-control" placeholder="e.g. Science" /></div>
             </div>
-            <div class="admin-tabs mt-10" style="display:flex; gap:10px; margin-bottom:16px;">
+            <div class="admin-tabs mt-24" style="display:flex; gap:10px; margin-bottom:20px;">
               <button class="btn-secondary active" id="tabManual" onclick="window.appEngineAPI.toggleCreatorTab('manual')">Manual Entry</button>
               <button class="btn-secondary" id="tabExcel" onclick="window.appEngineAPI.toggleCreatorTab('excel')">Excel / Sheet Import</button>
             </div>
             
-            <div id="creatorQuestionForm" class="mt-10">
-              <div class="form-group"><label>Question</label><input type="text" id="qFormText" class="form-control" /></div>
-              <div class="options-build-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                <div class="form-group"><label>Option A</label><input type="text" id="qFormOptA" class="form-control" /></div>
-                <div class="form-group"><label>Option B</label><input type="text" id="qFormOptB" class="form-control" /></div>
-                <div class="form-group"><label>Option C</label><input type="text" id="qFormOptC" class="form-control" /></div>
-                <div class="form-group"><label>Option D</label><input type="text" id="qFormOptD" class="form-control" /></div>
+            <div id="creatorQuestionForm">
+              <div class="form-group"><label>Question Text</label><input type="text" id="qFormText" class="form-control" placeholder="Type the question here..." /></div>
+              <div class="options-build-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
+                <div class="form-group"><label>Option A</label><input type="text" id="qFormOptA" class="form-control" placeholder="First option" /></div>
+                <div class="form-group"><label>Option B</label><input type="text" id="qFormOptB" class="form-control" placeholder="Second option" /></div>
+                <div class="form-group"><label>Option C</label><input type="text" id="qFormOptC" class="form-control" placeholder="Third option" /></div>
+                <div class="form-group"><label>Option D</label><input type="text" id="qFormOptD" class="form-control" placeholder="Fourth option" /></div>
               </div>
-              <div class="form-group"><label>Correct Answer</label>
-                <select id="qFormAnswer" class="form-control"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+              <div class="form-group" style="max-width: 200px;"><label>Correct Answer</label>
+                <select id="qFormAnswer" class="form-control"><option value="A">Option A</option><option value="B">Option B</option><option value="C">Option C</option><option value="D">Option D</option></select>
               </div>
-              <button id="creatorAppendQuestionBtn" class="btn-secondary"><i class="ri-add-line"></i> Add Question to Draft</button>
+              <button id="creatorAppendQuestionBtn" class="btn-secondary mt-10"><i class="ri-add-line"></i> Add Question to Draft</button>
             </div>
 
-            <div id="creatorExcelForm" class="hidden mt-10">
-              <div class="excel-drop-zone" id="excelDropZone" style="border:2px dashed var(--border); padding:40px; text-align:center; border-radius:var(--radius); background:var(--secondary); position:relative;">
-                <h3><i class="ri-file-excel-line" style="font-size:2rem; color:var(--success);"></i><br/>Upload Excel / Google Sheet</h3>
-                <p class="subtext mt-10">Upload a `.xlsx`, `.xls`, or `.csv` file containing columns: Question, A, B, C, D, Answer.</p>
+            <div id="creatorExcelForm" class="hidden">
+              <div class="excel-drop-zone" id="excelDropZone" style="border:2px dashed var(--border); padding:50px 20px; text-align:center; border-radius:var(--radius); background:var(--secondary); position:relative; cursor: pointer; transition: 0.3s;">
+                <h3><i class="ri-file-excel-line" style="font-size:3rem; color:var(--success); margin-bottom: 10px; display: block;"></i>Upload Excel / Google Sheet</h3>
+                <p class="subtext mt-10" style="color: var(--text-light);">Drag & drop a `.xlsx`, `.xls`, or `.csv` file containing columns: Question, A, B, C, D, Answer.</p>
                 <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" hidden />
-                <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                <div style="display:flex; gap:15px; justify-content:center; margin-top:24px;">
                     <button class="btn-secondary" id="btnDownloadExcelTemplate"><i class="ri-download-line"></i> Download Template</button>
-                    <button class="btn-success" onclick="document.getElementById('excelFileInput').click()"><i class="ri-upload-2-line"></i> Browse File</button>
+                    <button class="btn-success" onclick="document.getElementById('excelFileInput').click(); event.stopPropagation();"><i class="ri-upload-2-line"></i> Browse File</button>
                 </div>
               </div>
 
-              <div id="excelSheetSelectWrap" class="form-group mt-10 hidden">
+              <div id="excelSheetSelectWrap" class="form-group mt-24 hidden" style="max-width: 300px;">
                 <label>Select Worksheet</label>
                 <select id="excelSheetSelect" class="form-control"></select>
               </div>
 
               <div id="excelPreviewWrap" class="hidden mt-24">
-                <div id="excelImportSummary" style="text-align:center; background:var(--primary-light); color:var(--primary-dark); padding:10px; border-radius:var(--radius-sm); font-weight:700; margin-bottom:12px;"></div>
-                <div class="table-wrapper" style="max-height:320px; overflow-y:auto;">
+                <div id="excelImportSummary" style="text-align:center; background:var(--primary-light); color:var(--primary-dark); padding:12px; border-radius:var(--radius-sm); font-weight:700; margin-bottom:16px;"></div>
+                <div class="table-wrapper" style="max-height:400px; overflow-y:auto;">
                   <table class="data-table">
                     <thead><tr><th>#</th><th>Question</th><th>A</th><th>B</th><th>C</th><th>D</th><th>Answer</th><th>Status</th></tr></thead>
                     <tbody id="excelPreviewTableBody"></tbody>
                   </table>
                 </div>
-                <button id="btnConfirmExcelImport" class="btn-primary btn-full mt-10 hidden"><i class="ri-check-double-line"></i> Add Valid Questions to Draft</button>
+                <button id="btnConfirmExcelImport" class="btn-primary btn-full btn-large mt-24 hidden"><i class="ri-check-double-line"></i> Add Valid Questions to Draft</button>
               </div>
             </div>
 
-            <div class="workspace-action-row mt-24 pt-24" style="border-top:1px solid var(--border); display:flex; flex-direction:column; gap:10px;">
-              <div style="text-align:center; background:var(--primary-light); color:var(--primary-dark); padding:10px; border-radius:var(--radius-sm);">
-                  Questions Ready for Saving: <strong id="pendingQuestionsCount">0</strong>
+            <div class="workspace-action-row mt-24 pt-24" style="border-top:1px solid var(--border); display:flex; flex-direction:column; gap:15px;">
+              <div style="text-align:center; background:var(--primary-light); color:var(--primary-dark); padding:16px; border-radius:var(--radius-sm); font-size: 1.1rem;">
+                  Questions Ready for Saving: <strong id="pendingQuestionsCount" style="font-size: 1.5rem; margin-left: 10px;">0</strong>
               </div>
               <button id="creatorToWorkspaceBtn" class="btn-primary btn-full btn-large"><i class="ri-save-line"></i> Save Assessment to Library</button>
             </div>
@@ -521,16 +521,15 @@
               <p>Your responses have been recorded successfully.</p>
             </div>
           </div>
-          <div class="score-summary-banner glass-card text-center" style="padding:40px;">
-            <h3 style="font-size:2rem; margin-bottom:10px;">Final Score: <span id="reviewScoreText" style="color:var(--primary);">0/0</span></h3>
-            <h4 id="reviewPercentageText" style="font-size:3rem; font-weight:800; margin-bottom:20px;">0%</h4>
-            <p style="font-size:1.1rem; color:var(--text-light);">Completion Time: <b id="reviewTimeText">--</b></p>
-            <p style="font-size:1.1rem; color:var(--text-light);" id="reviewRankText">Rank: --</p>
-            <div id="passFailText" class="pf-badge mt-24" style="font-size:1.5rem;">--</div>
+          <div class="score-summary-banner glass-card text-center" style="max-width: 600px; margin: 0 auto; padding:50px 30px;">
+            <h3 style="font-size:2.2rem; margin-bottom:10px;">Final Score: <span id="reviewScoreText" style="color:var(--primary);">0/0</span></h3>
+            <h4 id="reviewPercentageText" style="font-size:4rem; font-weight:800; margin-bottom:20px; color: var(--text-main);">0%</h4>
+            <p style="font-size:1.2rem; color:var(--text-light); margin-bottom: 10px;">Completion Time: <b id="reviewTimeText" style="color: var(--text-main);">--</b></p>
+            <p style="font-size:1.2rem; color:var(--text-light);" id="reviewRankText">Rank: --</p>
+            <div id="passFailText" class="pf-badge mt-24" style="font-size:1.8rem; padding: 12px 30px;">--</div>
           </div>
           
           <div class="review-button-row mt-24" style="display:flex; gap:16px; justify-content:center; flex-wrap: wrap;">
-            <!-- Student PDF Downloads -->
             <button class="btn-primary btn-large" onclick="window.appEngineAPI.downloadStudentMarksheet()"><i class="ri-file-pdf-line"></i> Download Marksheet</button>
             <button class="btn-secondary btn-large" onclick="window.appEngineAPI.downloadStudentResponse()"><i class="ri-list-check"></i> Download Response Sheet</button>
           </div>
@@ -563,9 +562,9 @@
           </div>
           <div class="glass-card">
             <div class="form-group"><label>Select Exam</label><select id="pdfExamSelect" class="form-control"></select></div>
-            <div class="form-group-row mt-10">
-              <button class="btn-primary" id="btnGenQuestionPaper"><i class="ri-file-text-line"></i> Question Paper PDF</button>
-              <button class="btn-secondary" id="btnGenAnswerKey"><i class="ri-key-2-line"></i> Answer Key PDF</button>
+            <div class="form-group-row mt-24">
+              <button class="btn-primary btn-large" id="btnGenQuestionPaper"><i class="ri-file-text-line"></i> Question Paper PDF</button>
+              <button class="btn-secondary btn-large" id="btnGenAnswerKey"><i class="ri-key-2-line"></i> Answer Key PDF</button>
             </div>
           </div>
         </section>
@@ -579,12 +578,12 @@
             </div>
           </div>
           <div class="glass-card">
-            <div class="form-group-row" style="align-items:flex-end;">
-              <div class="form-group"><label>Select Exam</label><select id="marksheetExamSelect" class="form-control"></select></div>
+            <div class="form-group-row" style="align-items:flex-end; flex-wrap: wrap;">
+              <div class="form-group" style="flex: 1; min-width: 250px;"><label>Select Exam</label><select id="marksheetExamSelect" class="form-control"></select></div>
               <div class="form-group" style="width:auto;"><button class="btn-primary" id="btnLoadMarksheet"><i class="ri-refresh-line"></i> Load Results</button></div>
               <div class="form-group" style="width:auto;"><button class="btn-secondary" id="btnExportMarksheetPdf"><i class="ri-file-pdf-line"></i> Export PDF</button></div>
             </div>
-            <div class="table-wrapper mt-10">
+            <div class="table-wrapper mt-24">
               <table class="data-table" id="marksheetTable">
                 <thead><tr><th>Rank</th><th>Student</th><th>Roll No</th><th>Correct</th><th>Wrong</th><th>Unanswered</th><th>Marks</th><th>%</th><th>Time</th><th>Status</th></tr></thead>
                 <tbody id="marksheetTableBody"><tr><td colspan="10" class="text-center">Select an exam to load results.</td></tr></tbody>
@@ -595,40 +594,40 @@
 
         <!-- ================= SCHEDULED / SHARED EXAM GATEWAY ================= -->
         <section id="examGatewaySection" class="view-section hidden">
-          <div class="glass-card gateway-card" style="max-width:640px;margin:10px auto;padding:34px;text-align:center;">
-            <h2 id="gwTitle">Exam Title</h2>
-            <p id="gwMeta" class="subtext" style="color:var(--text-light); margin-top:6px;"></p>
-            <div id="gwPhaseBadge" class="gw-phase-badge">LOADING</div>
+          <div class="glass-card gateway-card" style="max-width:640px;margin:20px auto;padding:40px 30px;text-align:center;">
+            <h2 id="gwTitle" style="font-size: 1.8rem;">Exam Title</h2>
+            <p id="gwMeta" class="subtext" style="color:var(--text-light); margin-top:10px; font-size: 0.95rem;"></p>
+            <div id="gwPhaseBadge" class="gw-phase-badge mt-24">LOADING</div>
 
-            <div id="gwCountdownBox" class="hidden mt-24">
+            <div id="gwCountdownBox" class="hidden mt-24 pt-24" style="border-top: 1px solid var(--border);">
               <div class="gw-countdown" id="gwCountdown">00 : 00 : 00 : 00</div>
-              <div class="subtext" style="color:var(--text-light); font-size:0.8rem; margin-top:4px;">Days : Hours : Minutes : Seconds</div>
+              <div class="subtext" style="color:var(--text-light); font-size:0.9rem; margin-top:8px; font-weight: 600;">Days : Hours : Minutes : Seconds</div>
             </div>
 
-            <div id="gwJoinForm" class="hidden mt-24" style="text-align:left; max-width:360px; margin:24px auto 0;">
-              <div class="form-group"><label>Full Name</label><input type="text" id="gwNameInput" class="form-control" /></div>
-              <div class="form-group"><label>Roll / Register No. (Optional)</label><input type="text" id="gwRollInput" class="form-control" /></div>
-              <button class="btn-primary btn-full btn-large mt-10" id="gwStartBtn"><i class="ri-play-fill"></i> Start Exam</button>
+            <div id="gwJoinForm" class="hidden mt-24 pt-24" style="text-align:left; max-width:400px; margin:24px auto 0; border-top: 1px solid var(--border);">
+              <div class="form-group"><label>Full Name</label><input type="text" id="gwNameInput" class="form-control" placeholder="Enter your name" /></div>
+              <div class="form-group"><label>Roll / Register No. (Optional)</label><input type="text" id="gwRollInput" class="form-control" placeholder="Enter roll number" /></div>
+              <button class="btn-primary btn-full btn-large mt-24" id="gwStartBtn"><i class="ri-play-fill"></i> Start Exam</button>
             </div>
 
-            <div id="gwShareBox" class="hidden mt-24">
-              <div class="qr-canvas-box" id="gwQrBox" style="margin:0 auto 10px;"></div>
-              <div class="pin-code" id="gwPinCode">PIN: ----</div>
-              <p class="room-url-share" id="gwLinkText" style="margin-top:10px; word-break:break-all;"></p>
-              <div style="display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap;">
-                <button class="btn-secondary btn-sm" id="gwCopyLinkBtn"><i class="ri-file-copy-line"></i> Copy Link</button>
-                <button class="btn-danger btn-sm hidden" id="gwCancelBtn"><i class="ri-close-circle-line"></i> Cancel Exam</button>
+            <div id="gwShareBox" class="hidden mt-24 pt-24" style="border-top: 1px solid var(--border);">
+              <div class="qr-canvas-box" id="gwQrBox" style="margin:0 auto 15px; width: 130px; height: 130px;"></div>
+              <div class="pin-code" id="gwPinCode" style="display: inline-block; font-size: 1.5rem; padding: 8px 24px;">PIN: ----</div>
+              <p class="room-url-share" id="gwLinkText" style="margin-top:15px; word-break:break-all; font-size: 0.9rem; color: var(--text-light);"></p>
+              <div style="display:flex; gap:10px; justify-content:center; margin-top:20px; flex-wrap:wrap;">
+                <button class="btn-secondary" id="gwCopyLinkBtn"><i class="ri-file-copy-line"></i> Copy Link</button>
+                <button class="btn-danger hidden" id="gwCancelBtn"><i class="ri-close-circle-line"></i> Cancel Exam</button>
               </div>
 
-              <div class="glass-card table-panel mt-24" style="text-align:left;">
-                <div class="card-header-flex">
+              <div class="glass-card table-panel mt-24" style="text-align:left; background: var(--secondary-solid); border: none;">
+                <div class="card-header-flex" style="margin-bottom: 15px;">
                   <div>
-                    <h3><i class="ri-group-line"></i> Live Participant Monitor</h3>
-                    <p class="subtext">Joined: <b id="gwStatJoined">0</b> | Answering: <b id="gwStatAnswering">0</b> | Submitted: <b id="gwStatSubmitted">0</b></p>
+                    <h3 style="font-size: 1.1rem;"><i class="ri-group-line"></i> Live Participant Monitor</h3>
+                    <p class="subtext mt-10">Joined: <b id="gwStatJoined">0</b> | Answering: <b id="gwStatAnswering">0</b> | Submitted: <b id="gwStatSubmitted">0</b></p>
                   </div>
                 </div>
                 <div class="table-wrapper">
-                  <table class="data-table">
+                  <table class="data-table" style="background: var(--surface-solid);">
                     <thead><tr><th>Status</th><th>Student Name</th><th>Roll No</th><th>Progress</th><th>Answered</th><th>Score</th><th>Last Seen</th></tr></thead>
                     <tbody id="gwMonitorTableBody"><tr><td colspan="7" class="text-center">No students joined yet.</td></tr></tbody>
                   </table>
@@ -638,12 +637,31 @@
           </div>
         </section>
 
-        <section id="quizProSection" class="view-section hidden"></section>
-        <section id="workspaceSection" class="view-section hidden"></section>
-        <section id="analyticsSection" class="view-section hidden"></section>
-        <section id="leaderboardSection" class="view-section hidden"></section>
-        <section id="guidesSection" class="view-section hidden"></section>
-        <section id="profileSection" class="view-section hidden"></section>
+        <!-- EMPTY STATE SECTIONS -->
+        <section id="quizProSection" class="view-section hidden">
+          <div class="section-header"><div class="header-titles"><h2><i class="ri-share-circle-line"></i> Quiz Pro Matrix</h2></div></div>
+          <div class="glass-card empty-state-msg" style="padding: 60px 20px;"><i class="ri-tools-line" style="font-size:3rem; color:var(--text-light);"></i><h3 class="mt-10">Module in Development</h3><p class="mt-10">This module is currently being updated for the Enterprise Edition.</p></div>
+        </section>
+        <section id="workspaceSection" class="view-section hidden">
+          <div class="section-header"><div class="header-titles"><h2><i class="ri-drag-drop-line"></i> Interactive Canvas</h2></div></div>
+          <div class="glass-card empty-state-msg" style="padding: 60px 20px;"><i class="ri-tools-line" style="font-size:3rem; color:var(--text-light);"></i><h3 class="mt-10">Module in Development</h3><p class="mt-10">This module is currently being updated for the Enterprise Edition.</p></div>
+        </section>
+        <section id="analyticsSection" class="view-section hidden">
+          <div class="section-header"><div class="header-titles"><h2><i class="ri-pie-chart-2-line"></i> Analytics Center</h2></div></div>
+          <div class="glass-card empty-state-msg" style="padding: 60px 20px;"><i class="ri-tools-line" style="font-size:3rem; color:var(--text-light);"></i><h3 class="mt-10">Module in Development</h3><p class="mt-10">This module is currently being updated for the Enterprise Edition.</p></div>
+        </section>
+        <section id="leaderboardSection" class="view-section hidden">
+          <div class="section-header"><div class="header-titles"><h2><i class="ri-trophy-line"></i> Leaderboard</h2></div></div>
+          <div class="glass-card empty-state-msg" style="padding: 60px 20px;"><i class="ri-tools-line" style="font-size:3rem; color:var(--text-light);"></i><h3 class="mt-10">Module in Development</h3><p class="mt-10">This module is currently being updated for the Enterprise Edition.</p></div>
+        </section>
+        <section id="guidesSection" class="view-section hidden">
+          <div class="section-header"><div class="header-titles"><h2><i class="ri-book-read-line"></i> Guides & Blueprints</h2></div></div>
+          <div class="glass-card empty-state-msg" style="padding: 60px 20px;"><i class="ri-tools-line" style="font-size:3rem; color:var(--text-light);"></i><h3 class="mt-10">Module in Development</h3><p class="mt-10">This module is currently being updated for the Enterprise Edition.</p></div>
+        </section>
+        <section id="profileSection" class="view-section hidden">
+          <div class="section-header"><div class="header-titles"><h2><i class="ri-user-settings-line"></i> User Profile</h2></div></div>
+          <div class="glass-card empty-state-msg" style="padding: 60px 20px;"><i class="ri-tools-line" style="font-size:3rem; color:var(--text-light);"></i><h3 class="mt-10">Module in Development</h3><p class="mt-10">This module is currently being updated for the Enterprise Edition.</p></div>
+        </section>
 
       </div>
     </div>
@@ -653,7 +671,7 @@
   <div id="scheduleModal" class="modal-overlay hidden">
     <div class="modal-content glass-card">
       <div class="modal-header">
-        <h3>📅 Schedule Exam</h3>
+        <h3 style="display: flex; align-items: center; gap: 8px;"><i class="ri-calendar-event-line"></i> Schedule Exam</h3>
         <button class="btn-icon" onclick="window.appEngineAPI.closeScheduler()"><i class="ri-close-line"></i></button>
       </div>
       <div class="modal-body">
